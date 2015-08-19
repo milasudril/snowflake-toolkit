@@ -1,6 +1,13 @@
 SnowflakeToolkit--A toolkit for generating ice particles
 ========================================================
 
+Dependencies
+------------
+The toolkit has been design with so it should not have to many external
+dependencies. But it relies on
+
+ * glm - The "OpenGL Mathematics Library"
+
 Compiling
 --------------
 This is a shell scirpt that can be used to compile the toolkit
