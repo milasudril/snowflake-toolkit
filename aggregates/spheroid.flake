@@ -1,0 +1,12 @@
+param_declare(r_x,1)
+param_declare(r_y,1)
+param_declare(r_z,1)
+
+crystal(spheroid,../crystal-library/spheroid.ice)
+aggregate(spheroid,spheroid)
+
+aggregate_param_set(spheroid,r_x,param_get(r_x))
+
+aggregate_param_set(spheroid,r_y,param_get(r_y))
+
+aggregate_param_set(spheroid,r_z,param_get(r_z))

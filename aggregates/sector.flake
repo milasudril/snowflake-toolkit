@@ -1,0 +1,22 @@
+param_declare(r_x,3)
+param_declare(r_y,2)
+param_declare(r_z,1)
+
+crystal(spheroid, ../crystal-library/spheroid.ice)
+aggregate(sector, spheroid)
+node(a, spheroid)
+node(b, spheroid)
+vector(u, 0, 0, 0)
+child_append(sector, u, a, u, 0, 0, 0.1666666)
+child_append(sector, u, b, u, 0, 0, 0.3333333)
+aggregate_param_set(sector,r_x,param_get(r_x))
+aggregate_param_set(sector,r_y,param_get(r_y))
+aggregate_param_set(sector,r_z,param_get(r_z))
+
+node_param_set(a,r_x,param_get(r_x))
+node_param_set(a,r_y,param_get(r_y))
+node_param_set(a,r_z,param_get(r_z))
+
+node_param_set(b,r_x,param_get(r_x))
+node_param_set(b,r_y,param_get(r_y))
+node_param_set(b,r_z,param_get(r_z))

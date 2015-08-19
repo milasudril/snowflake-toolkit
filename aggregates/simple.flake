@@ -1,0 +1,2 @@
+crystal(cube,../crystal-library/cuboid.ice)
+aggregate(simple,cube)

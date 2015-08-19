@@ -1,0 +1,19 @@
+function mod34_beta_corr_plot(table)
+	y_min=min([table(:,4);table(:,6)]);
+	y_max=max([table(:,4);table(:,6)]);
+
+	corrplot(table(:,1),table(:,4),'$R_g\times 10^{-7}$','$\beta_\text{cloud}$','../report'...
+		,'output/mod34-rg-beta-cloud.pdf',1e7,1,[],[y_min y_max]);
+	corrplot(table(:,1),table(:,6),'$R_g\times 10^{-7}$','$\beta_\text{dropped}$','../report'...
+		,'output/mod34-rg-beta-dropped.pdf',1e7,1,[],[y_min y_max]);
+
+	corrplot(table(:,2),table(:,4),'$R_m\times 10^{-3}$','$\beta_\text{cloud}$','../report'...
+		,'output/mod34-rm-beta-cloud.pdf',1e3,1,[],[y_min y_max]);
+	corrplot(table(:,2),table(:,6),'$R_m\times 10^{-3}$','$\beta_\text{dropped}$','../report'...
+		,'output/mod34-rm-beta-dropped.pdf',1e3,1,[],[y_min y_max]);
+
+	corrplot(table(:,3),table(:,4),'$R_d\times 10^{-4}$','$\beta_\text{cloud}$','../report'...
+		,'output/mod34-rd-beta-cloud.pdf',1e4,1,[],[y_min y_max]);
+	corrplot(table(:,3),table(:,6),'$R_d\times 10^{-4}$','$\beta_\text{dropped}$','../report'...
+		,'output/mod34-rd-beta-dropped.pdf',1e4,1,[],[y_min y_max]);
+end

@@ -1,0 +1,71 @@
+# Makefile generated 2015-6-24 9:17
+#
+# Host:   x86_64, GNU/Linux
+# Target: x86_64, GNU/Linux
+# Shell:  /bin/bash
+
+all: __wand_targets __wand_targets/vector.o __wand_targets/volume_convex.o __wand_targets/volume.o __wand_targets/grain.o __wand_targets/aggregate_node.o __wand_targets/aggregate.o __wand_targets/config_parser.o __wand_targets/volume_loader.o __wand_targets/cloud_loader.o __wand_targets/io_scene_snowflakecrystalprototype __wand_targets/mesh_faces_tag __wand_targets/voxelbuilder_adda.o __wand_targets/volume_writer.o __wand_targets/volume_builder_bbc.o __wand_targets/snowflake_generate __wand_targets/snowflake_simulate __wand_targets/snowflake_simulate2 __wand_targets/snowflake_simulate3 __wand_targets/volume_builder.o __wand_targets/snowflake_test
+
+__wand_targets: | .
+	mkdir "__wand_targets"
+
+__wand_targets/vector.o: vector.cpp vector.h
+	g++ "vector.cpp" -fpic -O2 -g -pg -DNDEBUG -Wall -c -std=c++11 -I"/home/torbjorr/deployed" -o "__wand_targets/vector.o"
+
+__wand_targets/volume_convex.o: volume_convex.cpp voxel_builder.h vector.h volume_convex.h bounding_box.h
+	g++ "volume_convex.cpp" -fpic -O2 -g -pg -DNDEBUG -Wall -c -std=c++11 -I"/home/torbjorr/deployed" -o "__wand_targets/volume_convex.o"
+
+__wand_targets/volume.o: volume.cpp volume.h volume_deformation.h voxel_builder.h vector.h volume_convex.h bounding_box.h
+	g++ "volume.cpp" -fpic -O2 -g -pg -DNDEBUG -Wall -c -std=c++11 -I"/home/torbjorr/deployed" -o "__wand_targets/volume.o"
+
+__wand_targets/grain.o: grain.cpp grain.h volume.h volume_deformation.h voxel_builder.h vector.h volume_convex.h bounding_box.h
+	g++ "grain.cpp" -fpic -O2 -g -pg -DNDEBUG -Wall -c -std=c++11 -I"/home/torbjorr/deployed" -o "__wand_targets/grain.o"
+
+__wand_targets/aggregate_node.o: aggregate_node.cpp twins.h aggregate_node.h aggregate_edge.h grain.h volume.h volume_deformation.h voxel_builder.h vector.h volume_convex.h bounding_box.h
+	g++ "aggregate_node.cpp" -fpic -O2 -g -pg -DNDEBUG -Wall -c -std=c++11 -I"/home/torbjorr/deployed" -o "__wand_targets/aggregate_node.o"
+
+__wand_targets/aggregate.o: aggregate.cpp grain_visitor.h aggregate.h twins.h aggregate_node.h aggregate_edge.h grain.h volume.h volume_deformation.h voxel_builder.h vector.h volume_convex.h bounding_box.h
+	g++ "aggregate.cpp" -fpic -O2 -g -pg -DNDEBUG -Wall -c -std=c++11 -I"/home/torbjorr/deployed" -o "__wand_targets/aggregate.o"
+
+__wand_targets/config_parser.o: config_parser.cpp config_command.h config_commandhandler.h config_parser.h file_in.h
+	g++ "config_parser.cpp" -fpic -O2 -g -pg -DNDEBUG -Wall -c -std=c++11 -I"/home/torbjorr/deployed" -o "__wand_targets/config_parser.o"
+
+__wand_targets/volume_loader.o: volume_loader.cpp config_command.h volume.h volume_deformation.h voxel_builder.h vector.h volume_convex.h bounding_box.h volume_loader.h config_commandhandler.h file_in.h
+	g++ "volume_loader.cpp" -fpic -O2 -g -pg -DNDEBUG -Wall -c -std=c++11 -I"/home/torbjorr/deployed" -o "__wand_targets/volume_loader.o"
+
+__wand_targets/cloud_loader.o: cloud_loader.cpp config_parser.h cloud.h grain_visitor.h aggregate.h twins.h aggregate_node.h aggregate_edge.h grain.h config_command.h volume.h volume_deformation.h voxel_builder.h vector.h volume_convex.h bounding_box.h volume_loader.h file_in.h config_commandhandler.h cloud_loader.h
+	g++ "cloud_loader.cpp" -fpic -O2 -g -pg -DNDEBUG -Wall -c -std=c++11 -I"/home/torbjorr/deployed" -o "__wand_targets/cloud_loader.o"
+
+__wand_targets/io_scene_snowflakecrystalprototype: | __wand_targets io_scene_snowflakecrystalprototype
+	mkdir "__wand_targets/io_scene_snowflakecrystalprototype"
+
+__wand_targets/mesh_faces_tag: | __wand_targets mesh_faces_tag
+	mkdir "__wand_targets/mesh_faces_tag"
+
+__wand_targets/voxelbuilder_adda.o: voxelbuilder_adda.cpp file_out.h volume_convex.h bounding_box.h vector.h voxelbuilder_adda.h voxel_builder.h
+	g++ "voxelbuilder_adda.cpp" -fpic -O2 -g -pg -DNDEBUG -Wall -c -std=c++11 -I"/home/torbjorr/deployed" -o "__wand_targets/voxelbuilder_adda.o"
+
+__wand_targets/volume_writer.o: volume_writer.cpp file_out.h volume.h volume_deformation.h voxel_builder.h vector.h volume_convex.h bounding_box.h volume_writer.h
+	g++ "volume_writer.cpp" -fpic -O2 -g -pg -DNDEBUG -Wall -c -std=c++11 -I"/home/torbjorr/deployed" -o "__wand_targets/volume_writer.o"
+
+__wand_targets/volume_builder_bbc.o: volume_builder_bbc.cpp twins.h aggregate_node.h aggregate_edge.h grain.h volume.h volume_deformation.h voxel_builder.h vector.h volume_convex.h bounding_box.h volume_builder_bbc.h grain_visitor.h
+	g++ "volume_builder_bbc.cpp" -fpic -O2 -g -pg -DNDEBUG -Wall -c -std=c++11 -I"/home/torbjorr/deployed" -o "__wand_targets/volume_builder_bbc.o"
+
+__wand_targets/snowflake_generate: snowflake_generate.cpp __wand_targets/voxelbuilder_adda.o voxelbuilder_adda.h __wand_targets/volume_writer.o file_out.h volume_writer.h __wand_targets/volume_builder_bbc.o volume_builder_bbc.h __wand_targets/cloud_loader.o __wand_targets/volume_loader.o volume_loader.h cloud_loader.h __wand_targets/config_parser.o config_command.h config_commandhandler.h config_parser.h file_in.h cloud.h __wand_targets/aggregate.o grain_visitor.h aggregate.h __wand_targets/aggregate_node.o twins.h aggregate_node.h aggregate_edge.h __wand_targets/grain.o grain.h __wand_targets/volume.o volume.h volume_deformation.h __wand_targets/volume_convex.o voxel_builder.h __wand_targets/vector.o vector.h volume_convex.h bounding_box.h | __wand_targets
+	g++ "snowflake_generate.cpp" -fpic -O2 -g -pg -L"/home/torbjorr/deployed" "__wand_targets/voxelbuilder_adda.o" "__wand_targets/volume_writer.o" "__wand_targets/volume_builder_bbc.o" "__wand_targets/cloud_loader.o" "__wand_targets/volume_loader.o" "__wand_targets/config_parser.o" "__wand_targets/aggregate.o" "__wand_targets/aggregate_node.o" "__wand_targets/grain.o" "__wand_targets/volume.o" "__wand_targets/volume_convex.o" "__wand_targets/vector.o" -O2 -g -pg -DNDEBUG -Wall -std=c++11 -I"/home/torbjorr/deployed" -o "__wand_targets/snowflake_generate" -s
+
+__wand_targets/snowflake_simulate: snowflake_simulate.cpp twins.h __wand_targets/grain.o grain.h __wand_targets/voxelbuilder_adda.o voxelbuilder_adda.h __wand_targets/volume_writer.o file_out.h volume_writer.h list_indexed.h __wand_targets/volume_loader.o __wand_targets/volume.o volume.h volume_deformation.h __wand_targets/volume_convex.o voxel_builder.h __wand_targets/vector.o vector.h volume_convex.h bounding_box.h volume_loader.h __wand_targets/config_parser.o config_command.h config_commandhandler.h config_parser.h file_in.h | __wand_targets
+	g++ "snowflake_simulate.cpp" -fpic -O2 -g -pg -L"/home/torbjorr/deployed" "__wand_targets/grain.o" "__wand_targets/voxelbuilder_adda.o" "__wand_targets/volume_writer.o" "__wand_targets/volume_loader.o" "__wand_targets/volume.o" "__wand_targets/volume_convex.o" "__wand_targets/vector.o" "__wand_targets/config_parser.o" -O2 -g -pg -DNDEBUG -Wall -std=c++11 -I"/home/torbjorr/deployed" -o "__wand_targets/snowflake_simulate"
+
+__wand_targets/snowflake_simulate2: snowflake_simulate2.cpp twins.h __wand_targets/grain.o grain.h __wand_targets/voxelbuilder_adda.o voxelbuilder_adda.h __wand_targets/volume_writer.o file_out.h volume_writer.h list_indexed.h __wand_targets/volume_loader.o __wand_targets/volume.o volume.h volume_deformation.h __wand_targets/volume_convex.o voxel_builder.h __wand_targets/vector.o vector.h volume_convex.h bounding_box.h volume_loader.h __wand_targets/config_parser.o config_command.h config_commandhandler.h config_parser.h file_in.h | __wand_targets
+	g++ "snowflake_simulate2.cpp" -fpic -O2 -g -pg -L"/home/torbjorr/deployed" "__wand_targets/grain.o" "__wand_targets/voxelbuilder_adda.o" "__wand_targets/volume_writer.o" "__wand_targets/volume_loader.o" "__wand_targets/volume.o" "__wand_targets/volume_convex.o" "__wand_targets/vector.o" "__wand_targets/config_parser.o" -O2 -g -pg -DNDEBUG -Wall -std=c++11 -I"/home/torbjorr/deployed" -o "__wand_targets/snowflake_simulate2"
+
+__wand_targets/snowflake_simulate3: snowflake_simulate3.cpp twins.h __wand_targets/grain.o grain.h __wand_targets/voxelbuilder_adda.o voxelbuilder_adda.h __wand_targets/volume_writer.o file_out.h volume_writer.h list_indexed.h __wand_targets/volume_loader.o __wand_targets/volume.o volume.h volume_deformation.h __wand_targets/volume_convex.o voxel_builder.h __wand_targets/vector.o vector.h volume_convex.h bounding_box.h volume_loader.h __wand_targets/config_parser.o config_command.h config_commandhandler.h config_parser.h file_in.h | __wand_targets
+	g++ "snowflake_simulate3.cpp" -fpic -O2 -g -pg -L"/home/torbjorr/deployed" "__wand_targets/grain.o" "__wand_targets/voxelbuilder_adda.o" "__wand_targets/volume_writer.o" "__wand_targets/volume_loader.o" "__wand_targets/volume.o" "__wand_targets/volume_convex.o" "__wand_targets/vector.o" "__wand_targets/config_parser.o" -O2 -g -pg -DNDEBUG -Wall -std=c++11 -I"/home/torbjorr/deployed" -o "__wand_targets/snowflake_simulate3"
+
+__wand_targets/volume_builder.o: volume_builder.cpp twins.h aggregate_node.h aggregate_edge.h grain.h volume.h volume_deformation.h voxel_builder.h vector.h volume_convex.h bounding_box.h volume_builder.h grain_visitor.h
+	g++ "volume_builder.cpp" -fpic -O2 -g -pg -DNDEBUG -Wall -c -std=c++11 -I"/home/torbjorr/deployed" -o "__wand_targets/volume_builder.o"
+
+__wand_targets/snowflake_test: snowflake_test.cpp __wand_targets/config_parser.o config_parser.h __wand_targets/voxelbuilder_adda.o voxelbuilder_adda.h __wand_targets/volume_loader.o config_command.h volume_loader.h file_in.h config_commandhandler.h __wand_targets/volume_writer.o file_out.h volume_writer.h __wand_targets/volume_builder.o volume_builder.h __wand_targets/aggregate.o grain_visitor.h aggregate.h __wand_targets/aggregate_node.o twins.h aggregate_node.h aggregate_edge.h __wand_targets/grain.o grain.h __wand_targets/volume.o volume.h volume_deformation.h __wand_targets/volume_convex.o voxel_builder.h __wand_targets/vector.o vector.h volume_convex.h bounding_box.h | __wand_targets
+	g++ "snowflake_test.cpp" -fpic -O2 -g -pg -L"/home/torbjorr/deployed" "__wand_targets/config_parser.o" "__wand_targets/voxelbuilder_adda.o" "__wand_targets/volume_loader.o" "__wand_targets/volume_writer.o" "__wand_targets/volume_builder.o" "__wand_targets/aggregate.o" "__wand_targets/aggregate_node.o" "__wand_targets/grain.o" "__wand_targets/volume.o" "__wand_targets/volume_convex.o" "__wand_targets/vector.o" -O2 -g -pg -DNDEBUG -Wall -std=c++11 -I"/home/torbjorr/deployed" -o "__wand_targets/snowflake_test"
+

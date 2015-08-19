@@ -1,0 +1,237 @@
+config_set
+	[
+	components
+		[
+		Wand
+			[
+			herbarium
+				[
+				name[snowflake_toolkit]
+				authors[Torbjörn^ Rathsman]
+				]
+			actions[scan_recursive]
+			paths
+				[
+				sources
+					[.]
+				targets
+					[__wand_targets]
+				]
+			]
+		]
+	]
+
+config_set
+	[
+	profile
+		[makeexport]
+	components
+		[
+		Wand
+			[
+			actions[makeexport;nocompile;-install]
+			]
+		]
+	]
+
+config_set
+	[
+	profile
+		[install]
+	components
+		[
+		Wand
+			[
+			actions[install]
+			]
+		]
+	]
+
+config_set
+	[
+	shell[/bin/bash]
+	components
+		[
+		Makeexport
+			[
+			copy[cp^ "%0"^ "%1"]
+			mkdir[mkdir^ "%0"]
+			]
+		]
+	]
+
+config_set
+	[
+	platforms
+		[
+		target[x86;GNU/Linux]
+		]
+
+	profile[release;makeexport]
+
+	components
+		[
+		Handler^ C++
+			[
+			commands
+				[
+				compile_obj[g++^ "%0"^ -march=native^ -O2^ -DNDEBUG^ -Wall^ -c^ -std=c++11^ %2-o^ "%1"]
+				compile_app[g++^ "%0"^ %3%4-O2^ -march=native^ -DNDEBUG^ -Wall^ -std=c++11^ %2-o^ "%1"^ -s]
+				compile_dynlib[g++^ -shared^ "%0"^ %3%4-O2^ -DNDEBUG^ -Wall^ -std=c++11^ %2-o^ "%1"^ -s]
+				]
+			]
+		Makeexport
+			[
+			filename[Makefile-GNULinux32]
+			]
+		]
+	]
+
+config_set
+	[
+	platforms
+		[
+		target[x86_64;GNU/Linux]
+		]
+
+	profile[release;makeexport]
+
+	components
+		[
+
+		Handler^ C++
+			[
+			commands
+				[
+				compile_obj[g++^ "%0"^ -fpic^ -march=native^ -O2^ -DNDEBUG^ -Wall^ -c^ -std=c++11^ %2-o^ "%1"]
+				compile_app[g++^ "%0"^ -fpic^ %3%4-O2^ -march=native^ -DNDEBUG^ -Wall^ -std=c++11^ %2-o^ "%1"^ -s]
+				compile_dynlib[g++^ -shared^ "%0"^ -fpic^ %3%4-O2^ -march=native^ -DNDEBUG^ -Wall^ -std=c++11^ %2-o^ "%1"^ -s]
+				]
+			]
+		Makeexport
+			[
+			filename[Makefile-GNULinux64]
+			]
+		]
+	]
+
+config_set
+	[
+	platforms
+		[
+		target[x86_64;GNU/Linux]
+		]
+
+	profile[profile]
+
+	components
+		[
+
+		Handler^ C++
+			[
+			commands
+				[
+				compile_obj[g++^ "%0"^ -fpic^ -march=native^ -O2^ -DNDEBUG^ -DPROFILE^ -Wall^ -c^ -std=c++11^ %2-o^ "%1"]
+				compile_app[g++^ "%0"^ -fpic^ %3%4-O2^ -march=native^ -DNDEBUG^ -DPROFILE^ -Wall^ -std=c++11^ %2-o^ "%1"^ -s]
+				compile_dynlib[g++^ -shared^ "%0"^ -fpic^ %3%4-O2^ -march=native^ -DPROFILE^ -DNDEBUG^ -Wall^ -std=c++11^ %2-o^ "%1"^ -s]
+				]
+			]
+		Makeexport
+			[
+			filename[Makefile-GNULinux64-prof]
+			]
+		]
+	]
+
+
+config_set
+	[
+	platforms
+		[
+		host[;GNU/Linux]
+		target[;GNU/Linux]
+		]
+
+	components
+		[
+		Handler^ C++
+			[
+			commands
+				[
+				archive[ar^ rcs^ "%1" %0]
+				]
+
+			name_decorations
+				[
+				dir_include[-I"%0"]
+				dir_lib[-L"%0"]
+				libname_external[-l"%0"]
+				libname_internal[-l:"%0"]
+				]
+
+			envblock
+				[
+				LC_ALL[C]
+				]
+			]
+		]
+	]
+
+config_set
+	[
+	profile[debug]
+	platforms
+		[
+		target[x86;GNU/Linux]
+		]
+
+	components
+		[
+		Wand
+			[
+			paths
+				[
+				targets[__wand_targets_dbg]
+				]
+			]
+
+		Handler^ C++
+			[
+			commands
+				[
+				compile_obj[g++^ "%0"^ -pg^ -g^ -march=native^ -Wall^ -c^ -std=c++11^ %2-o^ "%1"]
+				compile_app[g++^ "%0"^ %3%4^ -pg^ -g^ -march=native^ -Wall^ -std=c++11^ %2-o^ "%1"]
+				compile_dynlib[g++^ -shared^ "%0"^ %3%4^ -pg^ -g^ -Wall^ -std=c++11^ %2-o^ "%1"]
+				]
+			]
+		]
+	]
+
+config_set
+	[
+	profile[debug]
+	platforms
+		[
+		target[x86-64;GNU/Linux]
+		]
+	components
+		[
+		Wand
+			[
+			paths
+				[
+				targets[__wand_targets_dbg]
+				]
+			]
+
+		Handler^ C++
+			[
+			commands
+				[
+				compile_obj[g++^ -fpic^ "%0"^ -g^ -pg^ -march=native^ -Wall^ -c^ -std=c++11^ %2-o^ "%1"]
+				compile_app[g++^ -fpic^ "%0"^ %3%4^ -march=native^ -g^ -pg^ -Wall^ -std=c++11^ %2-o^ "%1"]
+				compile_dynlib[g++^ -shared^ -fpic^ "%0"^ %3%4^ -march=native^ -g^ -pg^ -Wall^ -std=c++11^ %2-o^ "%1"]
+				]
+			]
+		]
+	]

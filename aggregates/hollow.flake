@@ -1,0 +1,10 @@
+param_declare(L,2)
+param_declare(h,0.5)
+param_declare(a,1)
+
+crystal(hollow,../crystal-library/hollow.ice)
+aggregate(test,hollow)
+
+aggregate_param_set(test,L,param_get(L))
+aggregate_param_set(test,h,param_get(h))
+aggregate_param_set(test,a,param_get(a))
