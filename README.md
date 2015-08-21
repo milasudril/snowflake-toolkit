@@ -10,7 +10,7 @@ dependencies. But it relies on
 
 Compiling
 --------------
-This is a shell scirpt that can be used to compile the toolkit
+This is a shell script that can be used to compile the toolkit
 
     #!/bin/bash
 
@@ -33,7 +33,7 @@ This is a shell scirpt that can be used to compile the toolkit
     make -f "Makefile-GNULinux64"
 
     # Move Wand to an appropriate place
-    mv "__wand_targets-x86_64-gnulinux/wand/wand" "~/bin/wand"
+    mv "__wand_targets-x86_64-gnulinux/wand/wand" ~/bin/wand
 
     # Leave the Gabi source directory
     cd "../.."
@@ -46,7 +46,7 @@ This is a shell scirpt that can be used to compile the toolkit
     git clone "https://github.com/milasudril/snowflake-toolkit.git"
 
     # Cd into the snowflake toolkit directory
-    cd "snowflake-tookit/source"
+    cd "snowflake-toolkit/code"
 
     # Run Wand to compile the project
     ~/bin/wand "profile[release]"
