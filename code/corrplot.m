@@ -3,7 +3,7 @@ function corrplot(X,Y,x_label,y_label,dir_base,file_out,X_scale,Y_scale,x_lim,y_
 	figwidth=0.46*textwidth;
 	fig=figure('paperunits','centimeters','papersize'...
 		,[figwidth 4.5],'paperposition',[0 0 figwidth 4.5]);
-	plot(X/X_scale,Y/Y_scale,'.','markersize',1);
+	plot(X/X_scale,Y/Y_scale,'.','markersize',1.5);
 	hold on
 	if(strcmp(x_label,y_label))
 		set(gcf(),'papersize'...

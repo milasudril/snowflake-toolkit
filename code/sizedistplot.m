@@ -1,28 +1,36 @@
-function sizedistplot(base_dir,dir_out,filename,prefix,values)
+function sizedistplot(base_dir,prefix,dir_out,filename)
 	size_pt=0.35136;
 	textwidth=418*size_pt/10;
 	textheight=595*size_pt/10;
 	figwidth=0.75*textwidth;
-	figheight=(textheight-4.75)/3;
+	figheight=1.2*(textheight-4.75)/3;
 
 	fig=figure('paperunits','centimeters','papersize'...
 		,[figwidth figheight],'paperposition',[0 0 figwidth figheight])
 	hold on
-	for k=1:numel(values)
-		data=frame_load(base_dir,values{k}.growthrate...
-			,values{k}.meltrate,values{k}.droprate,prefix...
-			,1024);
-		[N,R] = hist_fdr(data(:,1));
-		i_nz=intersect(find(N),find(R<=3));
-		size(i_nz)
-		semilogy(R(i_nz),N(i_nz),'-','markersize',2,'color',k*[0.2 0.2 0.2]);
-		[C,lambda_tmp,e_rms]=expfit(R',N');
-		x=linspace(0,max(R(i_nz)),128);
-		semilogy(x,C*exp(lambda_tmp*x),'--','color',k*[0.2 0.2 0.2]);
+
+	data=frame_load(base_dir,prefix,1024);
+	if size(data,1)>1
+		i_1=find(data(:,7)==1);
+		r_0=mean(data(i_1,1));
+		i_g1=find(data(:,7)>1);
+		if size(i_g1,1)>1
+			[N,R] = hist_fdr(data(i_g1,1)/r_0);
+			[~,i_max]=max(N);
+			n_0=sum(N(i_max:end));
+			cum=1-cumsum(N(i_max:end))/n_0;
+			[C,lambda_tmp,e_rms]=expfit(R(i_max:end)',cum');
+			semilogy(R,N,'.','markersize',1.5);
+			hold on
+			r_int=linspace(0,max(R),128);
+			plot(r_int,exp(lambda_tmp*r_int)*(1-n_0)*C);
+		end
 	end
-	xlabel('$R_\text{max}$');
-	ylabel('$C\dd{R_\text{max}}N$');
+
+	xlabel('$\frac{R_\text{max}}{r_\text{max}}$');
+	ylabel('$\dd{N}\left(\frac{R_\text{max}}{r_\text{max}}\right)$');
 	wd=cd(dir_out);
 	print(filename,'-dpdflatex');
+	cd(wd)
 	delete(fig);
 end

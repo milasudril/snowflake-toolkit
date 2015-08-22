@@ -14,7 +14,7 @@ SolidBuilder::~SolidBuilder()
 	assert(m_bonds.size()==0);
 	}
 
-void SolidBuilder::grainProcess(AggregateEdge& edge,Aggregate& aggregate)
+void SolidBuilder::iceParticleProcess(AggregateEdge& edge,AggregateGraph& aggregate)
 	{
 //	O + r_1 = P_1
 //	P_1 + v = B
@@ -30,17 +30,17 @@ void SolidBuilder::grainProcess(AggregateEdge& edge,Aggregate& aggregate)
 //
 //	U=R(\theta)*u
 //	V=R(\theta+\Delta\theta)*v
-	
+
 	Matrix R_0;
 	R_0=glm::rotate(R_0,m_bond.m_angle_z,{0,0,1});
 	R_0=glm::rotate(R_0,m_bond.m_angle_y,{0,1,0});
 	R_0=glm::rotate(R_0,m_bond.m_angle_x,{1,0,0});
-	
+
 	auto R=glm::rotate(R_0,edge.m_angle_z,{0,0,1});
 	R=glm::rotate(R,edge.m_angle_y,{0,1,0});
 	R=glm::rotate(R,edge.m_angle_x,{1,0,0});
-	
-	auto& sol_temp=edge.r_node_child->grainGet().solidGet();
+
+	auto& sol_temp=edge.r_node_child->iceParticleGet().solidGet();
 
 	m_bond.m_position+=
 		Vector(
@@ -58,6 +58,6 @@ void SolidBuilder::grainProcess(AggregateEdge& edge,Aggregate& aggregate)
 	T=glm::rotate(T,m_bond.m_angle_z,Vector{0,0,1});
 	T=glm::rotate(T,m_bond.m_angle_y,Vector{0,1,0});
 	T=glm::rotate(T,m_bond.m_angle_x,Vector{1,0,0});
-	
+
 	r_mesh_out.merge(T,sol_temp,0);
 	}

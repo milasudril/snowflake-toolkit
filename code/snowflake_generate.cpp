@@ -2,9 +2,9 @@
 target[name[snowflake_generate] type[application] platform[;GNU/Linux]]
 #endif
 
-#include "cloud.h"
+#include "aggregate_graph.h"
+#include "aggregate_graph_loader.h"
 #include "config_parser.h"
-#include "cloud_loader.h"
 #include "solid_builder_bbc.h"
 #include "solid_writer.h"
 #include "voxelbuilder_adda.h"
@@ -24,10 +24,10 @@ struct Setup
 	int size_z;
 	bool help_show;
 	bool param_show;
-	
+
 	Setup(int argc,char** argv);
 	};
-	
+
 static const struct option PROGRAM_OPTIONS[]=
 	{
 		 {"aggregate",required_argument,nullptr,'a'}
@@ -37,7 +37,7 @@ static const struct option PROGRAM_OPTIONS[]=
 		,{"param-show",no_argument,nullptr,'p'}
 		,{0,0,0,0}
 	};
-	
+
 Setup::Setup(int argc,char** argv):
 	size_x(1),size_y(0),size_z(0),help_show(0),param_show(0)
 	{
@@ -73,7 +73,7 @@ Setup::Setup(int argc,char** argv):
 		throw "Aggregate description file is not given. "
 			"Try --help for more information.";
 		}
-	
+
 	if(aggregate!=nullptr)
 		{
 		int k=0;
@@ -132,7 +132,7 @@ Setup::Setup(int argc,char** argv):
 			throw "No aggregate given";
 			}
 		}
-		
+
 	if(sample_geometry!=nullptr)
 		{
 		int k=0;
@@ -175,7 +175,7 @@ Setup::Setup(int argc,char** argv):
 int main(int argc,char** argv)
 	{
 	try
-		{		
+		{
 		Setup setup(argc,argv);
 		if(setup.help_show)
 			{
@@ -202,14 +202,15 @@ int main(int argc,char** argv)
 				"    If adda_file is omitted, data is written to /dev/stdout");
 			return 0;
 			}
-			
-		SnowflakeModel::Cloud cloud;
+
+		SnowflakeModel::AggregateGraph graph;
+		std::map<std::string,SnowflakeModel::Solid> solids;
 			{
 			SnowflakeModel::FileIn src(setup.m_aggregate.data());
 			SnowflakeModel::ConfigParser conf_parser(src);
-			SnowflakeModel::CloudLoader loader(cloud,setup.m_params);
+			SnowflakeModel::AggregateGraphLoader loader(graph,setup.m_params,solids);
 			conf_parser.commandsRead(loader);
-			
+
 			if(setup.param_show)
 				{
 				auto i=loader.varsBegin();
@@ -221,26 +222,21 @@ int main(int argc,char** argv)
 					}
 				}
 			}
-			
 
-		
+
+
 		SnowflakeModel::Solid m;
-		auto aggregate_current=cloud.aggregatesBegin();
-		while(aggregate_current!=cloud.aggregatesEnd())
-			{
-			aggregate_current->grainsVisit(SnowflakeModel::SolidBuilderBBC(m));
-			++aggregate_current;
-			}
-			
+		graph.nodesVisit(SnowflakeModel::SolidBuilderBBC(m));
+
 		m.centerCentroidAt(SnowflakeModel::Point{0,0,0,1});
-			
+
 		if(setup.m_mesh_output!="")
 			{
 			SnowflakeModel::FileOut file_out(setup.m_mesh_output.data());
 			SnowflakeModel::SolidWriter writer(file_out);
 			writer.write(m);
 			}
-				
+
 		if(setup.m_geom_output!="")
 			{
 			SnowflakeModel::FileOut file_out(setup.m_geom_output.data());

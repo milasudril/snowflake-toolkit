@@ -9,7 +9,7 @@ target[name[snowflake_simulate3] type[application] platform[;GNU/Linux]]
 #include "solid.h"
 #include "voxelbuilder_adda.h"
 #include "file_out.h"
-#include "grain.h"
+#include "ice_particle.h"
 #include "twins.h"
 #include "matrix_storage.h"
 #include "element_randomizer.h"
@@ -393,11 +393,11 @@ float vTermCompute(const SnowflakeModel::Solid& sol,const Setup& setup)
 	return sqrt(V/A);
 	}
 
-SnowflakeModel::Grain grainPrepare(const SnowflakeModel::Solid& s_in
+SnowflakeModel::IceParticle ice_particlePrepare(const SnowflakeModel::Solid& s_in
 	,const Setup& setup,std::mt19937& randgen)
 	{
-	SnowflakeModel::Grain grain;
-	grain.solidSet(s_in);
+	SnowflakeModel::IceParticle ice_particle;
+	ice_particle.solidSet(s_in);
 
 //	Setup parameters
 		{
@@ -407,7 +407,7 @@ SnowflakeModel::Grain grainPrepare(const SnowflakeModel::Solid& s_in
 			{
 		//	Test if parameter is deterministic
 			if(fabs(deformation->standard_deviation)<1e-7)
-				{grain.parameterSet(deformation->name.data(),deformation->mean);}
+				{ice_particle.parameterSet(deformation->name.data(),deformation->mean);}
 			else
 				{
 			//	It is not. Setup gamma distribution
@@ -426,24 +426,24 @@ SnowflakeModel::Grain grainPrepare(const SnowflakeModel::Solid& s_in
 
 				std::gamma_distribution<float> G(alpha,beta);
 				auto scale=G(randgen);
-				grain.parameterSet(deformation->name,scale);
+				ice_particle.parameterSet(deformation->name,scale);
 				}
 			++deformation;
 			}
 		}
 
-	auto vt=vTermCompute(grain.solidGet(),setup);
-	grain.velocitySet(vt*randomDirection(randgen));
+	auto vt=vTermCompute(ice_particle.solidGet(),setup);
+	ice_particle.velocitySet(vt*randomDirection(randgen));
 
-	return std::move(grain);
+	return std::move(ice_particle);
 	}
 
 
 float C_coalesce(size_t k,size_t l
-	,const std::vector<SnowflakeModel::Grain>& grains)
+	,const std::vector<SnowflakeModel::IceParticle>& ice_particles)
 	{
-	auto& g_k=grains[k];
-	auto& g_l=grains[l];
+	auto& g_k=ice_particles[k];
+	auto& g_l=ice_particles[l];
 
 	if(g_k.dead() || g_l.dead())
 		{return 0;}
@@ -460,10 +460,10 @@ float C_coalesce(size_t k,size_t l
 	return (R_max_k + R_max_l)*(R_max_k + R_max_l)*glm::distance(v_k,v_l);
 	}
 
-float C_drop(size_t k,const std::vector<SnowflakeModel::Grain>& grains
+float C_drop(size_t k,const std::vector<SnowflakeModel::IceParticle>& ice_particles
 	,const Setup& setup)
 	{
-	auto& g_k=grains[k];
+	auto& g_k=ice_particles[k];
 	if(g_k.dead())
 		{return 0;}
 
@@ -473,10 +473,10 @@ float C_drop(size_t k,const std::vector<SnowflakeModel::Grain>& grains
 	return 2.0f*glm::length(v_k)*setup.m_droprate*pow(setup.m_N,-1.0f/3);
 	}
 
-float C_melt(size_t k,const std::vector<SnowflakeModel::Grain>& grains
+float C_melt(size_t k,const std::vector<SnowflakeModel::IceParticle>& ice_particles
 	,const Setup& setup)
 	{
-	auto& g_k=grains[k];
+	auto& g_k=ice_particles[k];
 	if(g_k.dead())
 		{return 0;}
 
@@ -484,24 +484,24 @@ float C_melt(size_t k,const std::vector<SnowflakeModel::Grain>& grains
 	}
 
 void matrixRowUpdate(size_t k
-	,const std::vector<SnowflakeModel::Grain>& grains
+	,const std::vector<SnowflakeModel::IceParticle>& ice_particles
 	,SnowflakeModel::MatrixStorage& C_mat
 	,const Setup& setup)
 	{
-	for(size_t l=0;l<grains.size();++l)
+	for(size_t l=0;l<ice_particles.size();++l)
 		{
 		if(l!=k)
-			{C_mat.symmetricAssign(k,l,C_coalesce(k,l,grains));}
+			{C_mat.symmetricAssign(k,l,C_coalesce(k,l,ice_particles));}
 		}
 
-	auto l=grains.size();
+	auto l=ice_particles.size();
 
-	C_mat(k,l)=C_melt(k,grains,setup);
+	C_mat(k,l)=C_melt(k,ice_particles,setup);
 	auto elem_current=C_mat.rowGet(l);
 	k=0;
 	while(k!=l)
 		{
-		*elem_current=C_drop(k,grains,setup);
+		*elem_current=C_drop(k,ice_particles,setup);
 		++elem_current;
 		++k;
 		}
@@ -529,23 +529,23 @@ void matrixDump(const SnowflakeModel::MatrixStorage& C_mat)
 
 void init(const SnowflakeModel::Solid& s_in
 	,Setup& setup,std::mt19937& randgen
-	,std::vector<SnowflakeModel::Grain>& grains
+	,std::vector<SnowflakeModel::IceParticle>& ice_particles
 	,SnowflakeModel::MatrixStorage& C_mat)
 	{
 	auto n=setup.m_N;
 	while(n)
 		{
-		grains.push_back(grainPrepare(s_in,setup,randgen));
-		(grains.end()-1)->kill();
+		ice_particles.push_back(ice_particlePrepare(s_in,setup,randgen));
+		(ice_particles.end()-1)->kill();
 		--n;
 		}
 	setup.m_N=0;
-	for(size_t k=0;k<grains.size();++k)
-		{matrixRowUpdate(k,grains,C_mat,setup);}
+	for(size_t k=0;k<ice_particles.size();++k)
+		{matrixRowUpdate(k,ice_particles,C_mat,setup);}
 
-	for(size_t k=0;k<grains.size();++k)
+	for(size_t k=0;k<ice_particles.size();++k)
 		{
-		C_mat(k,k)=2.0f*setup.m_growthrate/grains.size();
+		C_mat(k,k)=2.0f*setup.m_growthrate/ice_particles.size();
 		}
 	}
 
@@ -571,7 +571,7 @@ size_t randomDraw(const T* ptr_begin,const T* ptr_end
 	}
 
 SnowflakeModel::Twins<size_t>
-grainsChoose(SnowflakeModel::ElementRandomizer& randomizer
+ice_particlesChoose(SnowflakeModel::ElementRandomizer& randomizer
 	,std::mt19937& randgen)
 	{
 	SNOWFLAKEMODEL_TIMED_SCOPE();
@@ -622,8 +622,8 @@ faceChoose(const SnowflakeModel::Solid& s_a,std::mt19937& randgen)
 
 void statsDump(
 	 SnowflakeModel::FileOut* frame_data_file
-	,std::vector<SnowflakeModel::Grain>& grains
-	,std::vector<SnowflakeModel::Grain>& grains_dropped
+	,std::vector<SnowflakeModel::IceParticle>& ice_particles
+	,std::vector<SnowflakeModel::IceParticle>& ice_particles_dropped
 	,const SnowflakeModel::MatrixStorage& C_mat
 	,size_t frame
 	,double tau
@@ -659,7 +659,7 @@ void statsDump(
 			"%.15g\t"
 			"%zu\t"
 			"%zu\t"
-			"%.15g\n",frame,now,tau,setup.m_N,grains_dropped.size()
+			"%.15g\n",frame,now,tau,setup.m_N,ice_particles_dropped.size()
 			,C_kl_sum);
 
 		fprintf(stderr,"\r# Processing %zu/%zu=%.3g  ",frame,setup.m_N_iter
@@ -669,9 +669,9 @@ void statsDump(
 			char countbuff[32];
 			sprintf(countbuff,"/frame-%zu.txt",frame/256);
 			SnowflakeModel::FileOut file_out((setup.m_output_dir+countbuff).data());
-			auto i=grains.begin();
+			auto i=ice_particles.begin();
 			file_out.printf("# R_max\tVolume\tSpeed\tL_x\tr_xy\tr_xz\tNumber of sub-volumes\n");
-			while(i!=grains.end())
+			while(i!=ice_particles.end())
 				{
 				if(!i->dead())
 					{
@@ -691,9 +691,9 @@ void statsDump(
 			char countbuff[32];
 			sprintf(countbuff,"/frame-dropped-%zu.txt",frame/256);
 			SnowflakeModel::FileOut file_out((setup.m_output_dir+countbuff).data());
-			auto i=grains_dropped.begin();
+			auto i=ice_particles_dropped.begin();
 			file_out.printf("# R_max\tVolume\tSpeed\tL_x\tr_xy\tr_xz\tNumber of sub-volumes\n");
-			while(i!=grains_dropped.end())
+			while(i!=ice_particles_dropped.end())
 				{
 				auto& bb=i->solidGet().boundingBoxGet();
 				auto L=bb.m_max-bb.m_min;
@@ -708,16 +708,16 @@ void statsDump(
 		}
 	}
 
-size_t grainDeadFind(std::vector<SnowflakeModel::Grain>& grains)
+size_t ice_particleDeadFind(std::vector<SnowflakeModel::IceParticle>& ice_particles)
 	{
-	auto i=grains.begin();
-	while(i!=grains.end())
+	auto i=ice_particles.begin();
+	while(i!=ice_particles.end())
 		{
 		if(i->dead())
-			{return i-grains.begin();}
+			{return i-ice_particles.begin();}
 		++i;
 		}
-	return i-grains.begin();
+	return i-ice_particles.begin();
 	}
 
 int main(int argc,char** argv)
@@ -768,9 +768,9 @@ int main(int argc,char** argv)
 		fprintf(stderr,"# Initializing\n");
 
 
-		std::vector<SnowflakeModel::Grain> grains;
+		std::vector<SnowflakeModel::IceParticle> ice_particles;
 		SnowflakeModel::MatrixStorage C_mat(setup.m_N+1,setup.m_N+1);
-		init(s_in,setup,randgen,grains,C_mat);
+		init(s_in,setup,randgen,ice_particles,C_mat);
 		SnowflakeModel::ElementRandomizer randomizer(C_mat);
 
 		std::uniform_int_distribution<int> U_rot(0,5);
@@ -790,55 +790,55 @@ int main(int argc,char** argv)
 
 		size_t frame=0;
 		double tau=0;
-		std::vector<SnowflakeModel::Grain> grains_dropped;
-		statsDump(frame_data_file,grains,grains_dropped,C_mat,frame,tau,setup);
+		std::vector<SnowflakeModel::IceParticle> ice_particles_dropped;
+		statsDump(frame_data_file,ice_particles,ice_particles_dropped,C_mat,frame,tau,setup);
 		while(frame!=setup.m_N_iter)
 			{
 			SNOWFLAKEMODEL_TIMED_SCOPE();
-			auto pair_merge=grainsChoose(randomizer,randgen);
+			auto pair_merge=ice_particlesChoose(randomizer,randgen);
 			tau+=-log(U(0.0,1.0,randgen))/double(C_mat.sumGetMt());
 
 			if(pair_merge.first==pair_merge.second)
 				{
-				auto k=grainDeadFind(grains);
-				if(k==grains.size())
+				auto k=ice_particleDeadFind(ice_particles);
+				if(k==ice_particles.size())
 					{
 					fprintf(stderr,"\n# Event rejected %zu: Cloud is full %zu %zu"
 						,frame,setup.m_N,k);
 					}
 				else
 					{
-					grains[k]=grainPrepare(s_in,setup,randgen);
+					ice_particles[k]=ice_particlePrepare(s_in,setup,randgen);
 					++setup.m_N;
-					matrixRowUpdate(k,grains,C_mat,setup);
+					matrixRowUpdate(k,ice_particles,C_mat,setup);
 					++frame;
-					statsDump(frame_data_file,grains,grains_dropped,C_mat,frame,tau,setup);
+					statsDump(frame_data_file,ice_particles,ice_particles_dropped,C_mat,frame,tau,setup);
 					}
 				}
 			else
-			if(pair_merge.first==grains.size())
+			if(pair_merge.first==ice_particles.size())
 				{
 				auto k=pair_merge.second;
-				grains_dropped.push_back(grains[k]);
-				grains[k].kill();
+				ice_particles_dropped.push_back(ice_particles[k]);
+				ice_particles[k].kill();
 				--setup.m_N;
-				matrixRowUpdate(k,grains,C_mat,setup);
+				matrixRowUpdate(k,ice_particles,C_mat,setup);
 				++frame;
-				statsDump(frame_data_file,grains,grains_dropped,C_mat,frame,tau,setup);
+				statsDump(frame_data_file,ice_particles,ice_particles_dropped,C_mat,frame,tau,setup);
 				}
 			else
-			if(pair_merge.second==grains.size())
+			if(pair_merge.second==ice_particles.size())
 				{
 				auto k=pair_merge.first;
-				grains[k].kill();
+				ice_particles[k].kill();
 				--setup.m_N;
-				matrixRowUpdate(k,grains,C_mat,setup);
+				matrixRowUpdate(k,ice_particles,C_mat,setup);
 				++frame;
-				statsDump(frame_data_file,grains,grains_dropped,C_mat,frame,tau,setup);
+				statsDump(frame_data_file,ice_particles,ice_particles_dropped,C_mat,frame,tau,setup);
 				}
 			else
 				{
-				auto& g_b=grains[pair_merge.first];
+				auto& g_b=ice_particles[pair_merge.first];
 				auto& s_b=g_b.solidGet();
 				s_b.centerBoundingBoxAt(SnowflakeModel::Point(0,0,0,1));
 				auto f_b=faceChoose(s_b,randgen);
@@ -847,7 +847,7 @@ int main(int argc,char** argv)
 					+ coords.x*(f_b.vertexGet(1) - f_b.vertexGet(0))
 					+ coords.y*(f_b.vertexGet(2) - f_b.vertexGet(0));
 
-				auto& g_a=grains[pair_merge.second];
+				auto& g_a=ice_particles[pair_merge.second];
 				auto s_a=g_a.solidGet();
 				s_a.centerBoundingBoxAt(SnowflakeModel::Point(0,0,0,1));
 				auto f_a=faceChoose(s_a,randgen);
@@ -875,10 +875,10 @@ int main(int argc,char** argv)
 					g_b.velocitySet(vTermCompute(s_b,setup)*randomDirection(randgen));
 					g_a.kill();
 					--setup.m_N;
-					matrixRowUpdate(pair_merge.first,grains,C_mat,setup);
-					matrixRowUpdate(pair_merge.second,grains,C_mat,setup);
+					matrixRowUpdate(pair_merge.first,ice_particles,C_mat,setup);
+					matrixRowUpdate(pair_merge.second,ice_particles,C_mat,setup);
 					++frame;
-					statsDump(frame_data_file,grains,grains_dropped,C_mat,frame,tau,setup);
+					statsDump(frame_data_file,ice_particles,ice_particles_dropped,C_mat,frame,tau,setup);
 					}
 #ifndef NDEBUG
 				else
@@ -893,9 +893,9 @@ int main(int argc,char** argv)
 			{
 			fprintf(stderr,"# Dumping wavefront files\n");
 				{
-				auto i=grains.begin();
+				auto i=ice_particles.begin();
 				size_t count=0;
-				while(i!=grains.end())
+				while(i!=ice_particles.end())
 					{
 					if(!i->dead())
 						{
@@ -913,9 +913,9 @@ int main(int argc,char** argv)
 				}
 
 				{
-				auto i=grains_dropped.begin();
+				auto i=ice_particles_dropped.begin();
 				size_t count=0;
-				while(i!=grains_dropped.end())
+				while(i!=ice_particles_dropped.end())
 					{
 					char num_buff[32];
 					sprintf(num_buff,"/mesh-dropped-%zx.obj",count);
@@ -934,9 +934,9 @@ int main(int argc,char** argv)
 			{
 			fprintf(stderr,"# Dumping adda files\n");
 				{
-				auto i=grains.begin();
+				auto i=ice_particles.begin();
 				size_t count=0;
-				while(i!=grains.end())
+				while(i!=ice_particles.end())
 					{
 					if(!i->dead())
 						{
@@ -957,9 +957,9 @@ int main(int argc,char** argv)
 				}
 
 				{
-				auto i=grains_dropped.begin();
+				auto i=ice_particles_dropped.begin();
 				size_t count=0;
-				while(i!=grains.end())
+				while(i!=ice_particles.end())
 					{
 					char num_buff[16];
 					sprintf(num_buff,"/geom-dropped-%zx.adda",count);

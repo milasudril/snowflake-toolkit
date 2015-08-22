@@ -1,20 +1,20 @@
 #ifdef __WAND__
-target[name[volume_buildler_bbc.h] type[include]]
+target[name[solid_builder_bbc.h] type[include]]
 dependency[solid_builder_bbc.o]
 #endif
 
 #ifndef SNOWFLAKEMODEL_SOLIDBUILDER_BBC_H
 #define SNOWFLAKEMODEL_SOLIDBUILDER_BBC_H
 
-#include "grain_visitor.h"
+#include "ice_particle_visitor.h"
 #include "vector.h"
 #include <stack>
 
-namespace SnowflakeModel 
+namespace SnowflakeModel
 	{
 	class Solid;
-	
-	class SolidBuilderBBC:public GrainVisitor
+
+	class SolidBuilderBBC:public IceParticleVisitor
 		{
 		public:
 			SolidBuilderBBC(Solid& mesh_out):
@@ -22,19 +22,19 @@ namespace SnowflakeModel
 				{
 				}
 
-			void branchBegin(AggregateEdge& edge,Aggregate& aggregate)
+			void branchBegin(AggregateEdge& edge,AggregateGraph& aggregate)
 				{
 				m_bonds.push(m_bond);
 				}
-				
-				
-			void branchEnd(AggregateEdge& edge,Aggregate& aggregate)
+
+
+			void branchEnd(AggregateEdge& edge,AggregateGraph& aggregate)
 				{
 				m_bond=m_bonds.top();
-				m_bonds.pop();	
+				m_bonds.pop();
 				}
-				
-			void grainProcess(AggregateEdge& edge,Aggregate& aggregate);
+
+			void iceParticleProcess(AggregateEdge& edge,AggregateGraph& aggregate);
 
 			~SolidBuilderBBC();
 
@@ -50,7 +50,7 @@ namespace SnowflakeModel
 			Solid& r_mesh_out;
 			std::stack<Bond> m_bonds;
 		};
-		
+
 	}
 
 #endif

@@ -12,9 +12,11 @@ function [tau,N_cloud,lambda]=sizedist_comp(base_dir,prefix)
 			r_0=mean(data(i_1,1));
 			i_g1=find(data(:,7)>1);
 			if size(i_g1,1)>1
-				[N,R] = hist_fdr(data(:,1)*r_0);
+				[N,R] = hist_fdr(data(i_g1,1)/r_0);
 				[~,i_max]=max(N);
-				[~,lambda_tmp,e_rms]=expfit(R(i_max:end)',N(i_max:end)');
+				n_0=sum(N(i_max:end));
+				cum=1-cumsum(N(i_max:end))/n_0;
+				[~,lambda_tmp,e_rms]=expfit(R(i_max:end)',cum');
 				lambda(k)=lambda_tmp;
 			end
 		end

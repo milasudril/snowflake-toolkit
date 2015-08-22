@@ -7,16 +7,10 @@ target[name[aggregate_edge.h] type[include]]
 
 #include "vector.h"
 
-namespace SnowflakeModel 
+namespace SnowflakeModel
 	{
 	class AggregateNode;
 	
-	/**\brief An AggregateEdge defines the connection between two
-	 * \link AggregateNode nodes \endlink in an
-	 * Aggregate. The connection is defined by the two connected nodes, the angles
-	 * between the nodes, and the location where the two nodes are connected, in
-	 * Grain coordinates. 
-	*/
 	struct AggregateEdge
 		{
 		AggregateEdge(AggregateNode* node_parent,const Vector& offset_parent

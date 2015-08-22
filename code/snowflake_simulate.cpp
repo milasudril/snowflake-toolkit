@@ -9,7 +9,7 @@ target[name[snowflake_simulate] type[application] platform[;GNU/Linux]]
 #include "solid.h"
 #include "voxelbuilder_adda.h"
 #include "file_out.h"
-#include "grain.h"
+#include "ice_particle.h"
 #include "twins.h"
 
 #include <getopt.h>
@@ -307,11 +307,11 @@ float vTermCompute(const SnowflakeModel::Solid& vol
 	return ret;
 	}
 
-SnowflakeModel::Grain grainPrepare(const SnowflakeModel::Solid& v_in
+SnowflakeModel::IceParticle ice_particlePrepare(const SnowflakeModel::Solid& v_in
 	,const Setup& setup,std::mt19937& randgen)
 	{
-	SnowflakeModel::Grain grain;
-	grain.solidSet(v_in);
+	SnowflakeModel::IceParticle ice_particle;
+	ice_particle.solidSet(v_in);
 
 	float alpha=1+setup.nu;
 	float beta=1+setup.nu;
@@ -322,37 +322,37 @@ SnowflakeModel::Grain grainPrepare(const SnowflakeModel::Solid& v_in
 
 	auto s=G(randgen);
 
-	grain.solidScale(s);
+	ice_particle.solidScale(s);
 
-	grain.densitySet(setup.rho_p);
-	auto vt=vTermCompute(grain.solidGet(),setup);
-	grain.velocitySet(SnowflakeModel::Vector(0,0,vt));
+	ice_particle.densitySet(setup.rho_p);
+	auto vt=vTermCompute(ice_particle.solidGet(),setup);
+	ice_particle.velocitySet(SnowflakeModel::Vector(0,0,vt));
 
-	return std::move(grain);
+	return std::move(ice_particle);
 	}
 
 void init(const SnowflakeModel::Solid& v_in
 	,const Setup& setup,std::mt19937& randgen
-	,SnowflakeModel::ListIndexed<SnowflakeModel::Grain>& grains)
+	,SnowflakeModel::ListIndexed<SnowflakeModel::IceParticle>& ice_particles)
 	{
 	auto n=setup.N;
 	while(n)
 		{
-		grains.append(grainPrepare(v_in,setup,randgen));
+		ice_particles.append(ice_particlePrepare(v_in,setup,randgen));
 		--n;
 		}
 	}
 
 float C(size_t k,size_t l
-	,const SnowflakeModel::ListIndexed<SnowflakeModel::Grain>& grains
+	,const SnowflakeModel::ListIndexed<SnowflakeModel::IceParticle>& ice_particles
 	,float V_world)
 	{
-	auto& g_k=grains[k];
+	auto& g_k=ice_particles[k];
 	auto& S_k=g_k.solidGet();
 	auto R_max_k=S_k.rMaxGet();
 	auto v_k=g_k.velocityGet();
 
-	auto& g_l=grains[l];
+	auto& g_l=ice_particles[l];
 	auto& S_l=g_l.solidGet();
 	auto R_max_l=S_l.rMaxGet();
 	auto v_l=g_l.velocityGet();
@@ -362,12 +362,12 @@ float C(size_t k,size_t l
 	}
 
 std::pair<SnowflakeModel::Twins<size_t>,float>
-grainsChoose(const SnowflakeModel::ListIndexed<SnowflakeModel::Grain>& grains
+ice_particlesChoose(const SnowflakeModel::ListIndexed<SnowflakeModel::IceParticle>& ice_particles
 	,float t
 	,float V_world
 	,std::mt19937& randgen)
 	{
-	auto N=grains.length();
+	auto N=ice_particles.length();
 	std::vector<float> C_k;
 	C_k.reserve(N-1);
 	float C_0=0;
@@ -375,7 +375,7 @@ grainsChoose(const SnowflakeModel::ListIndexed<SnowflakeModel::Grain>& grains
 		{
 		float C_l_sum=0;
 		for(size_t l=k+1; l<N; ++l)
-			{C_l_sum+=C(k,l,grains,V_world);}
+			{C_l_sum+=C(k,l,ice_particles,V_world);}
 		C_0+=C_l_sum;
 		C_k.push_back(C_l_sum);
 		}
@@ -392,7 +392,7 @@ grainsChoose(const SnowflakeModel::ListIndexed<SnowflakeModel::Grain>& grains
 	std::vector<float> C_l;
 	C_l.reserve(N-(k+1));
 	for(size_t l=k+1; l<N; ++l)
-		{C_l.push_back( C(k,l,grains,V_world) );}
+		{C_l.push_back( C(k,l,ice_particles,V_world) );}
 
 	std::discrete_distribution<size_t> P_cl(C_l.begin(),C_l.end());
 	auto l=P_cl(randgen)+k+1;
@@ -436,26 +436,26 @@ int main(int argc,char** argv)
 		randgen.discard(65536);
 		setup.paramsDump();
 		fprintf(stderr,"Initializing\n");
-		SnowflakeModel::ListIndexed<SnowflakeModel::Grain> grains;
-		init(s_in,setup,randgen,grains);
+		SnowflakeModel::ListIndexed<SnowflakeModel::IceParticle> ice_particles;
+		init(s_in,setup,randgen,ice_particles);
 
 		std::uniform_real_distribution<float> U_rot(0,2*glm::pi<float>());
 		std::list<SnowflakeModel::Solid> solids_out;
 		float tau_stop=1.5;
 		float tau=0;
 		fprintf(stderr,"Running simulation\n");
-		while(grains.length()!=1 && tau < tau_stop)
+		while(ice_particles.length()!=1 && tau < tau_stop)
 			{
-			auto tmp=grainsChoose(grains,tau,setup.V,randgen);
+			auto tmp=ice_particlesChoose(ice_particles,tau,setup.V,randgen);
 			tau+=tmp.second;
 			auto pair_merge=tmp.first;
-			auto& g_b=grains[pair_merge.first];
+			auto& g_b=ice_particles[pair_merge.first];
 			auto s_b=g_b.solidGet();
 			s_b.centerBoundingBoxAt(SnowflakeModel::Point(0,0,0,1));
 			auto f_b=std::move(faceChoose(s_b,randgen));
 			auto u=SnowflakeModel::Vector(f_b.m_mid);
 
-			auto& g_a=grains[pair_merge.second];
+			auto& g_a=ice_particles[pair_merge.second];
 			auto s_a=g_a.solidGet();
 			s_a.centerBoundingBoxAt(SnowflakeModel::Point(0,0,0,1));
 			auto f_a=std::move(faceChoose(s_a,randgen));
@@ -476,7 +476,7 @@ int main(int argc,char** argv)
 			--last;
 			g_b.solidSet( *last );
 			g_b.velocitySet(SnowflakeModel::Vector(0,0,vTermCompute(*last,setup)));
-			grains.remove(pair_merge.second);
+			ice_particles.remove(pair_merge.second);
 			}
 
 		if(setup.m_stat_output!="")
