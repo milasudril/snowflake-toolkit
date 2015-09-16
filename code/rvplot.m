@@ -14,6 +14,7 @@ function rvplot(base_dir,prefix,dir_out,filename)
 	[alpha,beta_tmp,e_rms]=powerfit(data(:,1),data(:,2));
 	x=linspace(0.3*min(data(:,1)),3*max(data(:,1)),128);
 	loglog(x,alpha.*x.^beta_tmp);
+	size(data)
 
 	xlabel('$R_\text{max}$');
 	ylabel('$V$');

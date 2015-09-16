@@ -199,9 +199,9 @@ config_set
 			[
 			commands
 				[
-				compile_obj[g++^ "%0"^ -pg^ -g^ -march=native^ -Wall^ -c^ -std=c++11^ %2-o^ "%1"]
-				compile_app[g++^ "%0"^ %3%4^ -pg^ -g^ -march=native^ -Wall^ -std=c++11^ %2-o^ "%1"]
-				compile_dynlib[g++^ -shared^ "%0"^ %3%4^ -pg^ -g^ -Wall^ -std=c++11^ %2-o^ "%1"]
+				compile_obj[g++^ "%0"^ -g^ -march=native^ -Wall^ -c^ -std=c++11^ %2-o^ "%1"]
+				compile_app[g++^ "%0"^ %3%4^ -g^ -march=native^ -Wall^ -std=c++11^ %2-o^ "%1"]
+				compile_dynlib[g++^ -shared^ "%0"^ %3%4^ -g^ -Wall^ -std=c++11^ %2-o^ "%1"]
 				]
 			]
 		]
@@ -228,9 +228,9 @@ config_set
 			[
 			commands
 				[
-				compile_obj[g++^ -fpic^ "%0"^ -g^ -pg^ -march=native^ -Wall^ -c^ -std=c++11^ %2-o^ "%1"]
-				compile_app[g++^ -fpic^ "%0"^ %3%4^ -march=native^ -g^ -pg^ -Wall^ -std=c++11^ %2-o^ "%1"]
-				compile_dynlib[g++^ -shared^ -fpic^ "%0"^ %3%4^ -march=native^ -g^ -pg^ -Wall^ -std=c++11^ %2-o^ "%1"]
+				compile_obj[g++^ -fpic^ "%0"^ -g^ -march=native^ -Wall^ -c^ -std=c++11^ %2-o^ "%1"]
+				compile_app[g++^ -fpic^ "%0"^ %3%4^ -march=native^ -g^ -Wall^ -std=c++11^ %2-o^ "%1"]
+				compile_dynlib[g++^ -shared^ -fpic^ "%0"^ %3%4^ -march=native^ -g^ -Wall^ -std=c++11^ %2-o^ "%1"]
 				]
 			]
 		]

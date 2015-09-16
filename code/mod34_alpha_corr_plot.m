@@ -1,0 +1,19 @@
+function mod34_alpha_corr_plot(table)
+	y_min=min([table(:,9);table(:,11)]);
+	y_max=max([table(:,9);table(:,11)]);
+
+	corrplot(table(:,1),table(:,9),'$R_g\times 10^{-7}$','$\alpha_\text{cloud}$','../report'...
+		,'output/mod34-rg-alpha-cloud.pdf',1e7,1,[],[y_min y_max]);
+	corrplot(table(:,1),table(:,11),'$R_g\times 10^{-7}$','$\alpha_\text{dropped}$','../report'...
+		,'output/mod34-rg-alpha-dropped.pdf',1e7,1,[],[y_min y_max]);
+
+	corrplot(table(:,2),table(:,9),'$R_m\times 10^{-3}$','$\alpha_\text{cloud}$','../report'...
+		,'output/mod34-rm-alpha-cloud.pdf',1e3,1,[],[y_min y_max]);
+	corrplot(table(:,2),table(:,11),'$R_m\times 10^{-3}$','$\alpha_\text{dropped}$','../report'...
+		,'output/mod34-rm-alpha-dropped.pdf',1e3,1,[],[y_min y_max]);
+
+	corrplot(table(:,3),table(:,9),'$R_d\times 10^{-4}$','$\alpha_\text{cloud}$','../report'...
+		,'output/mod34-rd-alpha-cloud.pdf',1e4,1,[],[y_min y_max]);
+	corrplot(table(:,3),table(:,11),'$R_d\times 10^{-4}$','$\alpha_\text{dropped}$','../report'...
+		,'output/mod34-rd-alpha-dropped.pdf',1e4,1,[],[y_min y_max]);
+end

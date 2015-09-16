@@ -26,7 +26,7 @@ namespace SnowflakeModel
 				:r_graph(graph),r_varlist(varlist),r_solids(solids)
 				{}
 
-			std::string invoke(const ConfigCommand& invoke,const FileIn& source);
+			std::string invoke(const ConfigCommand& command,const FileIn& source);
 
 			std::map<std::string,std::string>::const_iterator varsBegin() const
 				{return m_varlist.begin();}

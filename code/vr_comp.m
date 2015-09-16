@@ -10,7 +10,7 @@ function [tau,N_cloud,vr]=vr_comp(base_dir,prefix)
 			i_g1=find(data(:,7)>1);
 			if(size(i_g1,1) > 1)
 				fprintf(2,'\rComputing v_r for frame %d/%d ',k,size(frame_data,1));
-				vr(k)=mean(3*data(i_g1,2)./(4*pi*data(i_g1,1).^3));
+				vr(k)=3*mean(data(i_g1,2))./(4*pi*mean(data(i_g1,1).^3));
 			end
 		end
 	end

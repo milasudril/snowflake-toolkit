@@ -9,8 +9,6 @@ target[name[bounding_box.h] type[include]]
 
 namespace SnowflakeModel
 	{
-	/**\brief A BoundingBox gives the maximum extent of an object.
-	 */
 	struct BoundingBox
 		{
 		Vector m_min;

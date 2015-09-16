@@ -4,7 +4,6 @@ target[name[snowflake_simulate3] type[application] platform[;GNU/Linux]]
 
 #include "config_parser.h"
 #include "solid_loader.h"
-#include "list_indexed.h"
 #include "solid_writer.h"
 #include "solid.h"
 #include "voxelbuilder_adda.h"
@@ -335,7 +334,7 @@ void helpShow()
 		"    Generate data using the shape stored in crystal_file."
 		" See the reference manal for information about how to create "
 		"such a file.\n\n"
-		"--deformation=parameter\n"
+		"--deformation=name,mean,std\n"
 		"    Crystal file parameter to use for size modification. Use\n\n"
 		"         --param-show\n\n"
 		"    to list the name of available parameters.\n\n"
@@ -467,7 +466,8 @@ float C_drop(size_t k,const std::vector<SnowflakeModel::IceParticle>& ice_partic
 	if(g_k.dead())
 		{return 0;}
 
-	assert(setup.m_N!=0);
+	if(setup.m_N==0)
+		{abort();}
 
 	auto v_k=g_k.velocityGet();
 	return 2.0f*glm::length(v_k)*setup.m_droprate*pow(setup.m_N,-1.0f/3);

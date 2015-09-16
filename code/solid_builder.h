@@ -18,7 +18,7 @@ namespace SnowflakeModel
 		{
 		public:
 			SolidBuilder(Solid& mesh_out):
-				m_bond{Vector{0,0,0},0,0,0},r_mesh_out(mesh_out)
+				r_mesh_out(mesh_out),m_bond{Vector{0,0,0},0,0,0}
 				{
 				}
 
@@ -39,6 +39,7 @@ namespace SnowflakeModel
 			~SolidBuilder();
 
 		private:
+			Solid& r_mesh_out;
 			struct Bond
 				{
 				Vector m_position;
@@ -46,7 +47,6 @@ namespace SnowflakeModel
 				float m_angle_y;
 				float m_angle_z;
 				} m_bond;
-			Solid& r_mesh_out;
 			std::stack<Bond> m_bonds;
 		};
 

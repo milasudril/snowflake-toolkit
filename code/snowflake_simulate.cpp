@@ -4,13 +4,13 @@ target[name[snowflake_simulate] type[application] platform[;GNU/Linux]]
 
 #include "config_parser.h"
 #include "solid_loader.h"
-#include "list_indexed.h"
 #include "solid_writer.h"
 #include "solid.h"
 #include "voxelbuilder_adda.h"
 #include "file_out.h"
 #include "ice_particle.h"
 #include "twins.h"
+#include "list_indexed.h"
 
 #include <getopt.h>
 #include <glm/gtc/constants.hpp>

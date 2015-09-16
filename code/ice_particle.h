@@ -68,9 +68,8 @@ namespace SnowflakeModel
 			static constexpr uint32_t VOLUME_DIRTY=0x2;
 
 
-			SnowflakeModel::Vector m_velocity;
+			Vector m_velocity;
 			float m_density;
-			float m_tau_born;
 			bool m_dead;
 
 			void solidGenerate() const;

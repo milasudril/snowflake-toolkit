@@ -1,4 +1,4 @@
-function sizedistplot(base_dir,prefix,dir_out,filename)
+function sizedistplot(base_dir,prefix,frame,dir_out,filename)
 	size_pt=0.35136;
 	textwidth=418*size_pt/10;
 	textheight=595*size_pt/10;
@@ -9,10 +9,10 @@ function sizedistplot(base_dir,prefix,dir_out,filename)
 		,[figwidth figheight],'paperposition',[0 0 figwidth figheight])
 	hold on
 
-	data=frame_load(base_dir,prefix,1024);
+	data=frame_load(base_dir,prefix,frame);
 	if size(data,1)>1
 		i_1=find(data(:,7)==1);
-		r_0=mean(data(i_1,1));
+		r_0=mean(data(i_1,1))
 		i_g1=find(data(:,7)>1);
 		if size(i_g1,1)>1
 			[N,R] = hist_fdr(data(i_g1,1)/r_0);
@@ -23,7 +23,8 @@ function sizedistplot(base_dir,prefix,dir_out,filename)
 			semilogy(R,N,'.','markersize',1.5);
 			hold on
 			r_int=linspace(0,max(R),128);
-			plot(r_int,exp(lambda_tmp*r_int)*(1-n_0)*C);
+			lambda_tmp
+			semilogy(r_int,-exp(lambda_tmp*r_int)*lambda_tmp);
 		end
 	end
 

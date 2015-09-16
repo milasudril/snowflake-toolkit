@@ -26,16 +26,11 @@ void IceParticle::solidGenerate() const
 				{
 				vc.transformGroup(deformation->nameGet(),deformation->matrixGet());
 				}
-			++deformation;
-			}
-
-		deformation=m_deformations.data();
-		while(deformation!=deformations_end)
-			{
+			else
 			if(deformation->nameGet()=="$global")
-				{
-				vc.transform(deformation->matrixGet());
-				}
+				{vc.transform(deformation->matrixGet());}
+			else
+				{throw "Reserved group name";}
 			++deformation;
 			}
 		++subvolume;
@@ -44,8 +39,9 @@ void IceParticle::solidGenerate() const
 	if(r_solid->mirrorFlagTest(Solid::MIRROR_HEADING))
 		{
 		auto bb=m_solid_generated.boundingBoxGet();
-		auto bb_mid=0.5f*(bb.m_max+bb.m_min);
-		m_solid_generated.centerBoundingBoxAt(Point(-bb_mid,1));
+		Matrix trans;
+		trans=glm::translate(trans,Vector(-bb.m_min.x,0,0));
+		m_solid_generated.transform(trans,0);
 
 		auto volume_copy=m_solid_generated;
 		Matrix T;

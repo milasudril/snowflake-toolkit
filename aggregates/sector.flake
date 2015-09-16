@@ -2,7 +2,7 @@ param_declare(r_x,3)
 param_declare(r_y,2)
 param_declare(r_z,1)
 
-crystal(spheroid, ../crystal-library/spheroid.ice)
+crystal(spheroid, ../crystal-prototypes/spheroid.ice)
 aggregate(sector, spheroid)
 node(a, spheroid)
 node(b, spheroid)

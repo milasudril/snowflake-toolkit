@@ -111,11 +111,12 @@ namespace SnowflakeModel
 			mutable std::vector<SumTask> m_sums;
 			mutable std::vector<Thread> m_sum_workers;
 			mutable uint32_t m_flags_dirty;
+			static constexpr uint32_t SUM_DIRTY=1;
 
 			void sumCompute() const;
 			void sumComputeMt() const;
 
-			static constexpr uint32_t SUM_DIRTY=1;
+
 
 		};
 	}
