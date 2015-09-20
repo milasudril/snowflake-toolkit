@@ -295,11 +295,9 @@ float vTermCompute(const SnowflakeModel::Solid& vol
 	auto R=vol.rMaxGet();
 	auto A=glm::pi<float>()*R*R;
 	auto m=vol.volumeGet()*setup.rho_p;
-	auto bb=vol.boundingBoxGet();
-	R=(bb.m_max.x - bb.m_min.x)*(bb.m_max.y - bb.m_min.y);
 
-	auto A_e=R*glm::pi<float>();
-	auto X=8*m*setup.g*setup.rho_a*pow(A/A_e,1.0/4)
+	auto a=4*m/(glm::pi<float>()*pow(R,3));
+	auto X=8*m*setup.g*setup.rho_a*pow(a,1.0/4)
 		/(glm::pi<float>()*setup.eta*setup.eta);
 	auto Re=C_1*sqrt( (sqrt(1+C_2*sqrt(X))-1) );
 	auto ret=Re*setup.eta*sqrt(glm::pi<float>()/A)/(2*setup.rho_a);
