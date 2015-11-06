@@ -10,7 +10,7 @@ function [limit,predict_ratio]=limit_estimate(X,Y)
 	size_pt=0.35136;
 	textwidth=418*size_pt/10;
 	textheight=595*size_pt/10;
-	figwidth=0.75*textwidth;
+	figwidth=0.9*textwidth;
 	figheight=1.2*(textheight-4.75)/3;
 	set(gcf,'paperunits','centimeters','papersize'...
 		,[figwidth figheight],'paperposition',[0 0 figwidth figheight]);
@@ -50,6 +50,8 @@ function [limit,predict_ratio]=limit_estimate(X,Y)
 	ylabel('$\beta$');
 
 	ylim([0,max(ylim)]);
+	legend('Long model fit','Long model fit','Short model fit','Short model fit','Filterd data','Raw data','Final average','location','northeastoutside');
+	legend boxoff
 	hold off
 	drawnow
 	print('../report/limitest.pdf','-dpdflatex');

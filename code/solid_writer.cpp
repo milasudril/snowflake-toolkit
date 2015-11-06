@@ -34,6 +34,38 @@ void SolidWriter::write(const Solid& solid)
 
 			{
 			subvol_current->facesNormalCompute();
+			auto face_out_end=subvol_current->facesOutEnd();
+
+			auto face_out=subvol_current->facesOutBegin();
+			while(face_out!=face_out_end)
+				{
+				auto& f=subvol_current->faceGet(*face_out);
+				r_dest.printf("vn %.7g %.7g %.7g\n"
+					,f.m_normal.x
+					,f.m_normal.y
+					,f.m_normal.z);
+				++face_out;
+				}
+
+			face_out=subvol_current->facesOutBegin();
+			while(face_out!=face_out_end)
+				{
+				auto& f=subvol_current->faceGet(*face_out);
+				r_dest.printf("f ");
+				for(size_t k=0;k<VolumeConvex::VERTEX_COUNT;++k)
+					{
+					r_dest.printf(" %zu//%zu"
+						,f.vertexIndexGet(k) + vertex_id_first+1
+						,face_count);
+					}
+				r_dest.putc('\n');
+				++face_out;
+				++face_count;
+				}
+
+
+
+#if 0
 			auto face_current=subvol_current->facesBegin();
 			while(face_current!=subvol_current->facesEnd())
 				{
@@ -58,6 +90,7 @@ void SolidWriter::write(const Solid& solid)
 				++face_current;
 				++face_count;
 				}
+#endif
 			}
 		++obj_count;
 		++subvol_current;

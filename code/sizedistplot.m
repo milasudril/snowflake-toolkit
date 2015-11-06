@@ -2,7 +2,7 @@ function sizedistplot(base_dir,prefix,frame,dir_out,filename)
 	size_pt=0.35136;
 	textwidth=418*size_pt/10;
 	textheight=595*size_pt/10;
-	figwidth=0.75*textwidth;
+	figwidth=0.9*textwidth;
 	figheight=1.2*(textheight-4.75)/3;
 
 	fig=figure('paperunits','centimeters','papersize'...
@@ -30,6 +30,8 @@ function sizedistplot(base_dir,prefix,frame,dir_out,filename)
 
 	xlabel('$\frac{R_\text{max}}{r_\text{max}}$');
 	ylabel('$\dd{N}\left(\frac{R_\text{max}}{r_\text{max}}\right)$');
+	legend('Data points',sprintf('Data fit $\\gamma=%.2g$',lambda_tmp),'location','northeastoutside')
+	legend boxoff
 	wd=cd(dir_out);
 	print(filename,'-dpdflatex');
 	cd(wd)

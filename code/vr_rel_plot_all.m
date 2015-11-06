@@ -3,7 +3,7 @@ function vr_rel_plot_all()
 	size_pt=0.35136;
 	textwidth=418*size_pt/10;
 	textheight=595*size_pt/10;
-	figwidth=0.75*textwidth;
+	figwidth=0.9*textwidth;
 	figheight=1.2*(textheight-4.75)/3;
 
 	figure('paperunits','centimeters','papersize'...
@@ -57,9 +57,11 @@ function vr_rel_plot_all()
 	i_nz=find(n>0);
 	size(i_nz)
 	n=repmat(n,size(N,1),1);
-	h=pcolor(C{1}(i_nz),C{2},log(N(:,i_nz)./n(:,i_nz)));
+	h=pcolor(C{1}(i_nz),C{2},log10(N(:,i_nz)./n(:,i_nz)));
 	set(h,'EdgeColor','none');
 	colormap(flipud(gray(256)));
+	bar=colorbar;
+	ylabel(bar,'Event intensity');
 	xlim([0.2,20]);
 	set(gca,'xscale','log');
 	set(gca,'yscale','log');
@@ -67,5 +69,8 @@ function vr_rel_plot_all()
 	plot(x,gamma(4)./(gamma(3).*x));
 	xlabel('$-\lambdaR_\text{max}$');
 	ylabel('$\frac{v}{v_{r0}}$');
+	set(gca,'xtick',[0.2 0.5 1 2 5 10 20]);
+	set(gca,'xticklabel',{'0.2','0.5','1','2','5','10','20'});
+	hold off
 	print('test.png','-dpng','-r600','-G./gswrapper.sh');
 end
