@@ -350,6 +350,8 @@ void helpShow()
 		"--sample-geometry=Nx,Ny,Nz\n"
 		"    Sample the output geometry to a grid of size Nx x Ny x Nz\n\n"
 		"--seed=integer\n"
+		"--iterataions=integer\n"
+		"    Sets the number of iterations\n\n"
 		"    Sets the random number genererator seed\n\n"
 		"--N=integer\n"
 		"    The maximum number of crystals\n\n"

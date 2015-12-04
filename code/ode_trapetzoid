@@ -1,2 +1,0 @@
-function [T,Y]=ode_trapetzoid(odefun,t_vals,Y_0)
-end

@@ -8,6 +8,7 @@ target[name[snowflake_prototype-test] type[application] platform[;GNU/Linux]]
 #include "ice_particle.h"
 #include "solid_writer.h"
 #include "file_out.h"
+#include "voxelbuilder_adda.h"
 
 #include <getopt.h>
 #include <vector>
@@ -17,6 +18,7 @@ static constexpr char PARAM_SHAPE='A';
 static constexpr char PARAM_DEFORMATION='B';
 static constexpr char PARAM_OUTFILE='C';
 static constexpr char PARAM_PARAMSHOW='N';
+static constexpr char PARAM_GEOMETRY_SAMPLE='D';
 
 static const struct option PROGRAM_OPTIONS[]=
 	{
@@ -25,6 +27,7 @@ static const struct option PROGRAM_OPTIONS[]=
 		,{"deformation",required_argument,nullptr,PARAM_DEFORMATION}
 		,{"output",required_argument,nullptr,PARAM_OUTFILE}
 		,{"param-show",no_argument,nullptr,PARAM_PARAMSHOW}
+		,{"sample-geometry",required_argument,nullptr,PARAM_GEOMETRY_SAMPLE}
 		,{0,0,0,0}
 	};
 
@@ -42,8 +45,12 @@ struct Setup
 
 	static constexpr uint32_t HELP_SHOW=1;
 	static constexpr uint32_t PARAM_SHOW=16;
+	static constexpr uint32_t GEOMETRY_SAMPLE=8;
 
 	uint32_t m_actions;
+	int m_size_x;
+	int m_size_y;
+	int m_size_z;
 
 	Setup(int argc,char** argv);
 	void paramsDump();
@@ -54,6 +61,8 @@ Setup::Setup(int argc,char** argv):m_actions(0)
 	int option_index;
 	int c;
 	std::vector<std::string> deformations;
+	const char* sample_geometry=nullptr;
+
 
 	while( (c=getopt_long(argc,argv,"",PROGRAM_OPTIONS,&option_index))!=-1)
 		{
@@ -70,6 +79,12 @@ Setup::Setup(int argc,char** argv):m_actions(0)
 			case PARAM_DEFORMATION:
 			//	This option takes sub-options
 				deformations.push_back(optarg);
+				break;
+
+			case PARAM_GEOMETRY_SAMPLE:
+			//	This option takes sub-options.
+				sample_geometry=optarg;
+				m_actions|=GEOMETRY_SAMPLE;
 				break;
 
 			case PARAM_PARAMSHOW:
@@ -156,6 +171,39 @@ Setup::Setup(int argc,char** argv):m_actions(0)
 			++ptr;
 			}
 		}
+
+	if(sample_geometry!=nullptr)
+		{
+		int k=0;
+		std::string temp;
+		while(*sample_geometry!='\0' && k!=3)
+			{
+			switch(*sample_geometry)
+				{
+				case ',':
+					switch(k)
+						{
+						case 0:
+							m_size_x=atoi(temp.data());
+							break;
+						case 1:
+							m_size_y=atoi(temp.data());
+							break;
+						case 2:
+							m_size_z=atoi(temp.data());
+							break;
+						}
+					temp.clear();
+					++k;
+					break;
+				default:
+					temp+=*sample_geometry;
+				}
+			++sample_geometry;
+			}
+		if(*sample_geometry=='\0')
+			{m_size_z=atoi(temp.data());}
+		}
 	}
 
 void Setup::paramsDump()
@@ -189,6 +237,8 @@ void helpShow()
 		"    to list the name of available parameters.\n\n"
 		"--output=output_file\n"
 		"    Wavefront file to write transformed geometry to.\n\n"
+		"--sample-geometry=Nx,Ny,Nz\n"
+		"    Sample the output geometry to a grid of size Nx x Ny x Nz\n\n"
 		);
 	}
 
@@ -246,16 +296,26 @@ int main(int argc,char** argv)
 			}
 
 			{
-			SnowflakeModel::FileOut file_out(setup.m_output.data());
+			SnowflakeModel::FileOut file_out((setup.m_output+".obj").data());
 			SnowflakeModel::SolidWriter writer(file_out);
 			writer.write(particle_out.solidGet());
+			}
+
+		if(setup.m_actions&Setup::GEOMETRY_SAMPLE)
+			{
+			SnowflakeModel::FileOut file_out((setup.m_output+".adda").data());
+			SnowflakeModel::VoxelbuilderAdda builder(file_out
+				,setup.m_size_x,setup.m_size_y,setup.m_size_z
+				,particle_out.solidGet().boundingBoxGet());
+
+			particle_out.solidGet().geometrySample(builder);
 			}
 
 		return 0;
 		}
 	catch(const char* message)
 		{
-		fprintf(stderr,"# Error: %s\n",message);
+		fprintf(stderr,"# Error:i %s\n",message);
 		return -1;
 		}
 	}
