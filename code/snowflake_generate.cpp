@@ -7,6 +7,7 @@ target[name[snowflake_generate] type[application] platform[;GNU/Linux]]
 #include "config_parser.h"
 #include "solid_builder_bbc.h"
 #include "solid_writer.h"
+#include "solid_writer_prototype.h"
 #include "voxelbuilder_adda.h"
 #include "file_out.h"
 
@@ -18,6 +19,7 @@ struct Setup
 	std::string m_aggregate;
 	std::string m_mesh_output;
 	std::string m_geom_output;
+	std::string m_mesh_ice_output;
 	std::map<std::string,std::string> m_params;
 	int size_x;
 	int size_y;
@@ -33,6 +35,7 @@ static const struct option PROGRAM_OPTIONS[]=
 		 {"aggregate",required_argument,nullptr,'a'}
 		,{"help",no_argument,nullptr,'h'}
 		,{"mesh-output",required_argument,nullptr,'m'}
+		,{"mesh-output-ice",required_argument,nullptr,'M'}
 		,{"sample-geometry",required_argument,nullptr,'s'}
 		,{"param-show",no_argument,nullptr,'p'}
 		,{0,0,0,0}
@@ -64,6 +67,8 @@ Setup::Setup(int argc,char** argv):
 			case 'p':
 				param_show=1;
 				break;
+			case 'M':
+				m_mesh_ice_output=optarg;
 			case '?':
 				throw "Invalid parameter given";
 			}
@@ -189,6 +194,10 @@ int main(int argc,char** argv)
 				"--mesh-output=mesh_file\n"
 				"    Export the output geometry as a Wavefront file, that can "
 				"be imported into 3D modelling software such as Blender.\n\n"
+				"--mesh-output-ice=mesh_file\n"
+				"    Same as --dump-geometry but write data as an Ice crystal "
+				"prototype file, so it can be used by other tools provided by "
+				"the toolkit.\n\n"
 				"--param-show\n"
 				"    Print all availible parameters.\n\n"
 				"--sample-geometry=Nx,Ny,Nz,adda_file\n"
@@ -234,6 +243,13 @@ int main(int argc,char** argv)
 			{
 			SnowflakeModel::FileOut file_out(setup.m_mesh_output.data());
 			SnowflakeModel::SolidWriter writer(file_out);
+			writer.write(m);
+			}
+
+		if(setup.m_mesh_ice_output!="")
+			{
+			SnowflakeModel::FileOut file_out(setup.m_mesh_ice_output.data());
+			SnowflakeModel::SolidWriterPrototype writer(file_out);
 			writer.write(m);
 			}
 

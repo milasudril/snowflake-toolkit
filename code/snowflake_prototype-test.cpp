@@ -7,6 +7,7 @@ target[name[snowflake_prototype-test] type[application] platform[;GNU/Linux]]
 #include "solid.h"
 #include "ice_particle.h"
 #include "solid_writer.h"
+#include "solid_writer_prototype.h"
 #include "file_out.h"
 #include "voxelbuilder_adda.h"
 
@@ -19,6 +20,7 @@ static constexpr char PARAM_DEFORMATION='B';
 static constexpr char PARAM_OUTFILE='C';
 static constexpr char PARAM_PARAMSHOW='N';
 static constexpr char PARAM_GEOMETRY_SAMPLE='D';
+static constexpr char PARAM_OUTFILE_ICE='E';
 
 static const struct option PROGRAM_OPTIONS[]=
 	{
@@ -26,6 +28,7 @@ static const struct option PROGRAM_OPTIONS[]=
 		,{"shape",required_argument,nullptr,PARAM_SHAPE}
 		,{"deformation",required_argument,nullptr,PARAM_DEFORMATION}
 		,{"output",required_argument,nullptr,PARAM_OUTFILE}
+		,{"output-ice",required_argument,nullptr,PARAM_OUTFILE_ICE}
 		,{"param-show",no_argument,nullptr,PARAM_PARAMSHOW}
 		,{"sample-geometry",required_argument,nullptr,PARAM_GEOMETRY_SAMPLE}
 		,{0,0,0,0}
@@ -41,11 +44,12 @@ struct Setup
 	{
 	std::string m_crystal;
 	std::vector<DeformationData> m_deformations;
-	std::string m_output;
+	std::string m_output_obj;
+	std::string m_output_ice;
+	std::string m_geom_output;
 
 	static constexpr uint32_t HELP_SHOW=1;
 	static constexpr uint32_t PARAM_SHOW=16;
-	static constexpr uint32_t GEOMETRY_SAMPLE=8;
 
 	uint32_t m_actions;
 	int m_size_x;
@@ -84,7 +88,6 @@ Setup::Setup(int argc,char** argv):m_actions(0)
 			case PARAM_GEOMETRY_SAMPLE:
 			//	This option takes sub-options.
 				sample_geometry=optarg;
-				m_actions|=GEOMETRY_SAMPLE;
 				break;
 
 			case PARAM_PARAMSHOW:
@@ -92,7 +95,11 @@ Setup::Setup(int argc,char** argv):m_actions(0)
 				break;
 
 			case PARAM_OUTFILE:
-				m_output=optarg;
+				m_output_obj=optarg;
+				break;
+
+			case PARAM_OUTFILE_ICE:
+				m_output_ice=optarg;
 				break;
 
 			case '?':
@@ -107,7 +114,8 @@ Setup::Setup(int argc,char** argv):m_actions(0)
 			"Try --help for more information.";
 		}
 
-	if(m_output=="" && !(  (m_actions&HELP_SHOW) || (m_actions&PARAM_SHOW) ))
+	if(m_output_obj=="" && m_output_ice=="" && sample_geometry==nullptr
+		&& !(  (m_actions&HELP_SHOW) || (m_actions&PARAM_SHOW) ))
 		{
 		throw "Output file is not given. "
 			"Try --help for more information.";
@@ -202,7 +210,12 @@ Setup::Setup(int argc,char** argv):m_actions(0)
 			++sample_geometry;
 			}
 		if(*sample_geometry=='\0')
-			{m_size_z=atoi(temp.data());}
+			{
+			m_size_z=atoi(temp.data());
+			m_geom_output="/dev/stdout";
+			}
+		else
+			{m_geom_output=sample_geometry;}
 		}
 	}
 
@@ -210,8 +223,7 @@ void Setup::paramsDump()
 	{
 	printf("Parameters:\n\n"
 		"Shape:       %s\n"
-		"Output file: %s\n"
-		,m_crystal.data(),m_output.data());
+		,m_crystal.data());
 	printf("\nDeformations:\n");
 		{
 		auto ptr=m_deformations.data();
@@ -237,7 +249,9 @@ void helpShow()
 		"    to list the name of available parameters.\n\n"
 		"--output=output_file\n"
 		"    Wavefront file to write transformed geometry to.\n\n"
-		"--sample-geometry=Nx,Ny,Nz\n"
+		"--output-ice=output_file\n"
+		"    Ice crystal prototype file to write transformed geometry to.\n\n"
+		"--sample-geometry=Nx,Ny,Nz,filename\n"
 		"    Sample the output geometry to a grid of size Nx x Ny x Nz\n\n"
 		);
 	}
@@ -295,15 +309,16 @@ int main(int argc,char** argv)
 				}
 			}
 
+		if(setup.m_output_obj!="")
 			{
-			SnowflakeModel::FileOut file_out((setup.m_output+".obj").data());
+			SnowflakeModel::FileOut file_out(setup.m_output_obj.data());
 			SnowflakeModel::SolidWriter writer(file_out);
 			writer.write(particle_out.solidGet());
 			}
 
-		if(setup.m_actions&Setup::GEOMETRY_SAMPLE)
+		if(setup.m_geom_output!="")
 			{
-			SnowflakeModel::FileOut file_out((setup.m_output+".adda").data());
+			SnowflakeModel::FileOut file_out(setup.m_geom_output.data());
 			SnowflakeModel::VoxelbuilderAdda builder(file_out
 				,setup.m_size_x,setup.m_size_y,setup.m_size_z
 				,particle_out.solidGet().boundingBoxGet());
@@ -311,11 +326,18 @@ int main(int argc,char** argv)
 			particle_out.solidGet().geometrySample(builder);
 			}
 
+		if(setup.m_output_ice!="")
+			{
+			SnowflakeModel::FileOut file_out(setup.m_output_ice.data());
+			SnowflakeModel::SolidWriterPrototype writer(file_out);
+			writer.write(particle_out.solidGet());
+			}
+
 		return 0;
 		}
 	catch(const char* message)
 		{
-		fprintf(stderr,"# Error:i %s\n",message);
+		fprintf(stderr,"# Error: %s\n",message);
 		return -1;
 		}
 	}
