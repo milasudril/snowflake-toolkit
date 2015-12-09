@@ -25,7 +25,7 @@ namespace SnowflakeModel
 				{
 				public:
 					Face(VertexIndex v0,VertexIndex v1,VertexIndex v2
-						,const VolumeConvex& vc):r_vc(&vc)
+						,const VolumeConvex& vc):m_visible(0),r_vc(&vc)
 						{
 						m_verts[0]=v0;
 						m_verts[1]=v1;
@@ -38,6 +38,7 @@ namespace SnowflakeModel
 					mutable Point m_mid;
 					mutable Vector m_normal;
 					mutable Vector m_normal_raw;
+					bool m_visible;
 
 					void directionChange()
 						{std::swap(m_verts[0],m_verts[1]);}
@@ -177,16 +178,23 @@ namespace SnowflakeModel
 				{return facesOutBegin()+facesOutCount();}
 
 			void faceOutAdd(FaceIndex i)
-				{m_faces_out.push_back(i);}
+				{
+				m_faces_out.push_back(i);
+				m_faces[i].m_visible=1;
+				}
 
 			void faceOutRemove(size_t i)
 				{
 				assert(i<m_faces_out.size());
+				faceOutGet(i).m_visible=0;
 				m_faces_out.erase(m_faces_out.begin()+i);
 				m_flags_dirty|=AREA_VISIBLE_DIRTY;
 				}
 
 			const Face& faceOutGet(size_t i) const
+				{return m_faces[m_faces_out[i]];}
+
+			Face& faceOutGet(size_t i)
 				{return m_faces[m_faces_out[i]];}
 
 			bool normalsDirty() const
