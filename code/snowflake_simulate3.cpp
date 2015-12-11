@@ -5,6 +5,7 @@ target[name[snowflake_simulate3] type[application] platform[;GNU/Linux]]
 #include "config_parser.h"
 #include "solid_loader.h"
 #include "solid_writer.h"
+#include "solid_writer_prototype.h"
 #include "solid.h"
 #include "voxelbuilder_adda.h"
 #include "file_out.h"
@@ -39,6 +40,7 @@ static constexpr char PARAM_GROWTHRATE='K';
 static constexpr char PARAM_MELTRATE='L';
 static constexpr char PARAM_NITER='M';
 static constexpr char PARAM_PARAMSHOW='N';
+static constexpr char PARAM_GEOMETRY_DUMP_ICE='O';
 
 
 static const struct option PROGRAM_OPTIONS[]=
@@ -51,6 +53,7 @@ static const struct option PROGRAM_OPTIONS[]=
 		,{"sample-geometry",required_argument,nullptr,PARAM_GEOMETRY_SAMPLE}
 		,{"dump-stats",no_argument,nullptr,PARAM_STATS_DUMP}
 		,{"dump-geometry",no_argument,nullptr,PARAM_GEOMETRY_DUMP}
+		,{"dump-geometry-ice",no_argument,nullptr,PARAM_GEOMETRY_DUMP_ICE}
 
 		,{"seed",required_argument,nullptr,PARAM_SEED}
 		,{"iterations",required_argument,nullptr,PARAM_NITER}
@@ -85,6 +88,7 @@ struct Setup
 	static constexpr uint32_t STATS_DUMP=2;
 	static constexpr uint32_t GEOMETRY_DUMP=4;
 	static constexpr uint32_t GEOMETRY_SAMPLE=8;
+	static constexpr uint32_t GEOMETRY_DUMP_ICE=32;
 	static constexpr uint32_t PARAM_SHOW=16;
 
 	uint32_t m_actions;
@@ -148,6 +152,10 @@ Setup::Setup(int argc,char** argv):
 
 			case PARAM_GEOMETRY_DUMP:
 				m_actions|=GEOMETRY_DUMP;
+				break;
+
+			case PARAM_GEOMETRY_DUMP_ICE:
+				m_actions|=GEOMETRY_DUMP_ICE;
 				break;
 
 			case PARAM_STATS_DUMP:
@@ -347,6 +355,9 @@ void helpShow()
 		"--dump-geometry\n"
 		"    Export the output geometry as Wavefront files, that can "
 		"be imported into 3D modelling software such as blender(1).\n\n"
+		"--dump-geometry-ice\n"
+		"    Same as --dump-geometry but write data as Ice crystal prototype "
+		"files, so they can be used by other tools provided by the toolkit."
 		"--sample-geometry=Nx,Ny,Nz\n"
 		"    Sample the output geometry to a grid of size Nx x Ny x Nz\n\n"
 		"--seed=integer\n"
@@ -907,6 +918,47 @@ int main(int argc,char** argv)
 							(setup.m_output_dir+num_buff).data()
 							);
 						SnowflakeModel::SolidWriter writer(file_out);
+						writer.write(i->solidGet());
+						++count;
+						}
+					++i;
+					}
+				}
+
+				{
+				auto i=ice_particles_dropped.begin();
+				size_t count=0;
+				while(i!=ice_particles_dropped.end())
+					{
+					char num_buff[32];
+					sprintf(num_buff,"/mesh-dropped-%zx.obj",count);
+					SnowflakeModel::FileOut file_out(
+						(setup.m_output_dir+num_buff).data()
+						);
+					SnowflakeModel::SolidWriter writer(file_out);
+					writer.write(i->solidGet());
+					++count;
+					++i;
+					}
+				}
+			}
+
+		if(setup.m_actions&Setup::GEOMETRY_DUMP_ICE)
+			{
+			fprintf(stderr,"# Dumping crystal prototype files\n");
+				{
+				auto i=ice_particles.begin();
+				size_t count=0;
+				while(i!=ice_particles.end())
+					{
+					if(!i->dead())
+						{
+						char num_buff[16];
+						sprintf(num_buff,"/mesh-%zx.ice",count);
+						SnowflakeModel::FileOut file_out(
+							(setup.m_output_dir+num_buff).data()
+							);
+						SnowflakeModel::SolidWriterPrototype writer(file_out);
 						writer.write(i->solidGet());
 						++count;
 						}
