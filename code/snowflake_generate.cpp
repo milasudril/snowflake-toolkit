@@ -69,6 +69,7 @@ Setup::Setup(int argc,char** argv):
 				break;
 			case 'M':
 				m_mesh_ice_output=optarg;
+				break;
 			case '?':
 				throw "Invalid parameter given";
 			}

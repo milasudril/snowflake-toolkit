@@ -1,4 +1,4 @@
-crystal(bullet, ../crystal-library/bullet.ice)
+crystal(bullet, ../crystal-prototypes/bullet.ice)
 
 node(c0, bullet)
 node(c1, bullet)

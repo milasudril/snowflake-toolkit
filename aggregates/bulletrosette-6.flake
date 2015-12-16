@@ -2,7 +2,7 @@ param_declare(L,2)
 param_declare(t,0.5)
 param_declare(a,1)
 
-crystal(bullet, ../crystal-library/bullet.ice)
+crystal(bullet, ../crystal-prototypes/bullet.ice)
 
 node(a, bullet)
 node(b, bullet)
