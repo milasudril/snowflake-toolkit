@@ -8,7 +8,7 @@ function [tau,N_cloud,r_xy,r_xz]=mod34_aspect_ratio_comp(base_dir,growthrate...
 	for k=1:size(frame_data,1)
 	% 	R_max	Volume	Speed	L_x	r_xy	r_xz
 		data=frame_load(base_dir,growthrate,meltrate,droprate,prefix...
-			,frame_data(k,1)/256);
+			,frame_data(k,1));
 		if size(data,1)>1
 			fprintf(2,'\rComputing ratio for frame %d/%d ',k,size(frame_data,1));
 			r_xy(k)=mean(data(:,5));

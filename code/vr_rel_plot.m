@@ -1,6 +1,6 @@
 function [data]=vr_rel_plot(figno,base_dir,prefix)
 	frame_data=frame_data_load(base_dir);
-	data=frame_load(base_dir,prefix,frame_data(end,1)/256);
+	data=frame_load(base_dir,prefix,frame_data(end,1));
 	if size(data,1)>1
 		i_g1=find(data(:,7)>1);
 		i_1=find(data(:,7)==1);

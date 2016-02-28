@@ -5,7 +5,7 @@ function [tau,N_cloud,lambda]=sizedist_comp(base_dir,prefix)
 	lambda=zeros(size(tau,1),1);
 	for k=1:size(frame_data,1)
 	% 	R_max	Volume	Speed	L_x	r_xy	r_xz	Subvols
-		data=frame_load(base_dir,prefix,frame_data(k,1)/256);
+		data=frame_load(base_dir,prefix,frame_data(k,1));
 		if size(data,1)>1
 			fprintf(2,'\rComputing histogram for frame %d/%d ',k,size(frame_data,1));
 			i_1=find(data(:,7)==1);

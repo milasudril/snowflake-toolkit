@@ -16,7 +16,7 @@ function [frame_data,frame_last,frame_last_dropped]=mod34_stats_cloud(base_dir..
 	for k=1:size(frame_data,1)
 	% 	R_max	Volume	Speed	L_x	r_xy	r_xz
 		data=frame_load(base_dir,growthrate,meltrate,droprate,'frame'...
-  			,frame_data(k,1)/256);
+  			,frame_data(k,1));
 		if ~isempty(data)
 			[alpha,beta,e_rms]=powerfit(data(:,1),data(:,2));
 			frame_data_comp(k,i_alpha)=alpha;
@@ -28,7 +28,7 @@ function [frame_data,frame_last,frame_last_dropped]=mod34_stats_cloud(base_dir..
 		end
 	end
 	frame_last=frame_load(base_dir,growthrate,meltrate,droprate,'frame'...
-		,frame_data(end,1)/256);
+		,frame_data(end,1));
 
 	i_alpha=i_alpha+size(frame_data,2);
 	i_beta=i_beta+size(frame_data,2);
