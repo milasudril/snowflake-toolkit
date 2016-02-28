@@ -51,7 +51,7 @@ static const struct option PROGRAM_OPTIONS[]=
 		,{"output-directory",required_argument,nullptr,PARAM_OUTPUT_DIR}
 
 		,{"sample-geometry",required_argument,nullptr,PARAM_GEOMETRY_SAMPLE}
-		,{"dump-stats",no_argument,nullptr,PARAM_STATS_DUMP}
+		,{"dump-stats",required_argument,nullptr,PARAM_STATS_DUMP}
 		,{"dump-geometry",no_argument,nullptr,PARAM_GEOMETRY_DUMP}
 		,{"dump-geometry-ice",no_argument,nullptr,PARAM_GEOMETRY_DUMP_ICE}
 
@@ -92,6 +92,7 @@ struct Setup
 	static constexpr uint32_t PARAM_SHOW=16;
 
 	uint32_t m_actions;
+	uint32_t m_stat_saverate;
 
 	int m_size_x;
 	int m_size_y;
@@ -122,6 +123,7 @@ Setup::Setup(int argc,char** argv):
 	m_growthrate=GROWTHRATE;
 	m_meltrate=MELTRATE;
 	m_N_iter=N_ITER;
+	m_stat_saverate=256;
 
 	while( (c=getopt_long(argc,argv,"",PROGRAM_OPTIONS,&option_index))!=-1)
 		{
@@ -159,7 +161,12 @@ Setup::Setup(int argc,char** argv):
 				break;
 
 			case PARAM_STATS_DUMP:
+				{
 				m_actions|=STATS_DUMP;
+				auto N=atoi(optarg);
+				if(N!=0)
+					{m_stat_saverate=N;}
+				}
 				break;
 
 			case PARAM_SEED:
@@ -350,8 +357,9 @@ void helpShow()
 		"    Print this text and exit.\n\n"
 		"--output-dir=output_directory\n"
 		"    Directory for storing output data\n\n"
-		"--dump-stats\n"
-		"    Write particle measurements\n\n"
+		"--dump-stats=N\n"
+		"    Write particle measurements every N iteration. Measurements for "
+		"the first and last iteration are always saved\n\n"
 		"--dump-geometry\n"
 		"    Export the output geometry as Wavefront files, that can "
 		"be imported into 3D modelling software such as blender(1).\n\n"
@@ -802,7 +810,7 @@ int main(int argc,char** argv)
 		double tau=0;
 		std::vector<SnowflakeModel::IceParticle> ice_particles_dropped;
 		if((setup.m_actions&Setup::STATS_DUMP)
-			&& frame_data_file!=nullptr && frame%256==0 )
+			&& frame_data_file!=nullptr && frame%setup.m_stat_saverate==0 )
 			{
 			statsDump(frame_data_file,ice_particles,ice_particles_dropped,C_mat
 				,frame,tau,setup);
@@ -828,7 +836,7 @@ int main(int argc,char** argv)
 					matrixRowUpdate(k,ice_particles,C_mat,setup);
 					++frame;
 					if((setup.m_actions&Setup::STATS_DUMP)
-						&& frame_data_file!=nullptr && frame%256==0 )
+						&& frame_data_file!=nullptr && frame%setup.m_stat_saverate==0 )
 						{
 						statsDump(frame_data_file,ice_particles
 							,ice_particles_dropped,C_mat,frame,tau,setup);
@@ -845,7 +853,7 @@ int main(int argc,char** argv)
 				matrixRowUpdate(k,ice_particles,C_mat,setup);
 				++frame;
 				if((setup.m_actions&Setup::STATS_DUMP)
-					&& frame_data_file!=nullptr && frame%256==0 )
+					&& frame_data_file!=nullptr && frame%setup.m_stat_saverate==0 )
 					{
 					statsDump(frame_data_file,ice_particles
 						,ice_particles_dropped,C_mat,frame,tau,setup);
@@ -860,7 +868,7 @@ int main(int argc,char** argv)
 				matrixRowUpdate(k,ice_particles,C_mat,setup);
 				++frame;
 				if((setup.m_actions&Setup::STATS_DUMP)
-					&& frame_data_file!=nullptr && frame%256==0 )
+					&& frame_data_file!=nullptr && frame%setup.m_stat_saverate==0 )
 					{
 					statsDump(frame_data_file,ice_particles
 						,ice_particles_dropped,C_mat,frame,tau,setup);
@@ -909,7 +917,7 @@ int main(int argc,char** argv)
 					matrixRowUpdate(pair_merge.second,ice_particles,C_mat,setup);
 					++frame;
 					if((setup.m_actions&Setup::STATS_DUMP)
-						&& frame_data_file!=nullptr && frame%256==0 )
+						&& frame_data_file!=nullptr && frame%setup.m_stat_saverate==0 )
 						{
 						statsDump(frame_data_file,ice_particles
 							,ice_particles_dropped,C_mat,frame,tau,setup);
