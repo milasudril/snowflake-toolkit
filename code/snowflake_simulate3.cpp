@@ -642,8 +642,6 @@ void statsDump(
 	,double tau
 	,const Setup& setup)
 	{
-	if((setup.m_actions&Setup::STATS_DUMP) && frame_data_file!=nullptr && frame%256==0 )
-		{
 		auto now=time(nullptr);
 
 		double C_kl_sum=0;
@@ -680,7 +678,7 @@ void statsDump(
 
 			{
 			char countbuff[32];
-			sprintf(countbuff,"/frame-%zu.txt",frame/256);
+			sprintf(countbuff,"/frame-%zu.txt",frame);
 			SnowflakeModel::FileOut file_out((setup.m_output_dir+countbuff).data());
 			auto i=ice_particles.begin();
 			file_out.printf("# R_max\tVolume\tSpeed\tL_x\tr_xy\tr_xz\tNumber of sub-volumes\n");
@@ -702,7 +700,7 @@ void statsDump(
 
 			{
 			char countbuff[32];
-			sprintf(countbuff,"/frame-dropped-%zu.txt",frame/256);
+			sprintf(countbuff,"/frame-dropped-%zu.txt",frame);
 			SnowflakeModel::FileOut file_out((setup.m_output_dir+countbuff).data());
 			auto i=ice_particles_dropped.begin();
 			file_out.printf("# R_max\tVolume\tSpeed\tL_x\tr_xy\tr_xz\tNumber of sub-volumes\n");
@@ -718,7 +716,6 @@ void statsDump(
 				++i;
 				}
 			}
-		}
 	}
 
 size_t ice_particleDeadFind(std::vector<SnowflakeModel::IceParticle>& ice_particles)
@@ -804,7 +801,12 @@ int main(int argc,char** argv)
 		size_t frame=0;
 		double tau=0;
 		std::vector<SnowflakeModel::IceParticle> ice_particles_dropped;
-		statsDump(frame_data_file,ice_particles,ice_particles_dropped,C_mat,frame,tau,setup);
+		if((setup.m_actions&Setup::STATS_DUMP)
+			&& frame_data_file!=nullptr && frame%256==0 )
+			{
+			statsDump(frame_data_file,ice_particles,ice_particles_dropped,C_mat
+				,frame,tau,setup);
+			}
 		while(frame!=setup.m_N_iter)
 			{
 			SNOWFLAKEMODEL_TIMED_SCOPE();
@@ -825,7 +827,12 @@ int main(int argc,char** argv)
 					++setup.m_N;
 					matrixRowUpdate(k,ice_particles,C_mat,setup);
 					++frame;
-					statsDump(frame_data_file,ice_particles,ice_particles_dropped,C_mat,frame,tau,setup);
+					if((setup.m_actions&Setup::STATS_DUMP)
+						&& frame_data_file!=nullptr && frame%256==0 )
+						{
+						statsDump(frame_data_file,ice_particles
+							,ice_particles_dropped,C_mat,frame,tau,setup);
+						}
 					}
 				}
 			else
@@ -837,7 +844,12 @@ int main(int argc,char** argv)
 				--setup.m_N;
 				matrixRowUpdate(k,ice_particles,C_mat,setup);
 				++frame;
-				statsDump(frame_data_file,ice_particles,ice_particles_dropped,C_mat,frame,tau,setup);
+				if((setup.m_actions&Setup::STATS_DUMP)
+					&& frame_data_file!=nullptr && frame%256==0 )
+					{
+					statsDump(frame_data_file,ice_particles
+						,ice_particles_dropped,C_mat,frame,tau,setup);
+					}
 				}
 			else
 			if(pair_merge.second==ice_particles.size())
@@ -847,7 +859,12 @@ int main(int argc,char** argv)
 				--setup.m_N;
 				matrixRowUpdate(k,ice_particles,C_mat,setup);
 				++frame;
-				statsDump(frame_data_file,ice_particles,ice_particles_dropped,C_mat,frame,tau,setup);
+				if((setup.m_actions&Setup::STATS_DUMP)
+					&& frame_data_file!=nullptr && frame%256==0 )
+					{
+					statsDump(frame_data_file,ice_particles
+						,ice_particles_dropped,C_mat,frame,tau,setup);
+					}
 				}
 			else
 				{
@@ -891,7 +908,12 @@ int main(int argc,char** argv)
 					matrixRowUpdate(pair_merge.first,ice_particles,C_mat,setup);
 					matrixRowUpdate(pair_merge.second,ice_particles,C_mat,setup);
 					++frame;
-					statsDump(frame_data_file,ice_particles,ice_particles_dropped,C_mat,frame,tau,setup);
+					if((setup.m_actions&Setup::STATS_DUMP)
+						&& frame_data_file!=nullptr && frame%256==0 )
+						{
+						statsDump(frame_data_file,ice_particles
+							,ice_particles_dropped,C_mat,frame,tau,setup);
+						}
 					}
 #ifndef NDEBUG
 				else
@@ -900,6 +922,12 @@ int main(int argc,char** argv)
 					}
 #endif
 				}
+			}
+
+		if((setup.m_actions&Setup::STATS_DUMP) && frame_data_file!=nullptr)
+			{
+			statsDump(frame_data_file,ice_particles
+				,ice_particles_dropped,C_mat,frame,tau,setup);
 			}
 
 		if(setup.m_actions&Setup::GEOMETRY_DUMP)
