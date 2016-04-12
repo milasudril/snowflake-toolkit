@@ -1,6 +1,11 @@
 SnowflakeToolkit--A toolkit for generating ice particles
 ========================================================
 
+Documentation
+-------------
+The documentation can be found within the thesis "A software toolkit for generating ice and snow particle sharp data", availible from http://studentarbeten.chalmers.se/publication/234473-a-software-toolkit-for-generating-ice-and-snow-particle-sharp-data
+
+
 Dependencies
 ------------
 The toolkit has been design with so it should not have to many external
