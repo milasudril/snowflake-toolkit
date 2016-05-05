@@ -17,7 +17,7 @@ namespace SnowflakeModel
 	typedef glm::mat4 Matrix;
 	typedef glm::vec3 Vector;
 	typedef glm::i32vec4 PointInt;
-	
+
 	inline std::pair<float,uint32_t> extentMax(const Vector& v)
 		{
 		std::pair<float,uint32_t> ret{v[0],0};
@@ -29,10 +29,13 @@ namespace SnowflakeModel
 			}
 		return ret;
 		}
-	
-	
+
+
 	std::pair<Matrix,bool>
 	vectorsAlign(const Vector& dir,const SnowflakeModel::Vector& dir_target);
+
+	Matrix
+	vectorsAlign2(const Vector& dir,const SnowflakeModel::Vector& dir_target);
 	}
 
 #endif

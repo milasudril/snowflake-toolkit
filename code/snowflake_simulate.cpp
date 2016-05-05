@@ -301,7 +301,7 @@ float vTermCompute(const SnowflakeModel::Solid& vol
 		/(glm::pi<float>()*setup.eta*setup.eta);
 	auto Re=C_1*sqrt( (sqrt(1+C_2*sqrt(X))-1) );
 	auto ret=Re*setup.eta*sqrt(glm::pi<float>()/A)/(2*setup.rho_a);
-	assert(!isnan(ret));
+	assert(!std::isnan(ret));
 	return ret;
 	}
 

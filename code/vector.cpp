@@ -35,3 +35,20 @@ SnowflakeModel::vectorsAlign(const Vector& dir,const Vector& dir_target)
 	R+=nux + nux*nux*(1-c)/s;
 	return {R,0};
 	}
+
+static inline glm::mat3 orthobasis(const Vector& dir_target)
+	{
+	auto a=Vector(dir_target[2],dir_target[0],dir_target[1]);
+	auto v=glm::normalize(cross(dir_target,a));
+	auto w=cross(dir_target,v);
+
+	return glm::mat3(dir_target,v,w);
+	}
+
+Matrix SnowflakeModel::vectorsAlign2(const Vector& dir,const Vector& dir_target)
+	{
+	auto R_2=orthobasis(dir_target);
+	auto R_1=orthobasis(dir);
+
+	return Matrix(R_2*glm::transpose(R_1));
+	}
