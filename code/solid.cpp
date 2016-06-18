@@ -117,16 +117,16 @@ void Solid::boundingBoxCompute() const
 		return;
 		}
 
-	const BoundingBox* bb_temp=&subvolume->boundingBoxGet();
-	m_bounding_box.m_min=glm::min(m_bounding_box.m_min,bb_temp->m_min);
-	m_bounding_box.m_max=glm::max(m_bounding_box.m_max,bb_temp->m_max);
+	m_bounding_box=subvolume->boundingBoxGet();
+//	m_bounding_box.m_min=glm::min(m_bounding_box.m_min,bb_temp->m_min);
+//	m_bounding_box.m_max=glm::max(m_bounding_box.m_max,bb_temp->m_max);
 	++subvolume;
 
 	while(subvolume!=subvolumesEnd())
 		{
-		bb_temp=&subvolume->boundingBoxGet();
-		m_bounding_box.m_min=glm::min(m_bounding_box.m_min,bb_temp->m_min);
-		m_bounding_box.m_max=glm::max(m_bounding_box.m_max,bb_temp->m_max);
+		auto& bb_temp=subvolume->boundingBoxGet();
+		m_bounding_box.m_min=glm::min(m_bounding_box.m_min,bb_temp.m_min);
+		m_bounding_box.m_max=glm::max(m_bounding_box.m_max,bb_temp.m_max);
 		++subvolume;
 		}
 
