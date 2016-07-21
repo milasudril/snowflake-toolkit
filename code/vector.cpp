@@ -39,8 +39,8 @@ SnowflakeModel::vectorsAlign(const Vector& dir,const Vector& dir_target)
 static inline glm::mat3 orthobasis(const Vector& dir_target)
 	{
 	auto a=Vector(dir_target[2],dir_target[0],dir_target[1]);
-	auto v=glm::normalize(cross(dir_target,a));
-	auto w=cross(dir_target,v);
+	auto v=glm::normalize(glm::cross(dir_target,a));
+	auto w=glm::cross(dir_target,v);
 
 	return glm::mat3(dir_target,v,w);
 	}
