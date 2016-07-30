@@ -1,7 +1,13 @@
-#ifdef __WAND__
-target[name[solid_loader.o] type[object]]
-#endif
-
+//@	{
+//@	    "dependencies_extra":[],
+//@	    "targets":[
+//@	        {
+//@	            "dependencies":[],
+//@	            "name":"solid_loader.o",
+//@	            "type":"object"
+//@	        }
+//@	    ]
+//@	}
 #include "solid_loader.h"
 #include "solid.h"
 #include "config_command.h"

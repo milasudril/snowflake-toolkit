@@ -1,7 +1,13 @@
-#ifdef __WAND__
-target[name[aggregate_edge.h] type[include]]
-#endif
-
+//@	{
+//@	    "dependencies_extra":[],
+//@	    "targets":[
+//@	        {
+//@	            "dependencies":[],
+//@	            "name":"aggregate_edge.h",
+//@	            "type":"include"
+//@	        }
+//@	    ]
+//@	}
 #ifndef SNOWFLAKEMODEL_AGGREGATEEDGE_H
 #define SNOWFLAKEMODEL_AGGREGATEEDGE_H
 

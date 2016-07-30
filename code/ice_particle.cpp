@@ -1,7 +1,13 @@
-#ifdef __WAND__
-target[name[ice_particle.o] type[object]]
-#endif
-
+//@	{
+//@	    "dependencies_extra":[],
+//@	    "targets":[
+//@	        {
+//@	            "dependencies":[],
+//@	            "name":"ice_particle.o",
+//@	            "type":"object"
+//@	        }
+//@	    ]
+//@	}
 #include "ice_particle.h"
 
 using namespace SnowflakeModel;

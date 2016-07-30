@@ -1,7 +1,13 @@
-#ifdef __WAND__
-target[name[voxel_builder.h] type[include]]
-#endif
-
+//@	{
+//@	    "dependencies_extra":[],
+//@	    "targets":[
+//@	        {
+//@	            "dependencies":[],
+//@	            "name":"voxel_builder.h",
+//@	            "type":"include"
+//@	        }
+//@	    ]
+//@	}
 #ifndef SNOWFLAKEMODEL_VOXELBUILDER_H
 #define SNOWFLAKEMODEL_VOXELBUILDER_H
 

@@ -1,7 +1,13 @@
-#ifdef __WAND__
-target[name[file_out.h] type[outclude]]
-#endif
-
+//@	{
+//@	    "dependencies_extra":[],
+//@	    "targets":[
+//@	        {
+//@	            "dependencies":[],
+//@	            "name":"file_out.h",
+//@	            "type":"include"
+//@	        }
+//@	    ]
+//@	}
 #ifndef SNOWFLAKEMODEL_FILEOUT_H
 #define SNOWFLAKEMODEL_FILEOUT_H
 

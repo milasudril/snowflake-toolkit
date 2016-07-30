@@ -1,8 +1,18 @@
-#ifdef __WAND__
-target[name[ice_particle.h] type[include]]
-dependency[ice_particle.o]
-#endif
-
+//@	{
+//@	    "dependencies_extra":[
+//@	        {
+//@	            "ref":"ice_particle.o",
+//@	            "rel":"implementation"
+//@	        }
+//@	    ],
+//@	    "targets":[
+//@	        {
+//@	            "dependencies":[],
+//@	            "name":"ice_particle.h",
+//@	            "type":"include"
+//@	        }
+//@	    ]
+//@	}
 #ifndef SNOWFLAKEMODEL_ICEPARTICLE_H
 #define SNOWFLAKEMODEL_ICEPARTICLE_H
 

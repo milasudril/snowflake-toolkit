@@ -1,8 +1,18 @@
-#ifdef __WAND__
-target[name[config_parser.h] type[include]]
-dependency[config_parser.o]
-#endif
-
+//@	{
+//@	    "dependencies_extra":[
+//@	        {
+//@	            "ref":"config_parser.o",
+//@	            "rel":"implementation"
+//@	        }
+//@	    ],
+//@	    "targets":[
+//@	        {
+//@	            "dependencies":[],
+//@	            "name":"config_parser.h",
+//@	            "type":"include"
+//@	        }
+//@	    ]
+//@	}
 #ifndef SNOWFLAKEMODEL_CONFIGPARSER_H
 #define SNOWFLAKEMODEL_CONFIGPARSER_H
 

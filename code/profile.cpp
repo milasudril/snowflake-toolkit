@@ -1,7 +1,13 @@
-#ifdef __WAND__
-target[name[profile.o] type[object] platform[;GNU/Linux]]
-#endif
-
+//@	{
+//@	    "dependencies_extra":[],
+//@	    "targets":[
+//@	        {
+//@	            "dependencies":[],
+//@	            "name":"profile.o",
+//@	            "type":"object"
+//@	        }
+//@	    ]
+//@	}
 #ifdef PROFILE
 #include "profile.h"
 #include <sys/time.h>

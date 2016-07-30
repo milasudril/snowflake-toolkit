@@ -1,7 +1,13 @@
-#ifdef __WAND__
-target[name[task.h] type[include]]
-#endif
-
+//@	{
+//@	    "dependencies_extra":[],
+//@	    "targets":[
+//@	        {
+//@	            "dependencies":[],
+//@	            "name":"task.h",
+//@	            "type":"include"
+//@	        }
+//@	    ]
+//@	}
 #ifndef SNOWFLAKEMODEL_TASK_H
 #define SNOWFLAKEMODEL_TASK_H
 

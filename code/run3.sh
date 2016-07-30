@@ -10,7 +10,7 @@ for a in {0.17,0.22,0.28,0.33,0.39,0.44,0.5,0.55,0.61,0.66}; do
 	mkdir $dir_out/$a
 	seedval=`od -An -t u4 -N 4 /dev/urandom | sed -e 's/^[ \t]*//'`
 	echo "# Starting simulation for a=$a"
-	__wand_targets/snowflake_simulate3 --shape=../crystal-library/bullet.ice \
+	__targets_rel/snowflake_simulate3 --shape=../crystal-library/bullet.ice \
 		--deformation=L,$L,$L_std --deformation=a,$a --deformation=t,0 \
 		--output-dir=$dir_out/$a --dump-geometry --dump-stats \
 		--growthrate=33000000 --meltrate=500 --droprate=20000 \

@@ -1,8 +1,18 @@
-#ifdef __WAND__
-target[name[aggregate_graph.h] type[include]]
-dependency[aggregate_graph.o]
-#endif
-
+//@	{
+//@	    "dependencies_extra":[
+//@	        {
+//@	            "ref":"aggregate_graph.o",
+//@	            "rel":"implementation"
+//@	        }
+//@	    ],
+//@	    "targets":[
+//@	        {
+//@	            "dependencies":[],
+//@	            "name":"aggregate_graph.h",
+//@	            "type":"include"
+//@	        }
+//@	    ]
+//@	}
 #ifndef SNOWFLAKEMODEL_AGGREGATEGRAPH_H
 #define SNOWFLAKEMODEL_AGGREGATEGRAPH_H
 

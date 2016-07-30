@@ -1,7 +1,13 @@
-#ifdef __WAND__
-target[name[solid_deformation.h] type[include]]
-#endif
-
+//@	{
+//@	    "dependencies_extra":[],
+//@	    "targets":[
+//@	        {
+//@	            "dependencies":[],
+//@	            "name":"solid_deformation.h",
+//@	            "type":"include"
+//@	        }
+//@	    ]
+//@	}
 #ifndef SNOWFLAKEMODEL_SOLIDDEFORMATION_H
 #define SNOWFLAKEMODEL_SOLIDDEFORMATION_H
 

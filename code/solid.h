@@ -1,8 +1,18 @@
-#ifdef __WAND__
-target[name[solid.h] type[include]]
-dependency[solid.o]
-#endif
-
+//@	{
+//@	    "dependencies_extra":[
+//@	        {
+//@	            "ref":"solid.o",
+//@	            "rel":"implementation"
+//@	        }
+//@	    ],
+//@	    "targets":[
+//@	        {
+//@	            "dependencies":[],
+//@	            "name":"solid.h",
+//@	            "type":"include"
+//@	        }
+//@	    ]
+//@	}
 #ifndef SNOWFLAKEMODEL_SOLID_H
 #define SNOWFLAKEMODEL_SOLID_H
 

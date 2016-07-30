@@ -1,7 +1,13 @@
-#ifdef __WAND__
-target[name[vector.o] type[object]]
-#endif
-
+//@	{
+//@	    "dependencies_extra":[],
+//@	    "targets":[
+//@	        {
+//@	            "dependencies":[],
+//@	            "name":"vector.o",
+//@	            "type":"object"
+//@	        }
+//@	    ]
+//@	}
 #include "vector.h"
 
 using namespace SnowflakeModel;

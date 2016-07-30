@@ -1,7 +1,13 @@
-#ifdef __WAND__
-target[name[volume_convex.o] type[object]]
-#endif
-
+//@	{
+//@	    "dependencies_extra":[],
+//@	    "targets":[
+//@	        {
+//@	            "dependencies":[],
+//@	            "name":"volume_convex.o",
+//@	            "type":"object"
+//@	        }
+//@	    ]
+//@	}
 #include "volume_convex.h"
 #include "voxel_builder.h"
 #include "twins.h"

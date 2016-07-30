@@ -1,7 +1,13 @@
-#ifdef __WAND__
-target[name[snowflake_generate] type[application] platform[;GNU/Linux]]
-#endif
-
+//@	{
+//@	    "dependencies_extra":[],
+//@	    "targets":[
+//@	        {
+//@	            "dependencies":[],
+//@	            "name":"snowflake_generate",
+//@	            "type":"application"
+//@	        }
+//@	    ]
+//@	}
 #include "aggregate_graph.h"
 #include "aggregate_graph_loader.h"
 #include "config_parser.h"

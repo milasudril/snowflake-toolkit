@@ -1,7 +1,13 @@
-#ifdef __WAND__
-target[name[element_randomizer.o] type[object]]
-#endif
-
+//@	{
+//@	    "dependencies_extra":[],
+//@	    "targets":[
+//@	        {
+//@	            "dependencies":[],
+//@	            "name":"element_randomizer.o",
+//@	            "type":"object"
+//@	        }
+//@	    ]
+//@	}
 #include "element_randomizer.h"
 #include "task.h"
 #include "matrix_storage.h"

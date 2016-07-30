@@ -1,7 +1,13 @@
-#ifdef __WAND__
-target[name[aggregate_graph.o] type[object]]
-#endif
-
+//@	{
+//@	    "dependencies_extra":[],
+//@	    "targets":[
+//@	        {
+//@	            "dependencies":[],
+//@	            "name":"aggregate_graph.o",
+//@	            "type":"object"
+//@	        }
+//@	    ]
+//@	}
 #include "aggregate_graph.h"
 #include "ice_particle_visitor.h"
 #include "twins.h"

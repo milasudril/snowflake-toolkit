@@ -19,32 +19,34 @@ This is a shell script that can be used to compile the toolkit
 
     #!/bin/bash
 
-    # Download Gabi
-    wget "https://github.com/milasudril/gabi/archive/5.77.tar.gz"
+    # Download Maike
+    wget https://github.com/milasudril/maike/archive/0.7.2.tar.gz
 
     # Rename the compressed tarball
-    mv "5.77.tar.gz" "gabi-5.77.tar.gz"
+    mv "0.7.2.tar.gz" "maike-0.7.2.tar.gz"
 
     # Decompress the tarball
-    gzip -d "gabi-5.77.tar.gz"
+    gzip -d "maike-0.7.2.tar.gz"
 
     # Extract its contents
-    tar -xf "gabi-5.77.tar"
+    tar -xf "maike-0.7.2.tar.gz"
 
-    # Cd into the Gabi source directory
-    cd "gabi-5.77/source"
+    # Cd into the Maike source directory
+    cd maike-0.7.2
 
-    # Compile Gabi
-    make -f "Makefile-GNULinux64"
+    # Compile Maike
+    chmod u+x build.sh
+    ./build.sh
 
-    # Move Wand to an appropriate place
-    mv "__wand_targets-x86_64-gnulinux/wand/wand" ~/bin/wand
+    # Move Maike to an appropriate place
+    mv __targets/maike ~/bin/maike
+	mv __targets/*.so ~/bin
 
     # Leave the Gabi source directory
-    cd "../.."
+    cd ".."
 
     # Everything above this line can be skipped if the correct version
-    # of Wand is already installed
+    # of Maike is already installed
     ##################################################################
 
     # Download the toolkit
@@ -54,9 +56,9 @@ This is a shell script that can be used to compile the toolkit
     cd "snowflake-toolkit/code"
 
     # Run Wand to compile the project
-    ~/bin/wand "profile[release]"
+    ~/bin/maike
 
-Besides the release profile, there is a "profile", and a "debug" profile.
+Besides the release profile (stored in the default `maikeconfig.json`), there a "profile", and a "debug" profile. See the JSON files for information about the compiler settings.
 
 License
 -------

@@ -1,7 +1,13 @@
-#ifdef __WAND__
-target[name[solid_writer_prototype.o] type[object]]
-#endif
-
+//@	{
+//@	    "dependencies_extra":[],
+//@	    "targets":[
+//@	        {
+//@	            "dependencies":[],
+//@	            "name":"solid_writer_prototype.o",
+//@	            "type":"object"
+//@	        }
+//@	    ]
+//@	}
 #include "solid_writer_prototype.h"
 #include "solid.h"
 #include "file_out.h"

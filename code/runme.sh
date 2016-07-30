@@ -1,4 +1,4 @@
-__wand_targets/snowflake_simulate3 \
+__targets_rel/snowflake_simulate3 \
 	--shape=../crystal-library/bullet.ice --deformation=L --seed=0 \
 	--N=4999 --output-dir=/home/torbjorr/snowflake-out2/15000000-500-10000 \
 	--dump-stats \

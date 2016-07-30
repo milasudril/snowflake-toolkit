@@ -1,7 +1,13 @@
-#ifdef __WAND__
-target[name[solid.o] type[object]]
-#endif
-
+//@	{
+//@	    "dependencies_extra":[],
+//@	    "targets":[
+//@	        {
+//@	            "dependencies":[],
+//@	            "name":"solid.o",
+//@	            "type":"object"
+//@	        }
+//@	    ]
+//@	}
 #include "solid.h"
 
 using namespace SnowflakeModel;

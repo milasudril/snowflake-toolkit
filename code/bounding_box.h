@@ -1,7 +1,13 @@
-#ifdef __WAND__
-target[name[bounding_box.h] type[include]]
-#endif
-
+//@	{
+//@	    "dependencies_extra":[],
+//@	    "targets":[
+//@	        {
+//@	            "dependencies":[],
+//@	            "name":"bounding_box.h",
+//@	            "type":"include"
+//@	        }
+//@	    ]
+//@	}
 #ifndef SNOWFLAKEMODEL_BOUNDINGBOX_H
 #define SNOWFLAKEMODEL_BOUNDINGBOX_H
 

@@ -1,7 +1,13 @@
-#ifdef __WAND__
-target[name[config_commandhandler.h] type[include]]
-#endif
-
+//@	{
+//@	    "dependencies_extra":[],
+//@	    "targets":[
+//@	        {
+//@	            "dependencies":[],
+//@	            "name":"config_commandhandler.h",
+//@	            "type":"include"
+//@	        }
+//@	    ]
+//@	}
 #ifndef SNOWFLAKEMODEL_CONFIGCOMMANDHANDLER_H
 #define SNOWFLAKEMODEL_CONFIGCOMMANDHANDLER_H
 

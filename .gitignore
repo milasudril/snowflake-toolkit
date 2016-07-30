@@ -1,2 +1,3 @@
 *.o
-code/__wand_targets
+code/__targets*
+code/__wand2maike

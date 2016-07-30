@@ -1,8 +1,18 @@
-#ifdef __WAND__
-target[name[profile.h] type[include]]
-dependency[profile.o]
-#endif
-
+//@	{
+//@	    "dependencies_extra":[
+//@	        {
+//@	            "ref":"profile.o",
+//@	            "rel":"implementation"
+//@	        }
+//@	    ],
+//@	    "targets":[
+//@	        {
+//@	            "dependencies":[],
+//@	            "name":"profile.h",
+//@	            "type":"include"
+//@	        }
+//@	    ]
+//@	}
 #ifndef SNOWFLAKEMODEL_PROFILE_H
 #define SNOWFLAKEMODEL_PROFILE_H
 

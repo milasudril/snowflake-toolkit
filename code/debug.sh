@@ -1,2 +1,0 @@
-rm -rf ~/snowflake-out2 && gdb __wand_targets/snowflake_simulate3 \
--ex "set args --shape=../crystal-library/bullet.ice --deformation=L --seed=0 --stat-output=/home/torbjorr/snowflake-out2 --N=4999 --growthrate=20000000 --meltrate=500 --droprate=10 --mesh-output=/home/torbjorr/snowflake-out2 --sigma=0.25"

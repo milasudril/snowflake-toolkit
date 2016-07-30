@@ -1,7 +1,13 @@
-#ifdef __WAND__
-target[name[list_indexed.h] type[include]]
-#endif
-
+//@	{
+//@	    "dependencies_extra":[],
+//@	    "targets":[
+//@	        {
+//@	            "dependencies":[],
+//@	            "name":"list_indexed.h",
+//@	            "type":"include"
+//@	        }
+//@	    ]
+//@	}
 #ifndef SNOWFLAKEMODEL_LISTINDEXED_H
 #define SNOWFLAKEMODEL_LISTINDEXED_H
 

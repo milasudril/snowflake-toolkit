@@ -1,8 +1,18 @@
-#ifdef __WAND__
-target[name[thread.h] type[include]]
-dependency[thread.o]
-#endif
-
+//@	{
+//@	    "dependencies_extra":[
+//@	        {
+//@	            "ref":"thread.o",
+//@	            "rel":"implementation"
+//@	        }
+//@	    ],
+//@	    "targets":[
+//@	        {
+//@	            "dependencies":[],
+//@	            "name":"thread.h",
+//@	            "type":"include"
+//@	        }
+//@	    ]
+//@	}
 #ifndef SNOWFLAKEMODEL_THREAD_H
 #define SNOWFLAKEMODEL_THREAD_H
 

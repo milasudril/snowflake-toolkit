@@ -1,7 +1,13 @@
-#ifdef __WAND__
-target[name[ice_particle_visitor.h] type[include]]
-#endif
-
+//@	{
+//@	    "dependencies_extra":[],
+//@	    "targets":[
+//@	        {
+//@	            "dependencies":[],
+//@	            "name":"ice_particle_visitor.h",
+//@	            "type":"include"
+//@	        }
+//@	    ]
+//@	}
 #ifndef SNOWFLAKEMODEL_GRAINVISITOR_H
 #define SNOWFLAKEMODEL_GRAINVISITOR_H
 

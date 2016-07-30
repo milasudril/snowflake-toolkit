@@ -1,7 +1,13 @@
-#ifdef __WAND__
-target[name[twins.h] type[include]]
-#endif
-
+//@	{
+//@	    "dependencies_extra":[],
+//@	    "targets":[
+//@	        {
+//@	            "dependencies":[],
+//@	            "name":"twins.h",
+//@	            "type":"include"
+//@	        }
+//@	    ]
+//@	}
 #ifndef SNOWFLAKEMODEL_TWINS_H
 #define SNOWFLAKEMODEL_TWINS_H
 

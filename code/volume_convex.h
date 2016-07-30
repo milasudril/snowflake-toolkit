@@ -1,8 +1,18 @@
-#ifdef __WAND__
-target[name[volume_convex.h] type[include]]
-dependency[volume_convex.o]
-#endif
-
+//@	{
+//@	    "dependencies_extra":[
+//@	        {
+//@	            "ref":"volume_convex.o",
+//@	            "rel":"implementation"
+//@	        }
+//@	    ],
+//@	    "targets":[
+//@	        {
+//@	            "dependencies":[],
+//@	            "name":"volume_convex.h",
+//@	            "type":"include"
+//@	        }
+//@	    ]
+//@	}
 #ifndef SNOWFLAKEMODEL_VOLUMECONVEX_H
 #define SNOWFLAKEMODEL_VOLUMECONVEX_H
 

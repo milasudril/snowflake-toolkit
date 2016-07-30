@@ -1,8 +1,18 @@
-#ifdef __WAND__
-target[name[vector.h] type[include]]
-dependency[vector.o]
-#endif
-
+//@	{
+//@	    "dependencies_extra":[
+//@	        {
+//@	            "ref":"vector.o",
+//@	            "rel":"implementation"
+//@	        }
+//@	    ],
+//@	    "targets":[
+//@	        {
+//@	            "dependencies":[],
+//@	            "name":"vector.h",
+//@	            "type":"include"
+//@	        }
+//@	    ]
+//@	}
 #ifndef SNOWFLAKEMODEL_VECTOR_H
 #define SNOWFLAKEMODEL_VECTOR_H
 

@@ -19,7 +19,7 @@ for k in {44000000,}; do
 			rm -rf $dir_out/$k-$l-$m-$a
 			mkdir $dir_out/$k-$l-$m-$a
 			seedval=`od -An -t u4 -N 4 /dev/urandom | sed -e 's/^[ \t]*//'`
-			__wand_targets/snowflake_simulate3 \
+			__wand_rel/snowflake_simulate3 \
 				--shape=../crystal-library/bullet.ice --deformation=L,$L,$L_std \
 				--deformation=a,$a --deformation=t,0 \
 				--dump-geometry --dump-stats --output-dir=$dir_out/$k-$l-$m \
@@ -38,7 +38,7 @@ done
 #			rm -rf $dir_out/$k-$l-$m
 #			mkdir $dir_out/$k-$l-$m
 #			seedval=`od -An -t u4 -N 4 /dev/urandom | sed -e 's/^[ \t]*//'`
-#			__wand_targets/snowflake_simulate3 \
+#			__wand_rel/snowflake_simulate3 \
 #				--shape=../crystal-library/bullet.ice --deformation=L,1,0.25 \
 #				--deformation=a,0.33 --deformation=t,0 \
 #				--dump-stats --N=4999 --output-dir=$dir_out/$k-$l-$m \

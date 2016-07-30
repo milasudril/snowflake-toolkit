@@ -1,8 +1,18 @@
-#ifdef __WAND__
-target[name[matrix_storage.h] type[include]]
-dependency[matrix_storage.o]
-#endif
-
+//@	{
+//@	    "dependencies_extra":[
+//@	        {
+//@	            "ref":"matrix_storage.o",
+//@	            "rel":"implementation"
+//@	        }
+//@	    ],
+//@	    "targets":[
+//@	        {
+//@	            "dependencies":[],
+//@	            "name":"matrix_storage.h",
+//@	            "type":"include"
+//@	        }
+//@	    ]
+//@	}
 #ifndef SNOWFLAKEMODEL_MATRIXSTORAGE_H
 #define SNOWFLAKEMODEL_MATRIXSTORAGE_H
 

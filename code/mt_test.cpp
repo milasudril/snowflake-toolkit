@@ -1,7 +1,13 @@
-#ifdef __WAND__
-target[name[mt_test] type[application]]
-#endif
-
+//@	{
+//@	    "dependencies_extra":[],
+//@	    "targets":[
+//@	        {
+//@	            "dependencies":[],
+//@	            "name":"mt_test",
+//@	            "type":"application"
+//@	        }
+//@	    ]
+//@	}
 #include "matrix_storage.h"
 #include "element_randomizer.h"
 #include <random>

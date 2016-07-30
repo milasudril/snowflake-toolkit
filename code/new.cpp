@@ -1,7 +1,13 @@
-#ifdef __WAND__
-target[name[new.o] type[object]]
-#endif
-
+//@	{
+//@	    "dependencies_extra":[],
+//@	    "targets":[
+//@	        {
+//@	            "dependencies":[],
+//@	            "name":"new.o",
+//@	            "type":"object"
+//@	        }
+//@	    ]
+//@	}
 #include <cstdlib>
 
 void* operator new(size_t n_bytes)

@@ -1,7 +1,13 @@
-#ifdef __WAND__
-target[name[config_parser.o] type[object]]
-#endif
-
+//@	{
+//@	    "dependencies_extra":[],
+//@	    "targets":[
+//@	        {
+//@	            "dependencies":[],
+//@	            "name":"config_parser.o",
+//@	            "type":"object"
+//@	        }
+//@	    ]
+//@	}
 #include "config_parser.h"
 #include "config_commandhandler.h"
 #include "config_command.h"

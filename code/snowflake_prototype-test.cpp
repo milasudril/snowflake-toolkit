@@ -1,7 +1,13 @@
-#ifdef __WAND__
-target[name[snowflake_prototype-test] type[application] platform[;GNU/Linux]]
-#endif
-
+//@	{
+//@	    "dependencies_extra":[],
+//@	    "targets":[
+//@	        {
+//@	            "dependencies":[],
+//@	            "name":"snowflake_prototype-test",
+//@	            "type":"application"
+//@	        }
+//@	    ]
+//@	}
 #include "config_parser.h"
 #include "solid_loader.h"
 #include "solid.h"

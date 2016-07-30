@@ -1,7 +1,13 @@
-#ifdef __WAND__
-target[name[solid_builder_bbc.o] type[object]]
-#endif
-
+//@	{
+//@	    "dependencies_extra":[],
+//@	    "targets":[
+//@	        {
+//@	            "dependencies":[],
+//@	            "name":"solid_builder_bbc.o",
+//@	            "type":"object"
+//@	        }
+//@	    ]
+//@	}
 #include "solid_builder_bbc.h"
 #include "aggregate_node.h"
 #include "solid.h"

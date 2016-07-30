@@ -1,8 +1,18 @@
-#ifdef __WAND__
-target[name[element_randomizer.h] type[include]]
-dependency[element_randomizer.o]
-#endif
-
+//@	{
+//@	    "dependencies_extra":[
+//@	        {
+//@	            "ref":"element_randomizer.o",
+//@	            "rel":"implementation"
+//@	        }
+//@	    ],
+//@	    "targets":[
+//@	        {
+//@	            "dependencies":[],
+//@	            "name":"element_randomizer.h",
+//@	            "type":"include"
+//@	        }
+//@	    ]
+//@	}
 #ifndef SNOWFLAKEMODEL_ELEMENTRANDOMIZER_H
 #define SNOWFLAKEMODEL_ELEMENTRANDOMIZER_H
 

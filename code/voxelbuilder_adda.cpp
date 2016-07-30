@@ -1,7 +1,13 @@
-#ifdef __WAND__
-target[name[voxelbuilder_adda.o] type[object]]
-#endif
-
+//@	{
+//@	    "dependencies_extra":[],
+//@	    "targets":[
+//@	        {
+//@	            "dependencies":[],
+//@	            "name":"voxelbuilder_adda.o",
+//@	            "type":"object"
+//@	        }
+//@	    ]
+//@	}
 #include "voxelbuilder_adda.h"
 #include "volume_convex.h"
 #include "file_out.h"

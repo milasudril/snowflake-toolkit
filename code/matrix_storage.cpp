@@ -1,7 +1,18 @@
-#ifdef __WAND__
-target[name[matrix_storage.o] type[object] dependency[new.o]]
-#endif
-
+//@	{
+//@	    "dependencies_extra":[],
+//@	    "targets":[
+//@	        {
+//@	            "dependencies":[
+//@	                {
+//@	                    "ref":"new.o",
+//@	                    "rel":"implementation"
+//@	                }
+//@	            ],
+//@	            "name":"matrix_storage.o",
+//@	            "type":"object"
+//@	        }
+//@	    ]
+//@	}
 #include "matrix_storage.h"
 #include "thread.h"
 #include "task.h"

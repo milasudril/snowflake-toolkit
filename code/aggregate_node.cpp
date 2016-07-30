@@ -1,7 +1,13 @@
-#ifdef __WAND__
-target[name[aggregate_node.o] type[object]]
-#endif
-
+//@	{
+//@	    "dependencies_extra":[],
+//@	    "targets":[
+//@	        {
+//@	            "dependencies":[],
+//@	            "name":"aggregate_node.o",
+//@	            "type":"object"
+//@	        }
+//@	    ]
+//@	}
 #include "aggregate_node.h"
 #include "twins.h"
 

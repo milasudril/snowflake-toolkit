@@ -1,8 +1,18 @@
-#ifdef __WAND__
-target[name[solid_writer_prototype.h] type[include]]
-dependency[solid_writer_prototype.o]
-#endif
-
+//@	{
+//@	    "dependencies_extra":[
+//@	        {
+//@	            "ref":"solid_writer_prototype.o",
+//@	            "rel":"implementation"
+//@	        }
+//@	    ],
+//@	    "targets":[
+//@	        {
+//@	            "dependencies":[],
+//@	            "name":"solid_writer_prototype.h",
+//@	            "type":"include"
+//@	        }
+//@	    ]
+//@	}
 #ifndef SNOWFLAKEMODEL_SOLIDWRITERPROTOTYPE_H
 #define SNOWFLAKEMODEL_SOLIDWRITERPROTOTYPE_H
 

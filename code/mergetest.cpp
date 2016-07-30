@@ -1,7 +1,13 @@
-#ifdef __WAND__
-target[name[mergetest] type[application]]
-#endif
-
+//@	{
+//@	    "dependencies_extra":[],
+//@	    "targets":[
+//@	        {
+//@	            "dependencies":[],
+//@	            "name":"mergetest",
+//@	            "type":"application"
+//@	        }
+//@	    ]
+//@	}
 #include "solid_loader.h"
 #include "file_in.h"
 #include "file_out.h"

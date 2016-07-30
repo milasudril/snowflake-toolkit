@@ -1,7 +1,13 @@
-#ifdef __WAND__
-target[name[aggregate_graph_loader.o] type[object]]
-#endif
-
+//@	{
+//@	    "dependencies_extra":[],
+//@	    "targets":[
+//@	        {
+//@	            "dependencies":[],
+//@	            "name":"aggregate_graph_loader.o",
+//@	            "type":"object"
+//@	        }
+//@	    ]
+//@	}
 #include "aggregate_graph_loader.h"
 #include "solid_loader.h"
 #include "aggregate_graph.h"

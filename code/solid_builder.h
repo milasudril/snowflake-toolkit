@@ -1,8 +1,18 @@
-#ifdef __WAND__
-target[name[solid_builder.h] type[include]]
-dependency[solid_builder.o]
-#endif
-
+//@	{
+//@	    "dependencies_extra":[
+//@	        {
+//@	            "ref":"solid_builder.o",
+//@	            "rel":"implementation"
+//@	        }
+//@	    ],
+//@	    "targets":[
+//@	        {
+//@	            "dependencies":[],
+//@	            "name":"solid_builder.h",
+//@	            "type":"include"
+//@	        }
+//@	    ]
+//@	}
 #ifndef SNOWFLAKEMODEL_SOLIDBUILDER_H
 #define SNOWFLAKEMODEL_SOLIDBUILDER_H
 

@@ -1,7 +1,18 @@
-#ifdef __WAND__
-target[name[thread.o] type[object] platform[;GNU/Linux] dependency[pthread;external]]
-#endif
-
+//@	{
+//@	    "dependencies_extra":[],
+//@	    "targets":[
+//@	        {
+//@	            "dependencies":[
+//@	                {
+//@	                    "ref":"pthread",
+//@	                    "rel":"external"
+//@	                }
+//@	            ],
+//@	            "name":"thread.o",
+//@	            "type":"object"
+//@	        }
+//@	    ]
+//@	}
 #include "thread.h"
 #include "task.h"
 #include <unistd.h>
