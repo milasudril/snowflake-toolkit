@@ -123,6 +123,6 @@
         }
     ],
     "targetinfo":{
-        "target_directory":"__targets_rel"
+        "target_directory":"__targets_profile"
     }
 }
