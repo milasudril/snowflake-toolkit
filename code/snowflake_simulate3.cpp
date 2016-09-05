@@ -20,6 +20,7 @@
 #include "matrix_storage.h"
 #include "element_randomizer.h"
 #include "profile.h"
+#include "ctrlchandler.h"
 
 #include <getopt.h>
 #include <glm/gtc/constants.hpp>
@@ -598,7 +599,7 @@ size_t randomDraw(const T* ptr_begin,const T* ptr_end
 	}
 
 SnowflakeModel::Twins<size_t>
-ice_particlesChoose(SnowflakeModel::ElementRandomizer& randomizer
+ice_particlesChoose(const SnowflakeModel::ElementRandomizer& randomizer
 	,std::mt19937& randgen)
 	{
 	SNOWFLAKEMODEL_TIMED_SCOPE();
@@ -744,6 +745,134 @@ size_t ice_particleDeadFind(std::vector<SnowflakeModel::IceParticle>& ice_partic
 	return i-ice_particles.begin();
 	}
 
+void runStep(
+	 double& tau
+	,const SnowflakeModel::ElementRandomizer& randomizer,std::mt19937& randgen
+	,SnowflakeModel::MatrixStorage& C_mat
+	,std::vector<SnowflakeModel::IceParticle>& ice_particles
+	,size_t& frame
+	,const Setup& setup
+	,const SnowflakeModel::Solid& s_in
+	,size_t& N_particles
+	,SnowflakeModel::FileOut* frame_data_file
+	,std::vector<SnowflakeModel::IceParticle>& ice_particles_dropped
+	,std::uniform_int_distribution<int>& U_rot)
+	{
+	SNOWFLAKEMODEL_TIMED_SCOPE();
+	auto pair_merge=ice_particlesChoose(randomizer,randgen);
+	tau+=-log(U(0.0,1.0,randgen))/double(C_mat.sumGetMt());
+
+	if(pair_merge.first==pair_merge.second)
+		{
+		auto k=ice_particleDeadFind(ice_particles);
+		if(k==ice_particles.size())
+			{
+			fprintf(stderr,"\n# Event rejected %zu: Cloud is full %zu %zu"
+				,frame,N_particles,k);
+			}
+		else
+			{
+			ice_particles[k]=ice_particlePrepare(s_in,setup,randgen);
+			++N_particles;
+			matrixRowUpdate(k,ice_particles,C_mat,setup);
+			++frame;
+			if((setup.m_actions&Setup::STATS_DUMP)
+				&& frame_data_file!=nullptr && frame%setup.m_stat_saverate==0 )
+				{
+				statsDump(frame_data_file,ice_particles
+					,ice_particles_dropped,C_mat,frame,tau,setup);
+				}
+			}
+		}
+	else
+	if(pair_merge.first==ice_particles.size())
+		{
+		auto k=pair_merge.second;
+		ice_particles_dropped.push_back(ice_particles[k]);
+		ice_particles[k].kill();
+		--N_particles;
+		matrixRowUpdate(k,ice_particles,C_mat,setup);
+		++frame;
+		if((setup.m_actions&Setup::STATS_DUMP)
+			&& frame_data_file!=nullptr && frame%setup.m_stat_saverate==0 )
+			{
+			statsDump(frame_data_file,ice_particles
+				,ice_particles_dropped,C_mat,frame,tau,setup);
+			}
+		}
+	else
+	if(pair_merge.second==ice_particles.size())
+		{
+		auto k=pair_merge.first;
+		ice_particles[k].kill();
+		--N_particles;
+		matrixRowUpdate(k,ice_particles,C_mat,setup);
+		++frame;
+		if((setup.m_actions&Setup::STATS_DUMP)
+			&& frame_data_file!=nullptr && frame%setup.m_stat_saverate==0 )
+			{
+			statsDump(frame_data_file,ice_particles
+				,ice_particles_dropped,C_mat,frame,tau,setup);
+			}
+		}
+	else
+		{
+		auto& g_b=ice_particles[pair_merge.first];
+		auto& s_b=g_b.solidGet();
+		s_b.centerBoundingBoxAt(SnowflakeModel::Point(0,0,0,1));
+		auto f_b=faceChoose(s_b,randgen);
+		auto coords=drawFromTriangle(randgen);
+		auto u=f_b.vertexGet(0)
+			+ coords.x*(f_b.vertexGet(1) - f_b.vertexGet(0))
+			+ coords.y*(f_b.vertexGet(2) - f_b.vertexGet(0));
+
+		auto& g_a=ice_particles[pair_merge.second];
+		auto s_a=g_a.solidGet();
+		s_a.centerBoundingBoxAt(SnowflakeModel::Point(0,0,0,1));
+		auto f_a=faceChoose(s_a,randgen);
+		coords=drawFromTriangle(randgen);
+		auto v=f_a.vertexGet(0)
+			+ coords.x*(f_a.vertexGet(1) - f_a.vertexGet(0))
+			+ coords.y*(f_a.vertexGet(2) - f_a.vertexGet(0));
+
+
+		auto R=SnowflakeModel::vectorsAlign(f_a.m_normal, -f_b.m_normal);
+
+		auto pos=SnowflakeModel::Vector(u - R.first*v);
+
+		SnowflakeModel::Matrix T;
+		T=glm::translate(T,pos);
+		SnowflakeModel::Matrix R_x;
+		R_x=glm::translate(R_x,SnowflakeModel::Vector(v));
+		R_x=glm::rotate(R_x,2*glm::pi<float>()*float(U_rot(randgen))
+			/(U_rot.max()+1),f_a.m_normal);
+		R_x=glm::translate(R_x,SnowflakeModel::Vector(-v));
+		s_a.transform(T*R.first*R_x,R.second);
+		if(!overlap(s_b,s_a))
+			{
+			s_b.merge(s_a);
+			g_b.velocitySet(vTermCompute(s_b,setup)*randomDirection(randgen));
+			g_a.kill();
+			--N_particles;
+			matrixRowUpdate(pair_merge.first,ice_particles,C_mat,setup);
+			matrixRowUpdate(pair_merge.second,ice_particles,C_mat,setup);
+			++frame;
+			if((setup.m_actions&Setup::STATS_DUMP)
+				&& frame_data_file!=nullptr && frame%setup.m_stat_saverate==0 )
+				{
+				statsDump(frame_data_file,ice_particles
+					,ice_particles_dropped,C_mat,frame,tau,setup);
+				}
+			}
+#ifndef NDEBUG
+		else
+			{
+			fprintf(stderr,"# Event %zu rejected: Overlap\n",frame);
+			}
+#endif
+		}
+	}
+
 int main(int argc,char** argv)
 	{
 	try
@@ -814,6 +943,7 @@ int main(int argc,char** argv)
 
 		size_t frame=0;
 		double tau=0;
+		size_t N_particles;
 		std::vector<SnowflakeModel::IceParticle> ice_particles_dropped;
 		if((setup.m_actions&Setup::STATS_DUMP)
 			&& frame_data_file!=nullptr && frame%setup.m_stat_saverate==0 )
@@ -823,119 +953,9 @@ int main(int argc,char** argv)
 			}
 		while(frame!=setup.m_N_iter)
 			{
-			SNOWFLAKEMODEL_TIMED_SCOPE();
-			auto pair_merge=ice_particlesChoose(randomizer,randgen);
-			tau+=-log(U(0.0,1.0,randgen))/double(C_mat.sumGetMt());
-
-			if(pair_merge.first==pair_merge.second)
-				{
-				auto k=ice_particleDeadFind(ice_particles);
-				if(k==ice_particles.size())
-					{
-					fprintf(stderr,"\n# Event rejected %zu: Cloud is full %zu %zu"
-						,frame,setup.m_N,k);
-					}
-				else
-					{
-					ice_particles[k]=ice_particlePrepare(s_in,setup,randgen);
-					++setup.m_N;
-					matrixRowUpdate(k,ice_particles,C_mat,setup);
-					++frame;
-					if((setup.m_actions&Setup::STATS_DUMP)
-						&& frame_data_file!=nullptr && frame%setup.m_stat_saverate==0 )
-						{
-						statsDump(frame_data_file,ice_particles
-							,ice_particles_dropped,C_mat,frame,tau,setup);
-						}
-					}
-				}
-			else
-			if(pair_merge.first==ice_particles.size())
-				{
-				auto k=pair_merge.second;
-				ice_particles_dropped.push_back(ice_particles[k]);
-				ice_particles[k].kill();
-				--setup.m_N;
-				matrixRowUpdate(k,ice_particles,C_mat,setup);
-				++frame;
-				if((setup.m_actions&Setup::STATS_DUMP)
-					&& frame_data_file!=nullptr && frame%setup.m_stat_saverate==0 )
-					{
-					statsDump(frame_data_file,ice_particles
-						,ice_particles_dropped,C_mat,frame,tau,setup);
-					}
-				}
-			else
-			if(pair_merge.second==ice_particles.size())
-				{
-				auto k=pair_merge.first;
-				ice_particles[k].kill();
-				--setup.m_N;
-				matrixRowUpdate(k,ice_particles,C_mat,setup);
-				++frame;
-				if((setup.m_actions&Setup::STATS_DUMP)
-					&& frame_data_file!=nullptr && frame%setup.m_stat_saverate==0 )
-					{
-					statsDump(frame_data_file,ice_particles
-						,ice_particles_dropped,C_mat,frame,tau,setup);
-					}
-				}
-			else
-				{
-				auto& g_b=ice_particles[pair_merge.first];
-				auto& s_b=g_b.solidGet();
-				s_b.centerBoundingBoxAt(SnowflakeModel::Point(0,0,0,1));
-				auto f_b=faceChoose(s_b,randgen);
-				auto coords=drawFromTriangle(randgen);
-				auto u=f_b.vertexGet(0)
-					+ coords.x*(f_b.vertexGet(1) - f_b.vertexGet(0))
-					+ coords.y*(f_b.vertexGet(2) - f_b.vertexGet(0));
-
-				auto& g_a=ice_particles[pair_merge.second];
-				auto s_a=g_a.solidGet();
-				s_a.centerBoundingBoxAt(SnowflakeModel::Point(0,0,0,1));
-				auto f_a=faceChoose(s_a,randgen);
-				coords=drawFromTriangle(randgen);
-				auto v=f_a.vertexGet(0)
-					+ coords.x*(f_a.vertexGet(1) - f_a.vertexGet(0))
-					+ coords.y*(f_a.vertexGet(2) - f_a.vertexGet(0));
-
-
-				auto R=SnowflakeModel::vectorsAlign(f_a.m_normal, -f_b.m_normal);
-
-				auto pos=SnowflakeModel::Vector(u - R.first*v);
-
-				SnowflakeModel::Matrix T;
-				T=glm::translate(T,pos);
-				SnowflakeModel::Matrix R_x;
-				R_x=glm::translate(R_x,SnowflakeModel::Vector(v));
-				R_x=glm::rotate(R_x,2*glm::pi<float>()*float(U_rot(randgen))
-					/(U_rot.max()+1),f_a.m_normal);
-				R_x=glm::translate(R_x,SnowflakeModel::Vector(-v));
-				s_a.transform(T*R.first*R_x,R.second);
-				if(!overlap(s_b,s_a))
-					{
-					s_b.merge(s_a);
-					g_b.velocitySet(vTermCompute(s_b,setup)*randomDirection(randgen));
-					g_a.kill();
-					--setup.m_N;
-					matrixRowUpdate(pair_merge.first,ice_particles,C_mat,setup);
-					matrixRowUpdate(pair_merge.second,ice_particles,C_mat,setup);
-					++frame;
-					if((setup.m_actions&Setup::STATS_DUMP)
-						&& frame_data_file!=nullptr && frame%setup.m_stat_saverate==0 )
-						{
-						statsDump(frame_data_file,ice_particles
-							,ice_particles_dropped,C_mat,frame,tau,setup);
-						}
-					}
-#ifndef NDEBUG
-				else
-					{
-					fprintf(stderr,"# Event %zu rejected: Overlap\n",frame);
-					}
-#endif
-				}
+			runStep(tau,randomizer,randgen,C_mat,ice_particles,frame,setup,s_in
+				,N_particles,frame_data_file,ice_particles_dropped
+				,U_rot);
 			}
 
 		if((setup.m_actions&Setup::STATS_DUMP) && frame_data_file!=nullptr)

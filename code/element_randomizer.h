@@ -28,20 +28,14 @@ namespace SnowflakeModel
 	class ElementRandomizer
 		{
 		public:
+			ElementRandomizer(MatrixStorage&&)=delete;
 			ElementRandomizer(const MatrixStorage& M);
 			~ElementRandomizer();
 
-			Twins<size_t> elementChoose(std::mt19937& randgen);
+			Twins<size_t> elementChoose(std::mt19937& randgen) const noexcept;
 
 		private:
 			const MatrixStorage& r_M;
-#if 0
-			class TaskRandomDraw;
-			std::vector<TaskRandomDraw> m_tasks;
-			std::vector<Thread> m_workers;
-			double m_r;
-			int m_stop;
-#endif
 		};
 	}
 

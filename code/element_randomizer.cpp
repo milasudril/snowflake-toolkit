@@ -101,7 +101,7 @@ namespace
 		}
 	}
 
-Twins<size_t> ElementRandomizer::elementChoose(std::mt19937& randgen)
+Twins<size_t> ElementRandomizer::elementChoose(std::mt19937& randgen) const noexcept
 	{
 	SNOWFLAKEMODEL_TIMED_SCOPE();
 
