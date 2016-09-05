@@ -555,8 +555,78 @@ void matrixDump(const SnowflakeModel::MatrixStorage& C_mat)
 	putchar('\n');
 	}
 
+class Simstate
+	{
+	public:
+		Simstate(Setup&& setup,SnowflakeModel::Solid&& s_in)=delete;
+		Simstate(Setup&& setup,const SnowflakeModel::Solid& s_in)=delete;
+		Simstate(const Setup& setup,SnowflakeModel::Solid&& s_in)=delete;
+
+		Simstate(const Setup& setup,const SnowflakeModel::Solid& s_in);
+		~Simstate();
+
+		void step();
+
+	private:
+		const Setup& r_setup;
+		const SnowflakeModel::Solid& r_s_in;
+		double tau;
+		size_t frame;
+		SnowflakeModel::MatrixStorage C_mat;
+		SnowflakeModel::ElementRandomizer randomizer;
+		std::mt19937 randgen;
+		std::vector<SnowflakeModel::IceParticle> ice_particles;
+		std::vector<SnowflakeModel::IceParticle> ice_particles_dropped;
+		size_t N_particles;
+		SnowflakeModel::FileOut* frame_data_file;
+		std::uniform_int_distribution<int> U_rot;
+	};
+
+Simstate::Simstate(const Setup& setup,const SnowflakeModel::Solid& s_in):
+	 r_setup(setup),r_s_in(s_in),tau(0.0),frame(0),C_mat(setup.m_N+1,setup.m_N+1)
+	,randomizer(C_mat),randgen(setup.m_seed),N_particles(0),frame_data_file(nullptr)
+	,U_rot(0,5)
+	{
+//	http://www0.cs.ucl.ac.uk/staff/d.jones/GoodPracticeRNG.pdf
+	randgen.discard(65536);
+
+	auto n=setup.m_N;
+	while(n)
+		{
+		ice_particles.push_back(ice_particlePrepare(s_in,setup,randgen));
+		(ice_particles.end()-1)->kill();
+		--n;
+		}
+
+	for(size_t k=0;k<ice_particles.size();++k)
+		{matrixRowUpdate(k,ice_particles,C_mat,setup);}
+
+	for(size_t k=0;k<ice_particles.size();++k)
+		{
+		C_mat(k,k)=2.0f*setup.m_growthrate/ice_particles.size();
+		}
+
+	if(setup.m_actions&Setup::STATS_DUMP)
+		{
+		mkdir(setup.m_output_dir.data(),S_IRWXU|S_IRGRP|S_IXGRP);
+		frame_data_file=new SnowflakeModel::FileOut(
+			(setup.m_output_dir+"/frame_data.txt").data()
+			);
+
+		frame_data_file->printf("# Frame\tClock time\tSimulation time\tN_cloud\tN_drop\tC_kl_sum\n");
+		}
+	}
+
+Simstate::~Simstate()
+	{
+	if(frame_data_file!=nullptr)
+		{delete frame_data_file;}
+	}
+
+	
+
 void init(const SnowflakeModel::Solid& s_in
-	,Setup& setup,std::mt19937& randgen
+	,const Setup& setup,std::mt19937& randgen
 	,std::vector<SnowflakeModel::IceParticle>& ice_particles
 	,SnowflakeModel::MatrixStorage& C_mat)
 	{
@@ -567,7 +637,6 @@ void init(const SnowflakeModel::Solid& s_in
 		(ice_particles.end()-1)->kill();
 		--n;
 		}
-	setup.m_N=0;
 	for(size_t k=0;k<ice_particles.size();++k)
 		{matrixRowUpdate(k,ice_particles,C_mat,setup);}
 
@@ -745,18 +814,7 @@ size_t ice_particleDeadFind(std::vector<SnowflakeModel::IceParticle>& ice_partic
 	return i-ice_particles.begin();
 	}
 
-void runStep(
-	 double& tau
-	,const SnowflakeModel::ElementRandomizer& randomizer,std::mt19937& randgen
-	,SnowflakeModel::MatrixStorage& C_mat
-	,std::vector<SnowflakeModel::IceParticle>& ice_particles
-	,size_t& frame
-	,const Setup& setup
-	,const SnowflakeModel::Solid& s_in
-	,size_t& N_particles
-	,SnowflakeModel::FileOut* frame_data_file
-	,std::vector<SnowflakeModel::IceParticle>& ice_particles_dropped
-	,std::uniform_int_distribution<int>& U_rot)
+void Simstate::step()
 	{
 	SNOWFLAKEMODEL_TIMED_SCOPE();
 	auto pair_merge=ice_particlesChoose(randomizer,randgen);
@@ -772,15 +830,15 @@ void runStep(
 			}
 		else
 			{
-			ice_particles[k]=ice_particlePrepare(s_in,setup,randgen);
+			ice_particles[k]=ice_particlePrepare(r_s_in,r_setup,randgen);
 			++N_particles;
-			matrixRowUpdate(k,ice_particles,C_mat,setup);
+			matrixRowUpdate(k,ice_particles,C_mat,r_setup);
 			++frame;
-			if((setup.m_actions&Setup::STATS_DUMP)
-				&& frame_data_file!=nullptr && frame%setup.m_stat_saverate==0 )
+			if((r_setup.m_actions&Setup::STATS_DUMP)
+				&& frame_data_file!=nullptr && frame%r_setup.m_stat_saverate==0 )
 				{
 				statsDump(frame_data_file,ice_particles
-					,ice_particles_dropped,C_mat,frame,tau,setup);
+					,ice_particles_dropped,C_mat,frame,tau,r_setup);
 				}
 			}
 		}
@@ -791,13 +849,13 @@ void runStep(
 		ice_particles_dropped.push_back(ice_particles[k]);
 		ice_particles[k].kill();
 		--N_particles;
-		matrixRowUpdate(k,ice_particles,C_mat,setup);
+		matrixRowUpdate(k,ice_particles,C_mat,r_setup);
 		++frame;
-		if((setup.m_actions&Setup::STATS_DUMP)
-			&& frame_data_file!=nullptr && frame%setup.m_stat_saverate==0 )
+		if((r_setup.m_actions&Setup::STATS_DUMP)
+			&& frame_data_file!=nullptr && frame%r_setup.m_stat_saverate==0 )
 			{
 			statsDump(frame_data_file,ice_particles
-				,ice_particles_dropped,C_mat,frame,tau,setup);
+				,ice_particles_dropped,C_mat,frame,tau,r_setup);
 			}
 		}
 	else
@@ -806,13 +864,13 @@ void runStep(
 		auto k=pair_merge.first;
 		ice_particles[k].kill();
 		--N_particles;
-		matrixRowUpdate(k,ice_particles,C_mat,setup);
+		matrixRowUpdate(k,ice_particles,C_mat,r_setup);
 		++frame;
-		if((setup.m_actions&Setup::STATS_DUMP)
-			&& frame_data_file!=nullptr && frame%setup.m_stat_saverate==0 )
+		if((r_setup.m_actions&Setup::STATS_DUMP)
+			&& frame_data_file!=nullptr && frame%r_setup.m_stat_saverate==0 )
 			{
 			statsDump(frame_data_file,ice_particles
-				,ice_particles_dropped,C_mat,frame,tau,setup);
+				,ice_particles_dropped,C_mat,frame,tau,r_setup);
 			}
 		}
 	else
@@ -851,17 +909,17 @@ void runStep(
 		if(!overlap(s_b,s_a))
 			{
 			s_b.merge(s_a);
-			g_b.velocitySet(vTermCompute(s_b,setup)*randomDirection(randgen));
+			g_b.velocitySet(vTermCompute(s_b,r_setup)*randomDirection(randgen));
 			g_a.kill();
 			--N_particles;
-			matrixRowUpdate(pair_merge.first,ice_particles,C_mat,setup);
-			matrixRowUpdate(pair_merge.second,ice_particles,C_mat,setup);
+			matrixRowUpdate(pair_merge.first,ice_particles,C_mat,r_setup);
+			matrixRowUpdate(pair_merge.second,ice_particles,C_mat,r_setup);
 			++frame;
-			if((setup.m_actions&Setup::STATS_DUMP)
-				&& frame_data_file!=nullptr && frame%setup.m_stat_saverate==0 )
+			if((r_setup.m_actions&Setup::STATS_DUMP)
+				&& frame_data_file!=nullptr && frame%r_setup.m_stat_saverate==0 )
 				{
 				statsDump(frame_data_file,ice_particles
-					,ice_particles_dropped,C_mat,frame,tau,setup);
+					,ice_particles_dropped,C_mat,frame,tau,r_setup);
 				}
 			}
 #ifndef NDEBUG
@@ -913,6 +971,9 @@ int main(int argc,char** argv)
 			}
 
 
+		Simstate state(setup,s_in);
+
+
 		std::mt19937 randgen(setup.m_seed);
 	//	http://www0.cs.ucl.ac.uk/staff/d.jones/GoodPracticeRNG.pdf
 		randgen.discard(65536);
@@ -943,7 +1004,6 @@ int main(int argc,char** argv)
 
 		size_t frame=0;
 		double tau=0;
-		size_t N_particles;
 		std::vector<SnowflakeModel::IceParticle> ice_particles_dropped;
 		if((setup.m_actions&Setup::STATS_DUMP)
 			&& frame_data_file!=nullptr && frame%setup.m_stat_saverate==0 )
@@ -953,9 +1013,7 @@ int main(int argc,char** argv)
 			}
 		while(frame!=setup.m_N_iter)
 			{
-			runStep(tau,randomizer,randgen,C_mat,ice_particles,frame,setup,s_in
-				,N_particles,frame_data_file,ice_particles_dropped
-				,U_rot);
+			state.step();
 			}
 
 		if((setup.m_actions&Setup::STATS_DUMP) && frame_data_file!=nullptr)
