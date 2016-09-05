@@ -170,9 +170,9 @@ Setup::Setup(int argc,char** argv):
 			case PARAM_STATS_DUMP:
 				{
 				m_actions|=STATS_DUMP;
-				auto N=atoi(optarg);
-				if(N!=0)
-					{m_stat_saverate=N;}
+				auto freq=atoi(optarg);
+				if(freq!=0)
+					{m_stat_saverate=freq;}
 				}
 				break;
 
@@ -654,7 +654,7 @@ class Simstate
 		void prototypesDump() const;
 
 		double progressGet() const noexcept
-			{return frame/r_setup.m_N_iter;}
+			{return frame/static_cast<double>( r_setup.m_N_iter );}
 
 		void geometryDump() const;
 
@@ -1056,17 +1056,20 @@ int main(int argc,char** argv)
 
 
 		fprintf(stderr,"# Initializing\n");
-		Simstate state(setup,s_in);
+		SnowflakeModel::CtrlCHandler stopper;
 		setup.paramsDump();
+		Simstate state(setup,s_in);
 		fflush(stdout);
 		fprintf(stderr,"# Running simulation\n");
 
 		state.statsDump();
-		while(state.progressGet()<1.0)
+		while(state.progressGet()<1.0 && !stopper.captured())
 			{
 			if(state.step())
 				{state.statsDump();}
 			}
+		fprintf(stderr,"\n# Exiting\n");
+
 		state.statsDump();
 
 		if(setup.m_actions&Setup::GEOMETRY_DUMP)

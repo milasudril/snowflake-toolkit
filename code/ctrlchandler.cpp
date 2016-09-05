@@ -7,7 +7,7 @@
 
 using namespace SnowflakeModel;
 
-static bool s_captured=0;
+static volatile bool s_captured=0;
 
 static void action(int,siginfo_t* info,void*)
 	{
