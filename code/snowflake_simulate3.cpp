@@ -555,6 +555,90 @@ void matrixDump(const SnowflakeModel::MatrixStorage& C_mat)
 	putchar('\n');
 	}
 
+size_t ice_particleDeadFind(std::vector<SnowflakeModel::IceParticle>& ice_particles)
+	{
+	auto i=ice_particles.begin();
+	while(i!=ice_particles.end())
+		{
+		if(i->dead())
+			{return i-ice_particles.begin();}
+		++i;
+		}
+	return i-ice_particles.begin();
+	}
+
+const SnowflakeModel::VolumeConvex::Face&
+faceChoose(const SnowflakeModel::Solid& s_a,std::mt19937& randgen)
+	{
+	std::vector<float> weights;
+	auto v_current=s_a.subvolumesBegin();
+	while(v_current!=s_a.subvolumesEnd())
+		{
+		weights.push_back(v_current->areaVisibleGet());
+		++v_current;
+		}
+	std::discrete_distribution<size_t> P_v(weights.begin(),weights.end());
+	auto& subvol_sel=s_a.subvolumeGet(P_v(randgen));
+	weights.clear();
+	auto f_i=subvol_sel.facesOutBegin();
+	while(f_i!=subvol_sel.facesOutEnd())
+		{
+		weights.push_back(glm::length(subvol_sel.faceGet(*f_i).m_normal_raw));
+		++f_i;
+		}
+	std::discrete_distribution<size_t> P_f(weights.begin(),weights.end());
+	auto face_out_index=P_f(randgen);
+	auto& ret=subvol_sel.faceOutGet(face_out_index);
+//	subvol_sel.faceOutRemove(face_out_index);
+	subvol_sel.facesMidpointCompute();
+
+	return ret;
+	}
+
+template<class T>
+size_t randomDraw(const T* ptr_begin,const T* ptr_end
+	,T p_mass,std::mt19937& randgen)
+	{
+	do
+		{
+		auto r=U(static_cast<T>(0),static_cast<T>(p_mass),randgen);
+		auto ptr=ptr_begin;
+		auto sum=static_cast<T>(0);
+		while(ptr!=ptr_end)
+			{
+			if(r>=sum && r<*ptr + sum)
+				{return ptr-ptr_begin;}
+			sum+=*ptr;
+			++ptr;
+			}
+		fprintf(stderr,"# WARNING: no event matched. Trying again.\n");
+		}
+	while(1);
+	}
+
+SnowflakeModel::Twins<size_t>
+ice_particlesChoose(const SnowflakeModel::ElementRandomizer& randomizer
+	,std::mt19937& randgen)
+	{
+	SNOWFLAKEMODEL_TIMED_SCOPE();
+	return randomizer.elementChoose(randgen);
+	}
+
+glm::vec2 drawFromTriangle(std::mt19937& randgen)
+	{
+	float xi=0;
+	float eta=0;
+	do
+		{
+		xi=U(0.0f,1.0f,randgen);
+		eta=U(0.0f,1.0f,randgen);
+		}
+	while(eta > 1-xi);
+
+	return glm::vec2{xi,eta};
+	}
+
+
 class Simstate
 	{
 	public:
@@ -565,7 +649,16 @@ class Simstate
 		Simstate(const Setup& setup,const SnowflakeModel::Solid& s_in);
 		~Simstate();
 
-		void step();
+		bool step();
+		void statsDump() const;
+		void prototypesDump() const;
+
+		double progressGet() const noexcept
+			{return frame/r_setup.m_N_iter;}
+
+		void geometryDump() const;
+
+		void rasterize() const;
 
 	private:
 		const Setup& r_setup;
@@ -617,134 +710,153 @@ Simstate::Simstate(const Setup& setup,const SnowflakeModel::Solid& s_in):
 		}
 	}
 
+void Simstate::geometryDump() const
+	{	
+		{
+		auto i=ice_particles.begin();
+		size_t count=0;
+		while(i!=ice_particles.end())
+			{
+			if(!i->dead())
+				{
+				char num_buff[16];
+				sprintf(num_buff,"/mesh-%zx.obj",count);
+				SnowflakeModel::FileOut file_out(
+					(r_setup.m_output_dir+num_buff).data());
+				SnowflakeModel::SolidWriter writer(file_out);
+				writer.write(i->solidGet());
+				++count;
+				}
+			++i;
+			}
+		}
+
+		{
+		auto i=ice_particles_dropped.begin();
+		size_t count=0;
+		while(i!=ice_particles_dropped.end())
+			{
+			char num_buff[32];
+			sprintf(num_buff,"/mesh-dropped-%zx.obj",count);
+			SnowflakeModel::FileOut file_out(
+				(r_setup.m_output_dir+num_buff).data());
+			SnowflakeModel::SolidWriter writer(file_out);
+			writer.write(i->solidGet());
+			++count;
+			++i;
+			}
+		}
+	}
+
+void Simstate::prototypesDump() const
+	{
+		{
+		auto i=ice_particles.begin();
+		size_t count=0;
+		while(i!=ice_particles.end())
+			{
+			if(!i->dead())
+				{
+				char num_buff[16];
+				sprintf(num_buff,"/mesh-%zx.ice",count);
+				SnowflakeModel::FileOut file_out((r_setup.m_output_dir+num_buff).data());
+				SnowflakeModel::SolidWriterPrototype writer(file_out);
+				writer.write(i->solidGet());
+				++count;
+				}
+			++i;
+			}
+		}
+
+		{
+		auto i=ice_particles_dropped.begin();
+		size_t count=0;
+		while(i!=ice_particles_dropped.end())
+			{
+			char num_buff[32];
+			sprintf(num_buff,"/mesh-dropped-%zx.obj",count);
+			SnowflakeModel::FileOut file_out(
+				(r_setup.m_output_dir+num_buff).data());
+			SnowflakeModel::SolidWriter writer(file_out);
+			writer.write(i->solidGet());
+			++count;
+			++i;
+			}
+		}
+
+	}
+	
 Simstate::~Simstate()
 	{
 	if(frame_data_file!=nullptr)
 		{delete frame_data_file;}
 	}
 
-	
-
-void init(const SnowflakeModel::Solid& s_in
-	,const Setup& setup,std::mt19937& randgen
-	,std::vector<SnowflakeModel::IceParticle>& ice_particles
-	,SnowflakeModel::MatrixStorage& C_mat)
+void Simstate::rasterize() const
 	{
-	auto n=setup.m_N;
-	while(n)
 		{
-		ice_particles.push_back(ice_particlePrepare(s_in,setup,randgen));
-		(ice_particles.end()-1)->kill();
-		--n;
-		}
-	for(size_t k=0;k<ice_particles.size();++k)
-		{matrixRowUpdate(k,ice_particles,C_mat,setup);}
-
-	for(size_t k=0;k<ice_particles.size();++k)
-		{
-		C_mat(k,k)=2.0f*setup.m_growthrate/ice_particles.size();
-		}
-	}
-
-template<class T>
-size_t randomDraw(const T* ptr_begin,const T* ptr_end
-	,T p_mass,std::mt19937& randgen)
-	{
-	do
-		{
-		auto r=U(static_cast<T>(0),static_cast<T>(p_mass),randgen);
-		auto ptr=ptr_begin;
-		auto sum=static_cast<T>(0);
-		while(ptr!=ptr_end)
+		auto i=ice_particles.begin();
+		size_t count=0;
+		while(i!=ice_particles.end())
 			{
-			if(r>=sum && r<*ptr + sum)
-				{return ptr-ptr_begin;}
-			sum+=*ptr;
-			++ptr;
-			}
-		fprintf(stderr,"# WARNING: no event matched. Trying again.\n");
-		}
-	while(1);
-	}
-
-SnowflakeModel::Twins<size_t>
-ice_particlesChoose(const SnowflakeModel::ElementRandomizer& randomizer
-	,std::mt19937& randgen)
-	{
-	SNOWFLAKEMODEL_TIMED_SCOPE();
-	return randomizer.elementChoose(randgen);
-	}
-
-glm::vec2 drawFromTriangle(std::mt19937& randgen)
-	{
-	float xi=0;
-	float eta=0;
-	do
-		{
-		xi=U(0.0f,1.0f,randgen);
-		eta=U(0.0f,1.0f,randgen);
-		}
-	while(eta > 1-xi);
-
-	return glm::vec2{xi,eta};
-	}
-
-const SnowflakeModel::VolumeConvex::Face&
-faceChoose(const SnowflakeModel::Solid& s_a,std::mt19937& randgen)
-	{
-	std::vector<float> weights;
-	auto v_current=s_a.subvolumesBegin();
-	while(v_current!=s_a.subvolumesEnd())
-		{
-		weights.push_back(v_current->areaVisibleGet());
-		++v_current;
-		}
-	std::discrete_distribution<size_t> P_v(weights.begin(),weights.end());
-	auto& subvol_sel=s_a.subvolumeGet(P_v(randgen));
-	weights.clear();
-	auto f_i=subvol_sel.facesOutBegin();
-	while(f_i!=subvol_sel.facesOutEnd())
-		{
-		weights.push_back(glm::length(subvol_sel.faceGet(*f_i).m_normal_raw));
-		++f_i;
-		}
-	std::discrete_distribution<size_t> P_f(weights.begin(),weights.end());
-	auto face_out_index=P_f(randgen);
-	auto& ret=subvol_sel.faceOutGet(face_out_index);
-//	subvol_sel.faceOutRemove(face_out_index);
-	subvol_sel.facesMidpointCompute();
-
-	return ret;
-	}
-
-void statsDump(
-	 SnowflakeModel::FileOut* frame_data_file
-	,std::vector<SnowflakeModel::IceParticle>& ice_particles
-	,std::vector<SnowflakeModel::IceParticle>& ice_particles_dropped
-	,const SnowflakeModel::MatrixStorage& C_mat
-	,size_t frame
-	,double tau
-	,const Setup& setup)
-	{
-		auto now=time(nullptr);
-
-		double C_kl_sum=0;
-			{
-			auto elem_current=C_mat.rowGet(1);
-			auto n=C_mat.nColsGet();
-			size_t k=1;
-			while(elem_current!=C_mat.rowGet(C_mat.nRowsGet() -1 ))
+			if(!i->dead())
 				{
-				size_t l=0;
-				while(l!=k)
-					{
-					C_kl_sum+=*elem_current;
-					++l;
-					++elem_current;
-					}
-				elem_current+=n-l;
-				++k;
+				char num_buff[32];
+				sprintf(num_buff,"/geom-%zx.adda",count);
+				SnowflakeModel::FileOut file_out((r_setup.m_output_dir+num_buff).data());
+				SnowflakeModel::VoxelbuilderAdda builder(file_out
+					,r_setup.m_size_x,r_setup.m_size_y,r_setup.m_size_z
+					,i->solidGet().boundingBoxGet());
+
+				i->solidGet().geometrySample(builder);
+				++count;
 				}
+			++i;
+			}
+		}
+
+		{
+		auto i=ice_particles_dropped.begin();
+		size_t count=0;
+		while(i!=ice_particles.end())
+			{
+			char num_buff[16];
+			sprintf(num_buff,"/geom-dropped-%zx.adda",count);
+			SnowflakeModel::FileOut file_out((r_setup.m_output_dir+num_buff).data());
+			SnowflakeModel::VoxelbuilderAdda builder(file_out
+				,r_setup.m_size_x,r_setup.m_size_y,r_setup.m_size_z
+				,i->solidGet().boundingBoxGet());
+
+			i->solidGet().geometrySample(builder);
+			++count;
+			++i;
+			}
+		}
+	}
+
+void Simstate::statsDump() const
+	{
+	if( !(frame_data_file!=nullptr && frame%r_setup.m_stat_saverate==0) )
+		{return;}
+	auto now=time(nullptr);
+
+	double C_kl_sum=0;
+		{
+		auto elem_current=C_mat.rowGet(1);
+		auto n=C_mat.nColsGet();
+		size_t k=1;
+		while(elem_current!=C_mat.rowGet(C_mat.nRowsGet() -1 ))
+			{
+			size_t l=0;
+			while(l!=k)
+				{
+				C_kl_sum+=*elem_current;
+				++l;
+				++elem_current;
+				}
+			elem_current+=n-l;
+			++k;
+			}
 			}
 
 	//	Frame\tClock time\tSimulation time\tN_cloud\tN_drop\tC_kl_sum
@@ -754,16 +866,13 @@ void statsDump(
 			"%.15g\t"
 			"%zu\t"
 			"%zu\t"
-			"%.15g\n",frame,now,tau,setup.m_N,ice_particles_dropped.size()
+			"%.15g\n",frame,now,tau,N_particles,ice_particles_dropped.size()
 			,C_kl_sum);
-
-		fprintf(stderr,"\r# Processing %zu/%zu=%.3g  ",frame,setup.m_N_iter
-			,(double)frame/setup.m_N_iter);
 
 			{
 			char countbuff[32];
 			sprintf(countbuff,"/frame-%zu.txt",frame);
-			SnowflakeModel::FileOut file_out((setup.m_output_dir+countbuff).data());
+			SnowflakeModel::FileOut file_out((r_setup.m_output_dir+countbuff).data());
 			auto i=ice_particles.begin();
 			file_out.printf("# R_max\tVolume\tSpeed\tL_x\tr_xy\tr_xz\tNumber of sub-volumes\n");
 			while(i!=ice_particles.end())
@@ -785,7 +894,7 @@ void statsDump(
 			{
 			char countbuff[32];
 			sprintf(countbuff,"/frame-dropped-%zu.txt",frame);
-			SnowflakeModel::FileOut file_out((setup.m_output_dir+countbuff).data());
+			SnowflakeModel::FileOut file_out((r_setup.m_output_dir+countbuff).data());
 			auto i=ice_particles_dropped.begin();
 			file_out.printf("# R_max\tVolume\tSpeed\tL_x\tr_xy\tr_xz\tNumber of sub-volumes\n");
 			while(i!=ice_particles_dropped.end())
@@ -802,21 +911,13 @@ void statsDump(
 			}
 	}
 
-size_t ice_particleDeadFind(std::vector<SnowflakeModel::IceParticle>& ice_particles)
-	{
-	auto i=ice_particles.begin();
-	while(i!=ice_particles.end())
-		{
-		if(i->dead())
-			{return i-ice_particles.begin();}
-		++i;
-		}
-	return i-ice_particles.begin();
-	}
-
-void Simstate::step()
+bool Simstate::step()
 	{
 	SNOWFLAKEMODEL_TIMED_SCOPE();
+	//TODO: frame/N_iter only works for fixed number of iterations
+	if(frame%256==0)
+		{fprintf(stderr,"\r# Running simulation. %.3g%% done.",progressGet()*100);}
+
 	auto pair_merge=ice_particlesChoose(randomizer,randgen);
 	tau+=-log(U(0.0,1.0,randgen))/double(C_mat.sumGetMt());
 
@@ -827,6 +928,7 @@ void Simstate::step()
 			{
 			fprintf(stderr,"\n# Event rejected %zu: Cloud is full %zu %zu"
 				,frame,N_particles,k);
+			return 0;
 			}
 		else
 			{
@@ -834,12 +936,7 @@ void Simstate::step()
 			++N_particles;
 			matrixRowUpdate(k,ice_particles,C_mat,r_setup);
 			++frame;
-			if((r_setup.m_actions&Setup::STATS_DUMP)
-				&& frame_data_file!=nullptr && frame%r_setup.m_stat_saverate==0 )
-				{
-				statsDump(frame_data_file,ice_particles
-					,ice_particles_dropped,C_mat,frame,tau,r_setup);
-				}
+			return 1;
 			}
 		}
 	else
@@ -851,12 +948,7 @@ void Simstate::step()
 		--N_particles;
 		matrixRowUpdate(k,ice_particles,C_mat,r_setup);
 		++frame;
-		if((r_setup.m_actions&Setup::STATS_DUMP)
-			&& frame_data_file!=nullptr && frame%r_setup.m_stat_saverate==0 )
-			{
-			statsDump(frame_data_file,ice_particles
-				,ice_particles_dropped,C_mat,frame,tau,r_setup);
-			}
+		return 1;
 		}
 	else
 	if(pair_merge.second==ice_particles.size())
@@ -866,12 +958,7 @@ void Simstate::step()
 		--N_particles;
 		matrixRowUpdate(k,ice_particles,C_mat,r_setup);
 		++frame;
-		if((r_setup.m_actions&Setup::STATS_DUMP)
-			&& frame_data_file!=nullptr && frame%r_setup.m_stat_saverate==0 )
-			{
-			statsDump(frame_data_file,ice_particles
-				,ice_particles_dropped,C_mat,frame,tau,r_setup);
-			}
+		return 1;
 		}
 	else
 		{
@@ -915,12 +1002,7 @@ void Simstate::step()
 			matrixRowUpdate(pair_merge.first,ice_particles,C_mat,r_setup);
 			matrixRowUpdate(pair_merge.second,ice_particles,C_mat,r_setup);
 			++frame;
-			if((r_setup.m_actions&Setup::STATS_DUMP)
-				&& frame_data_file!=nullptr && frame%r_setup.m_stat_saverate==0 )
-				{
-				statsDump(frame_data_file,ice_particles
-					,ice_particles_dropped,C_mat,frame,tau,r_setup);
-				}
+			return 1;
 			}
 #ifndef NDEBUG
 		else
@@ -928,7 +1010,9 @@ void Simstate::step()
 			fprintf(stderr,"# Event %zu rejected: Overlap\n",frame);
 			}
 #endif
+		return 0;
 		}
+	return 0;
 	}
 
 int main(int argc,char** argv)
@@ -971,184 +1055,36 @@ int main(int argc,char** argv)
 			}
 
 
+		fprintf(stderr,"# Initializing\n");
 		Simstate state(setup,s_in);
-
-
-		std::mt19937 randgen(setup.m_seed);
-	//	http://www0.cs.ucl.ac.uk/staff/d.jones/GoodPracticeRNG.pdf
-		randgen.discard(65536);
 		setup.paramsDump();
 		fflush(stdout);
-		fprintf(stderr,"# Initializing\n");
-
-
-		std::vector<SnowflakeModel::IceParticle> ice_particles;
-		SnowflakeModel::MatrixStorage C_mat(setup.m_N+1,setup.m_N+1);
-		init(s_in,setup,randgen,ice_particles,C_mat);
-		SnowflakeModel::ElementRandomizer randomizer(C_mat);
-
-		std::uniform_int_distribution<int> U_rot(0,5);
-
 		fprintf(stderr,"# Running simulation\n");
 
-		SnowflakeModel::FileOut* frame_data_file=nullptr;
-		if(setup.m_actions&Setup::STATS_DUMP)
+		state.statsDump();
+		while(state.progressGet()<1.0)
 			{
-			mkdir(setup.m_output_dir.data(),S_IRWXU|S_IRGRP|S_IXGRP);
-			frame_data_file=new SnowflakeModel::FileOut(
-				(setup.m_output_dir+"/frame_data.txt").data()
-				);
-
-			frame_data_file->printf("# Frame\tClock time\tSimulation time\tN_cloud\tN_drop\tC_kl_sum\n");
+			if(state.step())
+				{state.statsDump();}
 			}
-
-		size_t frame=0;
-		double tau=0;
-		std::vector<SnowflakeModel::IceParticle> ice_particles_dropped;
-		if((setup.m_actions&Setup::STATS_DUMP)
-			&& frame_data_file!=nullptr && frame%setup.m_stat_saverate==0 )
-			{
-			statsDump(frame_data_file,ice_particles,ice_particles_dropped,C_mat
-				,frame,tau,setup);
-			}
-		while(frame!=setup.m_N_iter)
-			{
-			state.step();
-			}
-
-		if((setup.m_actions&Setup::STATS_DUMP) && frame_data_file!=nullptr)
-			{
-			statsDump(frame_data_file,ice_particles
-				,ice_particles_dropped,C_mat,frame,tau,setup);
-			}
+		state.statsDump();
 
 		if(setup.m_actions&Setup::GEOMETRY_DUMP)
 			{
 			fprintf(stderr,"# Dumping wavefront files\n");
-				{
-				auto i=ice_particles.begin();
-				size_t count=0;
-				while(i!=ice_particles.end())
-					{
-					if(!i->dead())
-						{
-						char num_buff[16];
-						sprintf(num_buff,"/mesh-%zx.obj",count);
-						SnowflakeModel::FileOut file_out(
-							(setup.m_output_dir+num_buff).data()
-							);
-						SnowflakeModel::SolidWriter writer(file_out);
-						writer.write(i->solidGet());
-						++count;
-						}
-					++i;
-					}
-				}
-
-				{
-				auto i=ice_particles_dropped.begin();
-				size_t count=0;
-				while(i!=ice_particles_dropped.end())
-					{
-					char num_buff[32];
-					sprintf(num_buff,"/mesh-dropped-%zx.obj",count);
-					SnowflakeModel::FileOut file_out(
-						(setup.m_output_dir+num_buff).data()
-						);
-					SnowflakeModel::SolidWriter writer(file_out);
-					writer.write(i->solidGet());
-					++count;
-					++i;
-					}
-				}
+			state.geometryDump();
 			}
 
 		if(setup.m_actions&Setup::GEOMETRY_DUMP_ICE)
 			{
 			fprintf(stderr,"# Dumping crystal prototype files\n");
-				{
-				auto i=ice_particles.begin();
-				size_t count=0;
-				while(i!=ice_particles.end())
-					{
-					if(!i->dead())
-						{
-						char num_buff[16];
-						sprintf(num_buff,"/mesh-%zx.ice",count);
-						SnowflakeModel::FileOut file_out(
-							(setup.m_output_dir+num_buff).data()
-							);
-						SnowflakeModel::SolidWriterPrototype writer(file_out);
-						writer.write(i->solidGet());
-						++count;
-						}
-					++i;
-					}
-				}
-
-				{
-				auto i=ice_particles_dropped.begin();
-				size_t count=0;
-				while(i!=ice_particles_dropped.end())
-					{
-					char num_buff[32];
-					sprintf(num_buff,"/mesh-dropped-%zx.obj",count);
-					SnowflakeModel::FileOut file_out(
-						(setup.m_output_dir+num_buff).data()
-						);
-					SnowflakeModel::SolidWriter writer(file_out);
-					writer.write(i->solidGet());
-					++count;
-					++i;
-					}
-				}
+			state.prototypesDump();
 			}
 
 		if(setup.m_actions&Setup::GEOMETRY_SAMPLE)
 			{
 			fprintf(stderr,"# Dumping adda files\n");
-				{
-				auto i=ice_particles.begin();
-				size_t count=0;
-				while(i!=ice_particles.end())
-					{
-					if(!i->dead())
-						{
-						char num_buff[32];
-						sprintf(num_buff,"/geom-%zx.adda",count);
-						SnowflakeModel::FileOut file_out(
-							(setup.m_output_dir+num_buff).data()
-							);
-						SnowflakeModel::VoxelbuilderAdda builder(file_out
-							,setup.m_size_x,setup.m_size_y,setup.m_size_z
-							,i->solidGet().boundingBoxGet());
-
-						i->solidGet().geometrySample(builder);
-						++count;
-						}
-					++i;
-					}
-				}
-
-				{
-				auto i=ice_particles_dropped.begin();
-				size_t count=0;
-				while(i!=ice_particles.end())
-					{
-					char num_buff[16];
-					sprintf(num_buff,"/geom-dropped-%zx.adda",count);
-					SnowflakeModel::FileOut file_out(
-						(setup.m_output_dir+num_buff).data()
-						);
-					SnowflakeModel::VoxelbuilderAdda builder(file_out
-						,setup.m_size_x,setup.m_size_y,setup.m_size_z
-						,i->solidGet().boundingBoxGet());
-
-					i->solidGet().geometrySample(builder);
-					++count;
-					++i;
-					}
-				}
+			state.rasterize();
 			}
 		}
 	catch(const char* message)
