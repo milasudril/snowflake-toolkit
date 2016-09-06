@@ -6,15 +6,22 @@ struct Foo
 	{
 	int64_t x;
 	double y;
-
-	static const SnowflakeModel::DataDump::FieldDescriptor s_fields[];
 	};
 
-const SnowflakeModel::DataDump::FieldDescriptor Foo::s_fields[]=
+namespace SnowflakeModel
+	{
+	template<>
+	struct MetaObject<Foo>
 		{
-		 {"x",SnowflakeModel::offsetof(&Foo::x),SnowflakeModel::DataDump::Type::INTEGER}
-		,{"y",SnowflakeModel::offsetof(&Foo::y),SnowflakeModel::DataDump::Type::DOUBLE}
+		static constexpr const DataDump::FieldDescriptor fields[]=
+			{
+			 {"x",SnowflakeModel::offsetof(&Foo::x),SnowflakeModel::DataDump::Type::INTEGER}
+			,{"y",SnowflakeModel::offsetof(&Foo::y),SnowflakeModel::DataDump::Type::DOUBLE}
+			};
+
 		};
+	constexpr const DataDump::FieldDescriptor MetaObject<Foo>::fields[];
+	}
 
 int main()
 	{
@@ -22,5 +29,13 @@ int main()
 
 	Foo obj{1,2.0};
 	dump.write("obj",&obj,1);
+
+	std::string str("Flygande bäckasiner söka hwila på mjuka tufvor");
+	dump.write("str",str.data(),str.size());
+	dump.write("str2",&str,1);
+
+	long x[4]={1,2,3,4};
+	dump.write("x",x,4);
+
 	return 0;
 	}
