@@ -21,6 +21,7 @@
 #include "element_randomizer.h"
 #include "profile.h"
 #include "ctrlchandler.h"
+#include "getdate.h"
 
 #include <getopt.h>
 #include <glm/gtc/constants.hpp>
@@ -1015,6 +1016,8 @@ bool Simstate::step()
 	return 0;
 	}
 
+
+
 int main(int argc,char** argv)
 	{
 	try
@@ -1060,8 +1063,8 @@ int main(int argc,char** argv)
 		setup.paramsDump();
 		Simstate state(setup,s_in);
 		fflush(stdout);
-		fprintf(stderr,"# Running simulation\n");
-
+		auto now=SnowflakeModel::getdate();
+		fprintf(stderr,"# Simulation started at %s\n",now.c_str());
 		state.statsDump();
 		while(state.progressGet()<1.0 && !stopper.captured())
 			{
