@@ -18,20 +18,39 @@
 
 using namespace SnowflakeModel;
 
-static const H5::PredType& mapType(DataDump::Type type)
+static H5::DataType mapType(DataDump::Type type)
 	{
 	switch(type)
 		{
-		case DataDump::Type::INTEGER:
-			return H5::PredType::NATIVE_INT64;
+		case DataDump::Type::CHAR:
+			return H5::PredType::NATIVE_CHAR;
+		case DataDump::Type::SHORT:
+			return H5::PredType::NATIVE_SHORT;
+		case DataDump::Type::INT:
+			return H5::PredType::NATIVE_INT;
+		case DataDump::Type::LONG:
+			return H5::PredType::NATIVE_LONG;
+		case DataDump::Type::LONGLONG:
+			return H5::PredType::NATIVE_LLONG;
+		case DataDump::Type::FLOAT:
+			return H5::PredType::NATIVE_FLOAT;
 		case DataDump::Type::DOUBLE:
 			return H5::PredType::NATIVE_DOUBLE;
-	/*	FIXME: HDF5 cannot handle std::string so this needs to be handled differently
+		case DataDump::Type::UCHAR:
+			return H5::PredType::NATIVE_UCHAR;
+		case DataDump::Type::USHORT:
+			return H5::PredType::NATIVE_USHORT;
+		case DataDump::Type::UINT:
+			return H5::PredType::NATIVE_UINT;
+		case DataDump::Type::ULONG:
+			return H5::PredType::NATIVE_ULONG;
+		case DataDump::Type::ULONGLONG:
+			return H5::PredType::NATIVE_ULLONG;
 		case DataDump::Type::STRING:
-			return H5::PredType::C_S1;*/
+			return H5::StrType(H5::PredType::C_S1, H5T_VARIABLE);
 		}
 //	This should never happen
-	return H5::PredType::NATIVE_INT64;
+	return H5::PredType::NATIVE_CHAR;
 	}
 
 std::unique_ptr<H5::CompType,void(*)(H5::CompType*)>

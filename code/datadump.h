@@ -36,7 +36,64 @@ namespace SnowflakeModel
 			DataDump(const char* filename);
 			~DataDump();
 
-			enum class Type:size_t{INTEGER,DOUBLE};
+			enum class Type:size_t{CHAR,SHORT,INT,LONG,LONGLONG
+				,FLOAT,DOUBLE
+				,UCHAR,USHORT,UINT,ULONG,ULONGLONG,STRING};
+
+			template<class T,bool dummy=0>
+			struct FieldType;
+
+			template<bool dummy>
+			struct FieldType<char,dummy>
+				{static constexpr Type type_id=Type::CHAR;};
+
+			template<bool dummy>
+			struct FieldType<short,dummy>
+				{static constexpr Type type_id=Type::SHORT;};
+
+			template<bool dummy>
+			struct FieldType<int,dummy>
+				{static constexpr Type type_id=Type::INT;};
+
+			template<bool dummy>
+			struct FieldType<long,dummy>
+				{static constexpr Type type_id=Type::LONG;};
+
+			template<bool dummy>
+			struct FieldType<long long,dummy>
+				{static constexpr Type type_id=Type::LONGLONG;};
+
+			template<bool dummy>
+			struct FieldType<unsigned char,dummy>
+				{static constexpr Type type_id=Type::UCHAR;};
+
+			template<bool dummy>
+			struct FieldType<unsigned short,dummy>
+				{static constexpr Type type_id=Type::USHORT;};
+
+			template<bool dummy>
+			struct FieldType<unsigned int,dummy>
+				{static constexpr Type type_id=Type::UINT;};
+
+			template<bool dummy>
+			struct FieldType<unsigned long,dummy>
+				{static constexpr Type type_id=Type::ULONG;};
+
+			template<bool dummy>
+			struct FieldType<unsigned long long,dummy>
+				{static constexpr Type type_id=Type::ULONGLONG;};
+
+			template<bool dummy>
+			struct FieldType<float,dummy>
+				{static constexpr Type type_id=Type::FLOAT;};
+
+			template<bool dummy>
+			struct FieldType<double,dummy>
+				{static constexpr Type type_id=Type::DOUBLE;};
+
+			template<bool dummy>
+			struct FieldType<const char*,dummy>
+				{static constexpr Type type_id=Type::STRING;};
 
 			struct FieldDescriptor
 				{

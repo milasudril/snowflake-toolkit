@@ -6,6 +6,7 @@ struct Foo
 	{
 	int64_t x;
 	double y;
+	const char* str;
 	};
 
 namespace SnowflakeModel
@@ -15,8 +16,9 @@ namespace SnowflakeModel
 		{
 		static constexpr const DataDump::FieldDescriptor fields[]=
 			{
-			 {"x",SnowflakeModel::offsetof(&Foo::x),SnowflakeModel::DataDump::Type::INTEGER}
-			,{"y",SnowflakeModel::offsetof(&Foo::y),SnowflakeModel::DataDump::Type::DOUBLE}
+			 {"x",SnowflakeModel::offsetof(&Foo::x),SnowflakeModel::DataDump::FieldType<decltype(Foo::x)>::type_id}
+			,{"y",SnowflakeModel::offsetof(&Foo::y),SnowflakeModel::DataDump::FieldType<decltype(Foo::y)>::type_id}
+			,{"str",SnowflakeModel::offsetof(&Foo::str),SnowflakeModel::DataDump::FieldType<decltype(Foo::str)>::type_id}
 			};
 
 		};
@@ -27,7 +29,7 @@ int main()
 	{
 	SnowflakeModel::DataDump dump("test.h5");
 
-	Foo obj{1,2.0};
+	Foo obj{1,2.0,"Hello, World"};
 	dump.write("obj",&obj,1);
 
 	std::string str("Flygande bäckasiner söka hwila på mjuka tufvor");
