@@ -14,6 +14,8 @@ namespace H5
 	{
 	class H5File;
 	class DataType;
+	class Group;
+	class StrType;
 	}
 
 namespace SnowflakeModel
@@ -31,6 +33,7 @@ namespace SnowflakeModel
 		{
 		public:
 			typedef std::unique_ptr<H5::DataType,void(*)(H5::DataType*)> DataTypeHandle;
+			typedef std::unique_ptr<H5::Group,void(*)(H5::Group*)> GroupHandle;
 
 			DataDump(const char* filename);
 			~DataDump();
@@ -47,6 +50,17 @@ namespace SnowflakeModel
 				{
 				public:
 					const H5::DataType& typeGet() const noexcept;
+				};
+
+			template<class T>
+			class MetaObject<T,typename std::enable_if<std::is_same<T,const char*>::value>::type>
+				{
+				public:
+					MetaObject();
+					const H5::DataType& typeGet() const noexcept
+						{return r_cstr;}
+				private:
+					const H5::DataType& r_cstr;
 				};
 
 			template<class T>
@@ -74,13 +88,17 @@ namespace SnowflakeModel
 			DataTypeHandle compoundMake(const FieldDescriptor* fields
 				,size_t n_fields,size_t struct_size);
 
+			GroupHandle groupCreate(const char* name);
+
 		private:
 			static void deleter(H5::DataType* obj);
+			static void deleter(H5::Group* obj);
 
 			void dataWrite(const H5::DataType& type,const char* objname
 				,size_t n_elems,const void* data);
 
 			std::unique_ptr<H5::H5File> m_file;
+			static H5::StrType s_cstr;
 		};
 
 	template<>

@@ -33,7 +33,7 @@ namespace SnowflakeModel
 		 {"obj",SnowflakeModel::offsetOf(&Foo::obj),bar.typeGet()}
 		,{"x",SnowflakeModel::offsetOf(&Foo::x),SnowflakeModel::DataDump::MetaObject<decltype(Foo::x)>().typeGet()}
 		,{"y",SnowflakeModel::offsetOf(&Foo::y),SnowflakeModel::DataDump::MetaObject<decltype(Foo::y)>().typeGet()}
-	//	,{"str",SnowflakeModel::offsetOf(&Foo::str),,SnowflakeModel::MetaObject<decltype(Foo::str)>().typeGet()}
+		,{"str",SnowflakeModel::offsetOf(&Foo::str),SnowflakeModel::DataDump::MetaObject<decltype(Foo::str)>().typeGet()}
 		};
 	}
 

@@ -394,10 +394,58 @@ void helpShow()
 		);
 	}
 
+struct DeformationDataTrivial
+	{
+	const char* name;
+	double mean;
+	double standard_deviation;
+	};
+
+namespace SnowflakeModel
+	{
+	template<>
+	const DataDump::FieldDescriptor DataDump::MetaObject<DeformationDataTrivial>::fields[]=
+		{
+		 {"name",offsetOf(&DeformationDataTrivial::name),DataDump::MetaObject<decltype(DeformationDataTrivial::name)>().typeGet()}
+		,{"mean",offsetOf(&DeformationDataTrivial::mean),DataDump::MetaObject<decltype(DeformationDataTrivial::mean)>().typeGet()}
+		,{"standard_deviation",offsetOf(&DeformationDataTrivial::standard_deviation),DataDump::MetaObject<decltype(DeformationDataTrivial::standard_deviation)>().typeGet()}
+		};
+
+	template<>
+	const DataDump::FieldDescriptor DataDump::MetaObject<Setup>::fields[]=
+		{
+		 {"actions",offsetOf(&Setup::m_actions),DataDump::MetaObject<decltype(Setup::m_actions)>().typeGet()}
+		,{"stat_saverate",offsetOf(&Setup::m_stat_saverate),DataDump::MetaObject<decltype(Setup::m_stat_saverate)>().typeGet()}
+		,{"size_x",offsetOf(&Setup::m_size_x),DataDump::MetaObject<decltype(Setup::m_size_x)>().typeGet()}
+		,{"size_y",offsetOf(&Setup::m_size_y),DataDump::MetaObject<decltype(Setup::m_size_y)>().typeGet()}
+		,{"size_z",offsetOf(&Setup::m_size_z),DataDump::MetaObject<decltype(Setup::m_size_z)>().typeGet()}
+		,{"N",offsetOf(&Setup::m_N),DataDump::MetaObject<decltype(Setup::m_N)>().typeGet()}
+		,{"N_iter",offsetOf(&Setup::m_N_iter),DataDump::MetaObject<decltype(Setup::m_N_iter)>().typeGet()}
+		,{"seed",offsetOf(&Setup::m_seed),DataDump::MetaObject<decltype(Setup::m_seed)>().typeGet()}
+		,{"droprate",offsetOf(&Setup::m_droprate),DataDump::MetaObject<decltype(Setup::m_droprate)>().typeGet()}
+		,{"growthrate",offsetOf(&Setup::m_growthrate),DataDump::MetaObject<decltype(Setup::m_growthrate)>().typeGet()}
+		,{"meltrate",offsetOf(&Setup::m_meltrate),DataDump::MetaObject<decltype(Setup::m_meltrate)>().typeGet()}
+		};
+	}
+
 void Setup::write(SnowflakeModel::DataDump& dump)
 	{
-	struct Trivial
-		{};
+	auto group=dump.groupCreate("setup");
+	dump.write("setup/output_dir",&m_output_dir,1);
+	dump.write("setup/crystal",&m_crystal,1);
+
+		{
+		std::vector<DeformationDataTrivial> deformations;
+		auto ptr=m_deformations.data();
+		auto ptr_end=ptr+m_deformations.size();
+		while(ptr!=ptr_end)
+			{
+			deformations.push_back({ptr->name.c_str(),ptr->mean,ptr->standard_deviation});
+			++ptr;
+			}
+		dump.write("setup/deformations",deformations.data(),deformations.size());
+		}
+	dump.write("setup/data",this,1);
 	}
 
 

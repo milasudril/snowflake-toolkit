@@ -18,6 +18,8 @@
 
 using namespace SnowflakeModel;
 
+H5::StrType DataDump::s_cstr(H5::PredType::C_S1, H5T_VARIABLE);
+
 namespace SnowflakeModel
 {
 template<>
@@ -69,7 +71,11 @@ const H5::DataType& DataDump::MetaObject<unsigned long>::typeGet() const noexcep
 template<>
 const H5::DataType& DataDump::MetaObject<unsigned long long>::typeGet() const noexcept
 	{return H5::PredType::NATIVE_ULLONG;}
+
+template<>
+DataDump::MetaObject<const char*>::MetaObject():r_cstr(s_cstr){}
 }
+
 
 
 
@@ -98,6 +104,11 @@ void DataDump::dataWrite(const H5::DataType& type,const char* objname
 	ds.write(data,type);
 	}
 
+DataDump::GroupHandle DataDump::groupCreate(const char* name)
+	{
+	return GroupHandle(new H5::Group(m_file->createGroup(name)), deleter);
+	}
+
 DataDump::DataDump(const char* filename):
 	m_file(new H5::H5File(filename, H5F_ACC_TRUNC))
 	{}
@@ -108,6 +119,8 @@ DataDump::~DataDump()
 void DataDump::deleter(H5::DataType* obj)
 	{delete obj;}
 
+void DataDump::deleter(H5::Group* obj)
+	{delete obj;}
 
 template<>
 void DataDump::write<char>(const char* objname,const char* data,size_t n_elems)
@@ -198,6 +211,5 @@ void DataDump::write<std::string>(const char* objname,const std::string* data,si
 		++pos;
 		}
 
-	H5::StrType datatype(H5::PredType::C_S1, H5T_VARIABLE);
-	dataWrite(datatype,objname,strptr.size(),strptr.data());
+	dataWrite(s_cstr,objname,strptr.size(),strptr.data());
 	}
