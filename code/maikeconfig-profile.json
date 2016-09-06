@@ -25,7 +25,7 @@
                     ],
                     "name":"g++"
                 },
-                "cflags_extra":["O2","march=native","DPROFILE"],
+                "cflags_extra":["O2","march=native","DPROFILE","DNDEBUG"],
                 "cflags_format":"-^",
                 "cxxversion_max":-1,
                 "cxxversion_min":201103,

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-dir_out=/home/torbjorr/snowflakeout-rates-1
+dir_out=/home/torbjorr/temp
 k=22000000
 l=1000
 m=20000
