@@ -18,62 +18,75 @@
 
 using namespace SnowflakeModel;
 
-static H5::DataType mapType(DataDump::Type type)
-	{
-	switch(type)
-		{
-		case DataDump::Type::CHAR:
-			return H5::PredType::NATIVE_CHAR;
-		case DataDump::Type::SHORT:
-			return H5::PredType::NATIVE_SHORT;
-		case DataDump::Type::INT:
-			return H5::PredType::NATIVE_INT;
-		case DataDump::Type::LONG:
-			return H5::PredType::NATIVE_LONG;
-		case DataDump::Type::LONGLONG:
-			return H5::PredType::NATIVE_LLONG;
-		case DataDump::Type::FLOAT:
-			return H5::PredType::NATIVE_FLOAT;
-		case DataDump::Type::DOUBLE:
-			return H5::PredType::NATIVE_DOUBLE;
-		case DataDump::Type::UCHAR:
-			return H5::PredType::NATIVE_UCHAR;
-		case DataDump::Type::USHORT:
-			return H5::PredType::NATIVE_USHORT;
-		case DataDump::Type::UINT:
-			return H5::PredType::NATIVE_UINT;
-		case DataDump::Type::ULONG:
-			return H5::PredType::NATIVE_ULONG;
-		case DataDump::Type::ULONGLONG:
-			return H5::PredType::NATIVE_ULLONG;
-		case DataDump::Type::STRING:
-			return H5::StrType(H5::PredType::C_S1, H5T_VARIABLE);
-		}
-//	This should never happen
-	return H5::PredType::NATIVE_CHAR;
-	}
+namespace SnowflakeModel
+{
+template<>
+const H5::DataType& DataDump::MetaObject<char>::typeGet() const noexcept
+	{return H5::PredType::NATIVE_CHAR;}
 
-std::unique_ptr<H5::CompType,void(*)(H5::CompType*)>
+template<>
+const H5::DataType& DataDump::MetaObject<short>::typeGet() const noexcept
+	{return H5::PredType::NATIVE_SHORT;}
+
+template<>
+const H5::DataType& DataDump::MetaObject<int>::typeGet() const noexcept
+	{return H5::PredType::NATIVE_INT;}
+
+template<>
+const H5::DataType& DataDump::MetaObject<long>::typeGet() const noexcept
+	{return H5::PredType::NATIVE_LONG;}
+
+template<>
+const H5::DataType& DataDump::MetaObject<long long>::typeGet() const noexcept
+	{return H5::PredType::NATIVE_LLONG;}
+
+template<>
+const H5::DataType& DataDump::MetaObject<float>::typeGet() const noexcept
+	{return H5::PredType::NATIVE_FLOAT;}
+
+template<>
+const H5::DataType& DataDump::MetaObject<double>::typeGet() const noexcept
+	{return H5::PredType::NATIVE_DOUBLE;}
+
+
+
+template<>
+const H5::DataType& DataDump::MetaObject<unsigned char>::typeGet() const noexcept
+	{return H5::PredType::NATIVE_UCHAR;}
+
+template<>
+const H5::DataType& DataDump::MetaObject<unsigned short>::typeGet() const noexcept
+	{return H5::PredType::NATIVE_USHORT;}
+
+template<>
+const H5::DataType& DataDump::MetaObject<unsigned int>::typeGet() const noexcept
+	{return H5::PredType::NATIVE_UINT;}
+
+template<>
+const H5::DataType& DataDump::MetaObject<unsigned long>::typeGet() const noexcept
+	{return H5::PredType::NATIVE_ULONG;}
+
+template<>
+const H5::DataType& DataDump::MetaObject<unsigned long long>::typeGet() const noexcept
+	{return H5::PredType::NATIVE_ULLONG;}
+}
+
+
+
+DataDump::DataTypeHandle
 	DataDump::compoundMake(const FieldDescriptor* fields
 	,size_t n_fields,size_t struct_size)
 	{
-	std::unique_ptr<H5::CompType,void(*)(H5::CompType*)> ret
-		(new H5::CompType(struct_size),deleter);
+	auto obj=new H5::CompType(struct_size);
 
 	auto fields_end=fields+n_fields;
 	while(fields!=fields_end)
 		{
-		ret->insertMember(fields->name,fields->offset,mapType(fields->type));
+		obj->insertMember(fields->name,fields->offset,fields->type);
 		++fields;
 		}
 
-	return std::move(ret);
-	}
-
-void DataDump::dataWrite(const H5::CompType& type,const char* objname
-	,size_t n_elems,const void* data)
-	{
-	dataWrite(static_cast<const H5::DataType&>(type),objname,n_elems,data);
+	return DataTypeHandle(obj,deleter);
 	}
 
 void DataDump::dataWrite(const H5::DataType& type,const char* objname
@@ -92,7 +105,7 @@ DataDump::DataDump(const char* filename):
 DataDump::~DataDump()
 	{}
 
-void DataDump::deleter(H5::CompType* obj)
+void DataDump::deleter(H5::DataType* obj)
 	{delete obj;}
 
 

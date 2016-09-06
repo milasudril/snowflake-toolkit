@@ -1,12 +1,13 @@
 //@	{
-//@	    "dependencies_extra":[],
-//@	    "targets":[
-//@	        {
-//@	            "dependencies":[],
-//@	            "name":"snowflake_simulate3",
-//@	            "type":"application"
-//@	        }
-//@	    ]
+//@	"dependencies_extra":[],
+//@		"targets":[
+//@			{
+//@			 "dependencies":[]
+//@			,"name":"snowflake_simulate3"
+//@			,"type":"application"
+//@			,"cxxoptions":{"cflags_extra":["L/usr/lib/x86_64-linux-gnu/hdf5/serial"]}
+//@			}
+//@		]
 //@	}
 #include "config_parser.h"
 #include "solid_loader.h"
@@ -22,6 +23,8 @@
 #include "profile.h"
 #include "ctrlchandler.h"
 #include "getdate.h"
+#include "filenameesc.h"
+#include "datadump.h"
 
 #include <getopt.h>
 #include <glm/gtc/constants.hpp>
@@ -115,6 +118,7 @@ struct Setup
 
 	Setup(int argc,char** argv);
 	void paramsDump();
+	void write(SnowflakeModel::DataDump& dump);
 	};
 
 Setup::Setup(int argc,char** argv):
@@ -389,6 +393,15 @@ void helpShow()
 		"--meltrate=value\n"
 		);
 	}
+
+void Setup::write(SnowflakeModel::DataDump& dump)
+	{
+	struct Trivial
+		{};
+	}
+
+
+
 
 size_t U(size_t a,size_t b,std::mt19937& randgen)
 	{
@@ -1072,6 +1085,13 @@ int main(int argc,char** argv)
 				{state.statsDump();}
 			}
 		fprintf(stderr,"\n# Exiting\n");
+			{
+			auto filename_dump=SnowflakeModel::filenameEscape(now.c_str());
+			filename_dump+=".h5";
+			fprintf(stderr,"# Dumping simulation state to %s\n",filename_dump.c_str());
+			SnowflakeModel::DataDump dump(filename_dump.c_str());
+			setup.write(dump);
+			}
 
 		state.statsDump();
 

@@ -2,8 +2,15 @@
 
 #include "datadump.h"
 
+struct Bar
+	{
+	float a;
+	float b;
+	};
+
 struct Foo
 	{
+	Bar obj;
 	int64_t x;
 	double y;
 	const char* str;
@@ -12,24 +19,29 @@ struct Foo
 namespace SnowflakeModel
 	{
 	template<>
-	struct MetaObject<Foo>
+	const DataDump::FieldDescriptor DataDump::MetaObject<Bar>::fields[]=
 		{
-		static constexpr const DataDump::FieldDescriptor fields[]=
-			{
-			 {"x",SnowflakeModel::offsetof(&Foo::x),SnowflakeModel::DataDump::FieldType<decltype(Foo::x)>::type_id}
-			,{"y",SnowflakeModel::offsetof(&Foo::y),SnowflakeModel::DataDump::FieldType<decltype(Foo::y)>::type_id}
-			,{"str",SnowflakeModel::offsetof(&Foo::str),SnowflakeModel::DataDump::FieldType<decltype(Foo::str)>::type_id}
-			};
-
+		 {"a",SnowflakeModel::offsetOf(&Bar::a),SnowflakeModel::DataDump::MetaObject<decltype(Bar::a)>().typeGet()}
+		,{"b",SnowflakeModel::offsetOf(&Bar::b),SnowflakeModel::DataDump::MetaObject<decltype(Bar::b)>().typeGet()}
 		};
-	constexpr const DataDump::FieldDescriptor MetaObject<Foo>::fields[];
+
+	static const DataDump::MetaObject<Bar> bar;
+
+	template<>
+	const DataDump::FieldDescriptor DataDump::MetaObject<Foo>::fields[]=
+		{
+		 {"obj",SnowflakeModel::offsetOf(&Foo::obj),bar.typeGet()}
+		,{"x",SnowflakeModel::offsetOf(&Foo::x),SnowflakeModel::DataDump::MetaObject<decltype(Foo::x)>().typeGet()}
+		,{"y",SnowflakeModel::offsetOf(&Foo::y),SnowflakeModel::DataDump::MetaObject<decltype(Foo::y)>().typeGet()}
+	//	,{"str",SnowflakeModel::offsetOf(&Foo::str),,SnowflakeModel::MetaObject<decltype(Foo::str)>().typeGet()}
+		};
 	}
 
 int main()
 	{
 	SnowflakeModel::DataDump dump("test.h5");
 
-	Foo obj{1,2.0,"Hello, World"};
+	Foo obj{{2.2f,245.0f},1,2.0,"Hello, World"};
 	dump.write("obj",&obj,1);
 
 	std::string str("Flygande bäckasiner söka hwila på mjuka tufvor");
