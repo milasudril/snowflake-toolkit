@@ -722,25 +722,60 @@ class Simstate
 
 		void rasterize() const;
 
+		void write(SnowflakeModel::DataDump& dump) const;
+
 	private:
+	/*	typedef std::mersenne_twister_engine<
+			uint32_t,
+			32, 624, 397, 31,
+			0x9908b0dfUL, 11,
+			0xffffffffUL, 7,
+			0x9d2c5680UL, 15,
+			0xefc60000UL, 18, 1812433253UL> mt32;*/
+
+
 		const Setup& r_setup;
 		const SnowflakeModel::Solid& r_s_in;
 		double tau;
 		size_t frame;
+		size_t N_particles;
 		SnowflakeModel::MatrixStorage C_mat;
-		SnowflakeModel::ElementRandomizer randomizer;
 		std::mt19937 randgen;
 		std::vector<SnowflakeModel::IceParticle> ice_particles;
 		std::vector<SnowflakeModel::IceParticle> ice_particles_dropped;
-		size_t N_particles;
-		SnowflakeModel::FileOut* frame_data_file;
-		std::uniform_int_distribution<int> U_rot;
+		std::uniform_int_distribution<int> U_rot; //Stateless
+		SnowflakeModel::ElementRandomizer randomizer; //Stateless
+		SnowflakeModel::FileOut* frame_data_file; //Stateless. Remember to append to this file when restoring state from savefile.
+
+		friend class SnowflakeModel::DataDump::MetaObject<Simstate>;
 	};
 
+namespace SnowflakeModel
+	{
+	template<>
+	const DataDump::FieldDescriptor DataDump::MetaObject<Simstate>::fields[]=
+		{
+		 {"tau",offsetOf(&Simstate::tau),DataDump::MetaObject<decltype(Simstate::tau)>().typeGet()}
+		,{"frame",offsetOf(&Simstate::frame),DataDump::MetaObject<decltype(Simstate::frame)>().typeGet()}
+		,{"N_particles",offsetOf(&Simstate::N_particles),DataDump::MetaObject<decltype(Simstate::N_particles)>().typeGet()}
+		};
+	}
+
+void Simstate::write(SnowflakeModel::DataDump& dump) const
+	{
+	auto group=dump.groupCreate("simstate");
+	dump.write("simstate/data",this,1);
+/*	dump.write("simstate/randgen"
+		,reinterpret_cast<const uint32_t*>(&randgen)
+		,*/
+	fprintf(stderr,"Mt size: %zu\n",sizeof(randgen));
+	}
+
 Simstate::Simstate(const Setup& setup,const SnowflakeModel::Solid& s_in):
-	 r_setup(setup),r_s_in(s_in),tau(0.0),frame(0),C_mat(setup.m_N+1,setup.m_N+1)
-	,randomizer(C_mat),randgen(setup.m_seed),N_particles(0),frame_data_file(nullptr)
-	,U_rot(0,5)
+	 r_setup(setup),r_s_in(s_in),tau(0.0),frame(0),N_particles(0)
+	,C_mat(setup.m_N+1,setup.m_N+1)
+	,randgen(setup.m_seed),U_rot(0,5),randomizer(C_mat)
+	,frame_data_file(nullptr)
 	{
 //	http://www0.cs.ucl.ac.uk/staff/d.jones/GoodPracticeRNG.pdf
 	randgen.discard(65536);
@@ -976,7 +1011,6 @@ void Simstate::statsDump() const
 bool Simstate::step()
 	{
 	SNOWFLAKEMODEL_TIMED_SCOPE();
-	//TODO: frame/N_iter only works for fixed number of iterations
 	if(frame%256==0)
 		{fprintf(stderr,"\r# Running simulation. %.3g%% done.",progressGet()*100);}
 
@@ -1139,6 +1173,7 @@ int main(int argc,char** argv)
 			fprintf(stderr,"# Dumping simulation state to %s\n",filename_dump.c_str());
 			SnowflakeModel::DataDump dump(filename_dump.c_str());
 			setup.write(dump);
+			state.write(dump);
 			}
 
 		state.statsDump();
