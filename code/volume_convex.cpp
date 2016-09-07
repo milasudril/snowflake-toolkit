@@ -17,6 +17,20 @@ using namespace SnowflakeModel;
 
 constexpr uint16_t VolumeConvex::VERTEX_COUNT;
 
+namespace SnowflakeModel
+	{
+	template<>
+	const DataDump::FieldDescriptor DataDump::MetaObject<VolumeConvex::Face>::fields[]=
+		{
+		 {"visible",offsetOf(&VolumeConvex::Face::m_visible),DataDump::MetaObject<bool>().typeGet()}
+		,{"v0",offsetOf(&VolumeConvex::Face::m_verts),DataDump::MetaObject<VolumeConvex::VertexIndex>().typeGet()}
+		,{"v1",offsetOf(&VolumeConvex::Face::m_verts) + 2,DataDump::MetaObject<VolumeConvex::VertexIndex>().typeGet()}
+		,{"v2",offsetOf(&VolumeConvex::Face::m_verts) + 4,DataDump::MetaObject<VolumeConvex::VertexIndex>().typeGet()}
+		};
+	template<>
+	const size_t DataDump::MetaObject<VolumeConvex::Face>::field_count=4;
+	}
+
 VolumeConvex::VolumeConvex(const VolumeConvex& vc):
 	 m_vertices(vc.m_vertices)
 	,m_faces(vc.m_faces)
@@ -407,5 +421,24 @@ void VolumeConvex::write(const char* id,DataDump& dump) const
 	auto group_name=std::string(id);
 	dump.write((group_name + "/vertices").c_str(),m_vertices.data()
 		,m_vertices.size());
+	dump.write((group_name + "/faces").c_str(),m_faces.data()
+		,m_faces.size());
+	dump.write((group_name + "/faces_out").c_str(),m_faces_out.data()
+		,m_faces_out.size());
+
+		{
+		auto v_groups_begin=m_vertex_groups.begin();
+		auto v_groups_end=m_vertex_groups.end();
+		auto group_name_base=group_name + "/vertex_groups";
+		auto group_v_groups=dump.groupCreate(group_name_base.c_str());
+		group_name_base+='/';
+		while(v_groups_begin!=v_groups_end)
+			{
+			auto group_name_current=group_name_base + v_groups_begin->first;
+			dump.write(group_name_current.c_str()
+				,v_groups_begin->second.data(),v_groups_begin->second.size());
+			++v_groups_begin;
+			}
+		}
 	}
 

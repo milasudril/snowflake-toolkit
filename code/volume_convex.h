@@ -62,6 +62,7 @@ namespace SnowflakeModel
 				private:
 					VertexIndex m_verts[VERTEX_COUNT];
 					const VolumeConvex* r_vc;
+					friend class DataDump::MetaObject<Face>;
 				};
 
 			VolumeConvex():
