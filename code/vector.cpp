@@ -12,6 +12,24 @@
 
 using namespace SnowflakeModel;
 
+namespace SnowflakeModel
+	{
+	template<>
+	const DataDump::FieldDescriptor DataDump::MetaObject<Vector>::fields[] __attribute__((init_priority(101)))=
+		{
+	//	{"x",0,DataDump::MetaObject<uint16_t>().typeGet()}
+		 {"x",offsetOf(&Vector::x),DataDump::MetaObject<decltype(Vector::x)>().typeGet()}
+		,{"y",offsetOf(&Vector::y),DataDump::MetaObject<decltype(Vector::y)>().typeGet()}
+		,{"z",offsetOf(&Vector::z),DataDump::MetaObject<decltype(Vector::z)>().typeGet()}
+		};
+	}
+
+const DataDump::MetaObject<Vector>& SnowflakeModel::vectorObj()
+	{
+	static const DataDump::MetaObject<Vector> s_obj;
+	return s_obj;
+	}
+
 std::pair<Matrix,bool>
 SnowflakeModel::vectorsAlign(const Vector& dir,const Vector& dir_target)
 	{

@@ -17,6 +17,7 @@
 #define SNOWFLAKEMODEL_VECTOR_H
 
 #define GLM_FORCE_RADIANS
+#include "datadump.h"
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <utility>
@@ -46,6 +47,10 @@ namespace SnowflakeModel
 
 	Matrix
 	vectorsAlign2(const Vector& dir,const SnowflakeModel::Vector& dir_target);
+
+/*	template<>
+	const DataDump::FieldDescriptor DataDump::MetaObject<Vector>::fields[] __attribute__((init_priority(101));*/
+	const DataDump::MetaObject<Vector>& vectorObj();
 	}
 
 #endif

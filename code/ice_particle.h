@@ -17,10 +17,10 @@
 #define SNOWFLAKEMODEL_ICEPARTICLE_H
 
 #include "solid.h"
+#include "datadump.h"
 
 namespace SnowflakeModel
 	{
-	class DataDump;
 	class IceParticle
 		{
 		public:
@@ -86,6 +86,8 @@ namespace SnowflakeModel
 			bool m_dead; //Saved
 
 			void solidGenerate() const;
+
+			friend class DataDump::MetaObject<IceParticle>;
 		};
 	}
 

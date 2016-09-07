@@ -15,6 +15,7 @@
 #include "datadump.h"
 #include <H5Cpp.h>
 #include <vector>
+#include <cassert>
 
 using namespace SnowflakeModel;
 
@@ -22,6 +23,10 @@ H5::StrType DataDump::s_cstr(H5::PredType::C_S1, H5T_VARIABLE);
 
 namespace SnowflakeModel
 {
+template<>
+const H5::DataType& DataDump::MetaObject<bool>::typeGet() const noexcept
+	{return H5::PredType::NATIVE_CHAR;}
+
 template<>
 const H5::DataType& DataDump::MetaObject<char>::typeGet() const noexcept
 	{return H5::PredType::NATIVE_CHAR;}
@@ -88,6 +93,7 @@ DataDump::DataTypeHandle
 	auto fields_end=fields+n_fields;
 	while(fields!=fields_end)
 		{
+		assert(&fields->type!=nullptr);
 		obj->insertMember(fields->name,fields->offset,fields->type);
 		++fields;
 		}

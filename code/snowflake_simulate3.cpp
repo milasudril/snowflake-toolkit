@@ -766,9 +766,12 @@ void Simstate::write(SnowflakeModel::DataDump& dump) const
 		auto group=dump.groupCreate("simstate/ice_particles");
 		while(ptr!=ptr_end)
 			{
-			auto name=std::string("simstate/ice_particles/");
-			name+=std::to_string(ptr_end-ptr);
-			ptr->write(name.c_str(),dump);
+			if(!ptr->dead())
+				{
+				auto name=std::string("simstate/ice_particles/");
+				name+=std::to_string(ptr_end-ptr);
+				ptr->write(name.c_str(),dump);
+				}
 			++ptr;
 			}
 		}
@@ -1015,7 +1018,7 @@ void Simstate::statsDump() const
 bool Simstate::step()
 	{
 	SNOWFLAKEMODEL_TIMED_SCOPE();
-	if(frame%256==0)
+	if(frame%64==0)
 		{fprintf(stderr,"\r# Running simulation. %.3g%% done.",progressGet()*100);}
 
 	auto pair_merge=ice_particlesChoose(randomizer,randgen);

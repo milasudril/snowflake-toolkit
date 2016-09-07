@@ -9,9 +9,19 @@
 //@	    ]
 //@	}
 #include "ice_particle.h"
-#include "datadump.h"
 
 using namespace SnowflakeModel;
+
+namespace SnowflakeModel
+	{
+	template<>
+	const DataDump::FieldDescriptor DataDump::MetaObject<IceParticle>::fields[]=
+		{
+		 {"velocity",offsetOf(&IceParticle::m_velocity),vectorObj().typeGet()}
+		,{"density",offsetOf(&IceParticle::m_density),DataDump::MetaObject<decltype(IceParticle::m_density)>().typeGet()}
+		,{"dead",offsetOf(&IceParticle::m_dead),DataDump::MetaObject<decltype(IceParticle::m_dead)>().typeGet()}
+		};
+	}
 
 void IceParticle::solidGenerate() const
 	{
@@ -98,6 +108,7 @@ void IceParticle::solidScale(float c)
 
 void IceParticle::write(const char* id,DataDump& dump) const
 	{
-	dump.groupCreate(id);
+	auto group=dump.groupCreate(id);
 	std::string path(id);
+	dump.write((path + "/data").c_str(),this,1);
 	}
