@@ -24,7 +24,6 @@
 #include "ctrlchandler.h"
 #include "getdate.h"
 #include "filenameesc.h"
-#include "datadump.h"
 #include "randomgenerator.h"
 
 #include <getopt.h>
@@ -413,6 +412,9 @@ namespace SnowflakeModel
 		};
 
 	template<>
+	const size_t DataDump::MetaObject<DeformationDataTrivial>::field_count=3;
+
+	template<>
 	const DataDump::FieldDescriptor DataDump::MetaObject<Setup>::fields[]=
 		{
 		 {"actions",offsetOf(&Setup::m_actions),DataDump::MetaObject<decltype(Setup::m_actions)>().typeGet()}
@@ -427,6 +429,9 @@ namespace SnowflakeModel
 		,{"growthrate",offsetOf(&Setup::m_growthrate),DataDump::MetaObject<decltype(Setup::m_growthrate)>().typeGet()}
 		,{"meltrate",offsetOf(&Setup::m_meltrate),DataDump::MetaObject<decltype(Setup::m_meltrate)>().typeGet()}
 		};
+
+	template<>
+	const size_t DataDump::MetaObject<Setup>::field_count=11;
 	}
 
 void Setup::write(SnowflakeModel::DataDump& dump)
@@ -751,6 +756,9 @@ namespace SnowflakeModel
 		,{"frame",offsetOf(&Simstate::frame),DataDump::MetaObject<decltype(Simstate::frame)>().typeGet()}
 		,{"N_particles",offsetOf(&Simstate::N_particles),DataDump::MetaObject<decltype(Simstate::N_particles)>().typeGet()}
 		};
+
+	template<>
+	const size_t DataDump::MetaObject<Simstate>::field_count=3;
 	}
 
 void Simstate::write(SnowflakeModel::DataDump& dump) const

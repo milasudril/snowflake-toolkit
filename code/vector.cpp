@@ -22,6 +22,10 @@ namespace SnowflakeModel
 		,{"z",offsetOf(&Vector::z),DataDump::MetaObject<decltype(Vector::z)>().typeGet()}
 		};
 	template<>
+	const size_t DataDump::MetaObject<Vector>::field_count=3;
+
+
+	template<>
 	const DataDump::FieldDescriptor DataDump::MetaObject<Point>::fields[] __attribute__((init_priority(102)))=
 		{
 		 {"x",offsetOf(&Point::x),DataDump::MetaObject<decltype(Point::x)>().typeGet()}
@@ -29,6 +33,8 @@ namespace SnowflakeModel
 		,{"z",offsetOf(&Point::z),DataDump::MetaObject<decltype(Point::z)>().typeGet()}
 		,{"w",offsetOf(&Point::w),DataDump::MetaObject<decltype(Point::w)>().typeGet()}
 		};
+	template<>
+	const size_t DataDump::MetaObject<Point>::field_count=4;
 	}
 
 const DataDump::MetaObject<Vector>& SnowflakeModel::vectorObj()

@@ -334,7 +334,6 @@ void Solid::write(const char* id,DataDump& dump) const
 		while(subvols_begin!=subvols_end)
 			{
 			auto group_name_current=defgroup_name + std::to_string(k);
-			auto group=dump.groupCreate(group_name_current.c_str());
 			subvols_begin->write(group_name_current.c_str(),dump);
 			++subvols_begin;
 			++k;

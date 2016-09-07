@@ -12,7 +12,6 @@
 #define SNOWFLAKEMODEL_SOLIDDEFORMATION_H
 
 #include "vector.h"
-#include "datadump.h"
 #include <string>
 #include <map>
 #include <vector>

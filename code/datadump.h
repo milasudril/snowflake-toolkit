@@ -68,7 +68,8 @@ namespace SnowflakeModel
 				{
 				public:
 					static const DataDump::FieldDescriptor fields[];
-					MetaObject():m_type(compoundMake(fields,countOf(fields),sizeof(T)))
+					static const size_t field_count;
+					MetaObject():m_type(compoundMake(fields,field_count,sizeof(T)))
 						{}
 
 					const H5::DataType& typeGet() const noexcept

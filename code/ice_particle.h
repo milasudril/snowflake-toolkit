@@ -17,7 +17,6 @@
 #define SNOWFLAKEMODEL_ICEPARTICLE_H
 
 #include "solid.h"
-#include "datadump.h"
 
 namespace SnowflakeModel
 	{

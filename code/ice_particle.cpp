@@ -21,6 +21,9 @@ namespace SnowflakeModel
 		,{"density",offsetOf(&IceParticle::m_density),DataDump::MetaObject<decltype(IceParticle::m_density)>().typeGet()}
 		,{"dead",offsetOf(&IceParticle::m_dead),DataDump::MetaObject<decltype(IceParticle::m_dead)>().typeGet()}
 		};
+
+	template<>
+	const size_t DataDump::MetaObject<IceParticle>::field_count=3;
 	}
 
 void IceParticle::solidGenerate() const

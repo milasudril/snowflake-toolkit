@@ -25,6 +25,9 @@ namespace SnowflakeModel
 		,{"b",SnowflakeModel::offsetOf(&Bar::b),SnowflakeModel::DataDump::MetaObject<decltype(Bar::b)>().typeGet()}
 		};
 
+	template<>
+	const size_t DataDump::MetaObject<Bar>::field_count=2;
+
 	static const DataDump::MetaObject<Bar> bar;
 
 	template<>
@@ -35,6 +38,9 @@ namespace SnowflakeModel
 		,{"y",SnowflakeModel::offsetOf(&Foo::y),SnowflakeModel::DataDump::MetaObject<decltype(Foo::y)>().typeGet()}
 		,{"str",SnowflakeModel::offsetOf(&Foo::str),SnowflakeModel::DataDump::MetaObject<decltype(Foo::str)>().typeGet()}
 		};
+
+	template<>
+	const size_t DataDump::MetaObject<Foo>::field_count=4;
 	}
 
 int main()
