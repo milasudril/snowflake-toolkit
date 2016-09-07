@@ -101,7 +101,7 @@ namespace
 		}
 	}
 
-Twins<size_t> ElementRandomizer::elementChoose(std::mt19937& randgen) const noexcept
+Twins<size_t> ElementRandomizer::elementChoose(RandomGenerator& randgen) const noexcept
 	{
 	SNOWFLAKEMODEL_TIMED_SCOPE();
 
@@ -139,7 +139,7 @@ Twins<size_t> ElementRandomizer::elementChoose(std::mt19937& randgen) const noex
 	}
 
 #if 0
-Twins<size_t> ElementRandomizer::elementChoose(std::mt19937& randgen)
+Twins<size_t> ElementRandomizer::elementChoose(RandomGenerator& randgen)
 	{
 	SNOWFLAKEMODEL_TIMED_SCOPE();
 	do

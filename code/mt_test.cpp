@@ -10,16 +10,17 @@
 //@	}
 #include "matrix_storage.h"
 #include "element_randomizer.h"
+#include "randomgenerator.h"
 #include <random>
 
-double U(double a,double b,std::mt19937& randgen)
+double U(double a,double b,SnowflakeModel::RandomGenerator& randgen)
 	{
 	return std::uniform_real_distribution<double>(a,b)(randgen);
 	}
 
 template<class T>
 size_t randomDraw(double sum,const T* ptr_begin,const T* ptr_end
-	,T p_mass,std::mt19937& randgen)
+	,T p_mass,SnowflakeModel::RandomGenerator& randgen)
 	{
 	do
 		{
@@ -39,7 +40,7 @@ size_t randomDraw(double sum,const T* ptr_begin,const T* ptr_end
 
 SnowflakeModel::Twins<size_t>
 grainsChoose(const SnowflakeModel::MatrixStorage& C_mat
-	,std::mt19937& randgen)
+	,SnowflakeModel::RandomGenerator& randgen)
 	{
 	auto i=randomDraw(0,C_mat.rowGet(0),C_mat.rowsEnd(),C_mat.sumGet(),randgen);
 	return C_mat.locationGet(i);
@@ -51,7 +52,7 @@ int main()
 		{
 		SnowflakeModel::MatrixStorage M(5000,5000);
 		std::fill(M.rowGet(0),M.rowsEnd(),1);
-		std::mt19937 rng;
+		SnowflakeModel::RandomGenerator rng;
 		rng.seed(0);
 		SnowflakeModel::Twins<size_t> elems{0,0};
 		SnowflakeModel::ElementRandomizer randomizer(M);

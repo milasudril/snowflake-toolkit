@@ -17,7 +17,7 @@
 #define SNOWFLAKEMODEL_ELEMENTRANDOMIZER_H
 
 #include "twins.h"
-#include <random>
+#include "randomgenerator.h"
 #include <vector>
 
 namespace SnowflakeModel
@@ -32,7 +32,7 @@ namespace SnowflakeModel
 			ElementRandomizer(const MatrixStorage& M);
 			~ElementRandomizer();
 
-			Twins<size_t> elementChoose(std::mt19937& randgen) const noexcept;
+			Twins<size_t> elementChoose(RandomGenerator& randgen) const noexcept;
 
 		private:
 			const MatrixStorage& r_M;

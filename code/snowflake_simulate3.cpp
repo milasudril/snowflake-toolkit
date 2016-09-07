@@ -25,6 +25,7 @@
 #include "getdate.h"
 #include "filenameesc.h"
 #include "datadump.h"
+#include "randomgenerator.h"
 
 #include <getopt.h>
 #include <glm/gtc/constants.hpp>
@@ -461,12 +462,12 @@ float U(float a,float b,std::mt19937& randgen)
 	return std::uniform_real_distribution<float>(a,b)(randgen);
 	}
 
-double U(double a,double b,std::mt19937& randgen)
+double U(double a,double b,SnowflakeModel::RandomGenerator& randgen)
 	{
 	return std::uniform_real_distribution<double>(a,b)(randgen);
 	}
 
-SnowflakeModel::Vector randomDirection(std::mt19937& randgen)
+SnowflakeModel::Vector randomDirection(SnowflakeModel::RandomGenerator& randgen)
 	{
 	auto theta=U(0,2*glm::pi<float>(),randgen);
 	auto phi=U(0,glm::pi<float>(),randgen);
@@ -483,7 +484,7 @@ float vTermCompute(const SnowflakeModel::Solid& sol,const Setup& setup)
 	}
 
 SnowflakeModel::IceParticle ice_particlePrepare(const SnowflakeModel::Solid& s_in
-	,const Setup& setup,std::mt19937& randgen)
+	,const Setup& setup,SnowflakeModel::RandomGenerator& randgen)
 	{
 	SnowflakeModel::IceParticle ice_particle;
 	ice_particle.solidSet(s_in);
@@ -630,7 +631,7 @@ size_t ice_particleDeadFind(std::vector<SnowflakeModel::IceParticle>& ice_partic
 	}
 
 const SnowflakeModel::VolumeConvex::Face&
-faceChoose(const SnowflakeModel::Solid& s_a,std::mt19937& randgen)
+faceChoose(const SnowflakeModel::Solid& s_a,SnowflakeModel::RandomGenerator& randgen)
 	{
 	std::vector<float> weights;
 	auto v_current=s_a.subvolumesBegin();
@@ -659,7 +660,7 @@ faceChoose(const SnowflakeModel::Solid& s_a,std::mt19937& randgen)
 
 template<class T>
 size_t randomDraw(const T* ptr_begin,const T* ptr_end
-	,T p_mass,std::mt19937& randgen)
+	,T p_mass,SnowflakeModel::RandomGenerator& randgen)
 	{
 	do
 		{
@@ -680,13 +681,13 @@ size_t randomDraw(const T* ptr_begin,const T* ptr_end
 
 SnowflakeModel::Twins<size_t>
 ice_particlesChoose(const SnowflakeModel::ElementRandomizer& randomizer
-	,std::mt19937& randgen)
+	,SnowflakeModel::RandomGenerator& randgen)
 	{
 	SNOWFLAKEMODEL_TIMED_SCOPE();
 	return randomizer.elementChoose(randgen);
 	}
 
-glm::vec2 drawFromTriangle(std::mt19937& randgen)
+glm::vec2 drawFromTriangle(SnowflakeModel::RandomGenerator& randgen)
 	{
 	float xi=0;
 	float eta=0;
@@ -725,22 +726,13 @@ class Simstate
 		void write(SnowflakeModel::DataDump& dump) const;
 
 	private:
-	/*	typedef std::mersenne_twister_engine<
-			uint32_t,
-			32, 624, 397, 31,
-			0x9908b0dfUL, 11,
-			0xffffffffUL, 7,
-			0x9d2c5680UL, 15,
-			0xefc60000UL, 18, 1812433253UL> mt32;*/
-
-
 		const Setup& r_setup;
 		const SnowflakeModel::Solid& r_s_in;
 		double tau;
 		size_t frame;
 		size_t N_particles;
 		SnowflakeModel::MatrixStorage C_mat;
-		std::mt19937 randgen;
+		SnowflakeModel::RandomGenerator randgen;
 		std::vector<SnowflakeModel::IceParticle> ice_particles;
 		std::vector<SnowflakeModel::IceParticle> ice_particles_dropped;
 		std::uniform_int_distribution<int> U_rot; //Stateless
