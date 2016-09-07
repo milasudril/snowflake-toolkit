@@ -302,3 +302,42 @@ bool SnowflakeModel::overlap(const Solid& v_a,const Solid& v_b)
 		{return 1;}*/
 	return 0;
 	}
+
+void Solid::write(const char* id,DataDump& dump) const
+	{
+	auto group=dump.groupCreate(id);
+	std::string group_name(id);
+	dump.write((group_name + "/mirror_flags").c_str(),&m_mirror_flags,1);
+	
+		{
+		size_t k=0;
+		auto deformations_begin=m_deformation_templates.data();
+		auto deformations_end=deformations_begin + m_deformation_templates.size();
+		auto defgroup=dump.groupCreate((group_name + "/deformation_templates").c_str());
+		auto defgroup_name=group_name + "/deformation_templates/"; 
+		while(deformations_begin!=deformations_end)
+			{
+			auto group_name_current=defgroup_name + std::to_string(k);
+			auto group=dump.groupCreate(group_name_current.c_str());
+			deformations_begin->write(group_name_current.c_str(),dump);
+			++deformations_begin;
+			++k;
+			}
+		}
+
+		{
+		size_t k=0;
+		auto subvols_begin=subvolumesBegin();
+		auto subvols_end=subvolumesEnd();
+		auto defgroup=dump.groupCreate((group_name + "/subvolumes").c_str());
+		auto defgroup_name=group_name + "/subvolumes/"; 
+		while(subvols_begin!=subvols_end)
+			{
+			auto group_name_current=defgroup_name + std::to_string(k);
+			auto group=dump.groupCreate(group_name_current.c_str());
+			subvols_begin->write(group_name_current.c_str(),dump);
+			++subvols_begin;
+			++k;
+			}
+		}
+	}

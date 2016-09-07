@@ -150,6 +150,8 @@ namespace SnowflakeModel
 					|RMAX_DIRTY|VOLUME_DIRTY;
 				}
 
+			void write(const char* id,DataDump& dump) const;
+
 
 		private:
 			static constexpr uint32_t BOUNDINGBOX_DIRTY=1;

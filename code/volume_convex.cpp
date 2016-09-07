@@ -401,4 +401,11 @@ void VolumeConvex::areaVisibleCompute() const
 	m_flags_dirty&=~AREA_VISIBLE_DIRTY;
 	}
 
+void VolumeConvex::write(const char* id,DataDump& dump) const
+	{
+	auto group=dump.groupCreate(id);
+	auto group_name=std::string(id);
+	dump.write((group_name + "/vertices").c_str(),m_vertices.data()
+		,m_vertices.size());
+	}
 

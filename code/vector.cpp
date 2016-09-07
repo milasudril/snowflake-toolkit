@@ -17,16 +17,30 @@ namespace SnowflakeModel
 	template<>
 	const DataDump::FieldDescriptor DataDump::MetaObject<Vector>::fields[] __attribute__((init_priority(101)))=
 		{
-	//	{"x",0,DataDump::MetaObject<uint16_t>().typeGet()}
 		 {"x",offsetOf(&Vector::x),DataDump::MetaObject<decltype(Vector::x)>().typeGet()}
 		,{"y",offsetOf(&Vector::y),DataDump::MetaObject<decltype(Vector::y)>().typeGet()}
 		,{"z",offsetOf(&Vector::z),DataDump::MetaObject<decltype(Vector::z)>().typeGet()}
+		};
+	template<>
+	const DataDump::FieldDescriptor DataDump::MetaObject<Point>::fields[] __attribute__((init_priority(102)))=
+		{
+		 {"x",offsetOf(&Point::x),DataDump::MetaObject<decltype(Point::x)>().typeGet()}
+		,{"y",offsetOf(&Point::y),DataDump::MetaObject<decltype(Point::y)>().typeGet()}
+		,{"z",offsetOf(&Point::z),DataDump::MetaObject<decltype(Point::z)>().typeGet()}
+		,{"w",offsetOf(&Point::w),DataDump::MetaObject<decltype(Point::w)>().typeGet()}
 		};
 	}
 
 const DataDump::MetaObject<Vector>& SnowflakeModel::vectorObj()
 	{
 	static const DataDump::MetaObject<Vector> s_obj;
+	return s_obj;
+	}
+
+
+const DataDump::MetaObject<Point>& SnowflakeModel::pointObj()
+	{
+	static const DataDump::MetaObject<Point> s_obj;
 	return s_obj;
 	}
 

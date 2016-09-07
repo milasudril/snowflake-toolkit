@@ -210,6 +210,8 @@ namespace SnowflakeModel
 			bool normalsDirty() const
 				{return m_flags_dirty&FACES_NORMAL_DIRTY;}
 
+			void write(const char* id,DataDump& dump) const;
+
 
 		private:
 			std::vector< Vertex > m_vertices;

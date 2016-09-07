@@ -127,5 +127,7 @@ void IceParticle::write(const char* id,DataDump& dump) const
 			++k;
 			}
 		}
+
+		m_solid_generated.write((path+"/solid_generated").c_str(),dump);
 	}
 

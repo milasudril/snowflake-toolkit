@@ -48,9 +48,8 @@ namespace SnowflakeModel
 	Matrix
 	vectorsAlign2(const Vector& dir,const SnowflakeModel::Vector& dir_target);
 
-/*	template<>
-	const DataDump::FieldDescriptor DataDump::MetaObject<Vector>::fields[] __attribute__((init_priority(101));*/
 	const DataDump::MetaObject<Vector>& vectorObj();
+	const DataDump::MetaObject<Point>& pointObj();
 	}
 
 #endif
