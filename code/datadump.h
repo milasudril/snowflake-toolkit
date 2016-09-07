@@ -84,6 +84,13 @@ namespace SnowflakeModel
 				dataWrite(MetaObject<T>().typeGet(),objname,n_elems,data);
 				}
 
+			template<class T>
+			void write(const char* objname,const T* data,size_t n_rows
+				,size_t n_cols)
+				{
+				dataWrite(MetaObject<T>().typeGet(),objname,n_rows,n_cols);
+				}
+
 			static 
 			DataTypeHandle compoundMake(const FieldDescriptor* fields
 				,size_t n_fields,size_t struct_size);
@@ -97,47 +104,12 @@ namespace SnowflakeModel
 			void dataWrite(const H5::DataType& type,const char* objname
 				,size_t n_elems,const void* data);
 
+			void dataWrite(const H5::DataType& type,const char* objname
+				,size_t n_rows,size_t n_cols,const void* data);
+
 			std::unique_ptr<H5::H5File> m_file;
 			static H5::StrType s_cstr;
 		};
-
-	template<>
-	void DataDump::write<char>(const char* objname,const char* data,size_t n_elems);
-
-	template<>
-	void DataDump::write<short>(const char* objname,const short* data,size_t n_elems);
-
-	template<>
-	void DataDump::write<int>(const char* objname,const int* data,size_t n_elems);
-
-	template<>
-	void DataDump::write<long>(const char* objname,const long* data,size_t n_elems);
-
-	template<>
-	void DataDump::write<long long>(const char* objname,const long long* data,size_t n_elems);
-
-	template<>
-	void DataDump::write<float>(const char* objname,const float* data,size_t n_elems);
-
-	template<>
-	void DataDump::write<double>(const char* objname,const double* data,size_t n_elems);
-
-
-
-	template<>
-	void DataDump::write<unsigned char>(const char* objname,const unsigned char* data,size_t n_elems);
-
-	template<>
-	void DataDump::write<unsigned short>(const char* objname,const unsigned short* data,size_t n_elems);
-
-	template<>
-	void DataDump::write<unsigned int>(const char* objname,const unsigned int* data,size_t n_elems);
-
-	template<>
-	void DataDump::write<unsigned long>(const char* objname,const unsigned long* data,size_t n_elems);
-
-	template<>
-	void DataDump::write<unsigned long long>(const char* objname,const unsigned long long* data,size_t n_elems);
 
 	template<>
 	void DataDump::write<std::string>(const char* objname,const std::string* data,size_t n_elems);
