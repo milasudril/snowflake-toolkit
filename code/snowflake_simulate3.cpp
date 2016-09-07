@@ -757,10 +757,7 @@ void Simstate::write(SnowflakeModel::DataDump& dump) const
 	{
 	auto group=dump.groupCreate("simstate");
 	dump.write("simstate/data",this,1);
-/*	dump.write("simstate/randgen"
-		,reinterpret_cast<const uint32_t*>(&randgen)
-		,*/
-	fprintf(stderr,"Mt size: %zu\n",sizeof(randgen));
+	dump.write("simstate/randgen",SnowflakeModel::begin(randgen),SnowflakeModel::size(randgen));
 	}
 
 Simstate::Simstate(const Setup& setup,const SnowflakeModel::Solid& s_in):

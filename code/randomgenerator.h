@@ -35,7 +35,7 @@ namespace SnowflakeModel
 	inline uint32_t* end(RandomGenerator& rng)
 		{return begin(rng) + 624;}
 
-	inline constexpr size_t length(const RandomGenerator& rng)
+	inline constexpr size_t size(const RandomGenerator& rng)
 		{return 624;}
 	
 	}
