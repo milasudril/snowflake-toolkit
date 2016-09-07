@@ -5,6 +5,7 @@
 //@	            "dependencies":[],
 //@	            "name":"mergetest",
 //@	            "type":"application"
+//@			,"cxxoptions":{"cflags_extra":["L/usr/lib/x86_64-linux-gnu/hdf5/serial"]}
 //@	        }
 //@	    ]
 //@	}

@@ -759,6 +759,20 @@ void Simstate::write(SnowflakeModel::DataDump& dump) const
 	dump.write("simstate/data",this,1);
 	dump.write("simstate/C_mat",C_mat.rowGet(0),C_mat.nRowsGet(),C_mat.nColsGet());
 	dump.write("simstate/randgen",SnowflakeModel::begin(randgen),SnowflakeModel::size(randgen));
+
+		{
+		auto ptr=ice_particles.data();
+		auto ptr_end=ptr+ice_particles.size();
+		auto group=dump.groupCreate("simstate/ice_particles");
+		while(ptr!=ptr_end)
+			{
+			auto name=std::string("simstate/ice_particles/");
+			name+=std::to_string(ptr_end-ptr);
+			ptr->write(name.c_str(),dump);
+			++ptr;
+			}
+		}
+
 	}
 
 Simstate::Simstate(const Setup& setup,const SnowflakeModel::Solid& s_in):

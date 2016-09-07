@@ -9,6 +9,7 @@
 //@	    ]
 //@	}
 #include "ice_particle.h"
+#include "datadump.h"
 
 using namespace SnowflakeModel;
 
@@ -95,3 +96,8 @@ void IceParticle::solidScale(float c)
 	m_solid_generated.transform(S,c<0);
 	}
 
+void IceParticle::write(const char* id,DataDump& dump) const
+	{
+	dump.groupCreate(id);
+	std::string path(id);
+	}

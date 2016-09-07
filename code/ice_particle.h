@@ -20,6 +20,7 @@
 
 namespace SnowflakeModel
 	{
+	class DataDump;
 	class IceParticle
 		{
 		public:
@@ -69,18 +70,20 @@ namespace SnowflakeModel
 			bool dead() const
 				{return m_dead;}
 
+			void write(const char* id,DataDump& dump) const;
+
 		private:
 			const Solid* r_solid;
-			mutable std::vector<SolidDeformation> m_deformations;
-			mutable Solid m_solid_generated;
+			mutable std::vector<SolidDeformation> m_deformations; //Saved
+			mutable Solid m_solid_generated; //Saved
 			mutable uint32_t m_flags_dirty;
 			static constexpr uint32_t DEFORMATIONS_DIRTY=0x1;
 			static constexpr uint32_t VOLUME_DIRTY=0x2;
 
 
-			Vector m_velocity;
-			float m_density;
-			bool m_dead;
+			Vector m_velocity; //Saved
+			float m_density; //Saved
+			bool m_dead; //Saved
 
 			void solidGenerate() const;
 		};
