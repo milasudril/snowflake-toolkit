@@ -88,7 +88,7 @@ namespace SnowflakeModel
 			void write(const char* objname,const T* data,size_t n_rows
 				,size_t n_cols)
 				{
-				dataWrite(MetaObject<T>().typeGet(),objname,n_rows,n_cols);
+				dataWrite(MetaObject<T>().typeGet(),objname,n_rows,n_cols,data);
 				}
 
 			static 

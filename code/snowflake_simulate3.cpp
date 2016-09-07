@@ -757,6 +757,7 @@ void Simstate::write(SnowflakeModel::DataDump& dump) const
 	{
 	auto group=dump.groupCreate("simstate");
 	dump.write("simstate/data",this,1);
+	dump.write("simstate/C_mat",C_mat.rowGet(0),C_mat.nRowsGet(),C_mat.nColsGet());
 	dump.write("simstate/randgen",SnowflakeModel::begin(randgen),SnowflakeModel::size(randgen));
 	}
 

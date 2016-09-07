@@ -104,6 +104,15 @@ void DataDump::dataWrite(const H5::DataType& type,const char* objname
 	ds.write(data,type);
 	}
 
+void DataDump::dataWrite(const H5::DataType& type,const char* objname
+	,size_t n_rows,size_t n_cols,const void* data)
+	{
+	hsize_t dim[]={n_rows,n_cols};
+	H5::DataSpace space(2,dim);
+	H5::DataSet ds(m_file->createDataSet(objname,type,space));
+	ds.write(data,type);
+	}
+
 DataDump::GroupHandle DataDump::groupCreate(const char* name)
 	{
 	return GroupHandle(new H5::Group(m_file->createGroup(name)), deleter);
@@ -136,3 +145,4 @@ void DataDump::write<std::string>(const char* objname,const std::string* data,si
 
 	dataWrite(s_cstr,objname,strptr.size(),strptr.data());
 	}
+

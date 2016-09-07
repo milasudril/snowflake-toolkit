@@ -51,5 +51,8 @@ int main()
 	long x[4]={1,2,3,4};
 	dump.write("x",x,4);
 
+	long y[2][3]={{1,2,3},{4,5,6}};
+	dump.write("y",&y[0][0],2,3);
+
 	return 0;
 	}
