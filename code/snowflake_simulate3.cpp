@@ -764,15 +764,17 @@ void Simstate::write(SnowflakeModel::DataDump& dump) const
 		auto ptr=ice_particles.data();
 		auto ptr_end=ptr+ice_particles.size();
 		auto group=dump.groupCreate("simstate/ice_particles");
+		auto group_name=std::string("simstate/ice_particles/");
+		size_t k=0;
 		while(ptr!=ptr_end)
 			{
 			if(!ptr->dead())
 				{
-				auto name=std::string("simstate/ice_particles/");
-				name+=std::to_string(ptr_end-ptr);
+				auto name=group_name+std::to_string(k);
 				ptr->write(name.c_str(),dump);
 				}
 			++ptr;
+			++k;
 			}
 		}
 

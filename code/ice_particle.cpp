@@ -111,4 +111,21 @@ void IceParticle::write(const char* id,DataDump& dump) const
 	auto group=dump.groupCreate(id);
 	std::string path(id);
 	dump.write((path + "/data").c_str(),this,1);
+
+		{
+		auto deformation_group=path + "/deformations";
+		auto deformations=dump.groupCreate(deformation_group.c_str());
+		auto deformation=m_deformations.data();
+		auto deformations_end=deformation + m_deformations.size();
+		deformation_group+='/';
+		size_t k=0;
+		while(deformation!=deformations_end)
+			{
+			auto def_name=deformation_group + std::to_string(k);
+			deformation->write(def_name.c_str(),dump);
+			++deformation;
+			++k;
+			}
+		}
 	}
+

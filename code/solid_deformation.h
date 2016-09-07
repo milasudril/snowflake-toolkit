@@ -1,5 +1,5 @@
 //@	{
-//@	    "dependencies_extra":[],
+//@	    "dependencies_extra":[{"ref":"solid_deformation.o","rel":"implementation"}],
 //@	    "targets":[
 //@	        {
 //@	            "dependencies":[],
@@ -12,8 +12,10 @@
 #define SNOWFLAKEMODEL_SOLIDDEFORMATION_H
 
 #include "vector.h"
+#include "datadump.h"
 #include <string>
 #include <map>
+#include <vector>
 
 namespace SnowflakeModel
 	{
@@ -56,11 +58,15 @@ namespace SnowflakeModel
 			const Matrix& matrixGet() const
 				{return m_matrix;}
 
+		/**TODO Only used for help text. Remove and use the map directly instead.
+		*/
 			const std::string* paramnamesBegin() const
 				{return param_names.data();}
 
 			const std::string* paramnamesEnd() const
 				{return param_names.data()+param_names.size();}
+
+			void write(const char* id,DataDump& dump) const;
 
 		private:
 			Matrix m_matrix;
