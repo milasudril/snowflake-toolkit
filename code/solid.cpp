@@ -318,7 +318,6 @@ void Solid::write(const char* id,DataDump& dump) const
 		while(deformations_begin!=deformations_end)
 			{
 			auto group_name_current=defgroup_name + std::to_string(k);
-			auto group=dump.groupCreate(group_name_current.c_str());
 			deformations_begin->write(group_name_current.c_str(),dump);
 			++deformations_begin;
 			++k;

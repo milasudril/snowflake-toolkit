@@ -888,7 +888,7 @@ void Simstate::prototypesDump() const
 		while(i!=ice_particles_dropped.end())
 			{
 			char num_buff[32];
-			sprintf(num_buff,"/mesh-dropped-%zx.obj",count);
+			sprintf(num_buff,"/mesh-dropped-%zx.ice",count);
 			SnowflakeModel::FileOut file_out(
 				(r_setup.m_output_dir+num_buff).data());
 			SnowflakeModel::SolidWriter writer(file_out);
@@ -1029,7 +1029,7 @@ bool Simstate::step()
 	{
 	SNOWFLAKEMODEL_TIMED_SCOPE();
 	if(frame%64==0)
-		{fprintf(stderr,"\r# Running simulation. %.3g%% done.",progressGet()*100);}
+		{fprintf(stderr,"\r# Running simulation. %.3g%% done.    ",progressGet()*100);}
 
 	auto pair_merge=ice_particlesChoose(randomizer,randgen);
 	tau+=-log(U(0.0,1.0,randgen))/double(C_mat.sumGetMt());
@@ -1191,6 +1191,7 @@ int main(int argc,char** argv)
 			SnowflakeModel::DataDump dump(filename_dump.c_str());
 			setup.write(dump);
 			state.write(dump);
+			s_in.write("solid_in",dump);
 			}
 
 		state.statsDump();
