@@ -81,7 +81,7 @@ template<>
 DataDump::MetaObject<const char*>::MetaObject():r_cstr(s_cstr){}
 
 template<>
-DataDump::MetaObject<char*>::MetaObject():r_cstr(s_cstr){}
+DataDump::MetaObject<DataDump::StringHolder>::MetaObject():r_cstr(s_cstr){}
 }
 
 

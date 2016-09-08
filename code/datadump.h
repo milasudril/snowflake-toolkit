@@ -34,6 +34,40 @@ namespace SnowflakeModel
 	class DataDump
 		{
 		public:
+			class StringHolder
+				{
+				public:
+					StringHolder():m_buffer(nullptr)
+						{}
+
+					~StringHolder()
+						{free(m_buffer);}
+
+					StringHolder(const StringHolder&)=delete;
+
+					StringHolder& operator=(const StringHolder&)=delete;
+
+					StringHolder(StringHolder&& x) noexcept:
+						m_buffer(x.m_buffer)
+						{x.m_buffer=nullptr;}
+
+					StringHolder& operator=(StringHolder&& x) noexcept
+						{
+						std::swap(x.m_buffer,m_buffer);
+						return *this;
+						}
+
+					operator const char*() const
+						{return m_buffer;}
+
+					const char* begin() const
+						{return m_buffer;}
+
+				private:
+					char* m_buffer;
+				};
+				
+
 			class ArrayReaderImpl;
 			typedef std::unique_ptr<ArrayReaderImpl,void(*)(ArrayReaderImpl*)>
 				ArrayReaderHandle;
@@ -96,7 +130,8 @@ namespace SnowflakeModel
 				};
 
 			template<class T>
-			class MetaObject<T,typename std::enable_if<std::is_same<T,const char*>::value>::type>
+			class MetaObject<T,typename std::enable_if<std::is_same<T,const char*>::value
+				|| std::is_same<T,StringHolder>::value>::type>
 				{
 				public:
 					MetaObject();
@@ -107,18 +142,9 @@ namespace SnowflakeModel
 				};
 
 			template<class T>
-			class MetaObject<T,typename std::enable_if<std::is_same<T,char*>::value>::type>
-				{
-				public:
-					MetaObject();
-					const H5::DataType& typeGet() const noexcept
-						{return r_cstr;}
-				private:
-					const H5::DataType& r_cstr;
-				};
-
-			template<class T>
-			class MetaObject<T,typename std::enable_if<std::is_class<T>::value>::type>
+			class MetaObject<T
+				,typename std::enable_if<std::is_class<T>::value 
+					&& !std::is_same<T,StringHolder>::value>::type>
 				{
 				public:
 					static const DataDump::FieldDescriptor fields[];

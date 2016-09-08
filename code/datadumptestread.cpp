@@ -4,25 +4,8 @@
 
 struct Foo
 	{
-	char* key;
+	SnowflakeModel::DataDump::StringHolder key;
 	int value;
-
-	Foo():key(nullptr),value(0){}
-	~Foo()
-		{free(key);}
-
-	Foo(const Foo&)=delete;
-	Foo& operator=(const Foo&)=delete;
-
-	Foo(Foo&& x) noexcept:key(x.key),value(x.value)
-		{x.key=nullptr;}
-
-	Foo& operator=(Foo&& x) noexcept
-		{
-		std::swap(x.key,key);
-		std::swap(x.value,value);
-		return *this;
-		}
 	};
 
 namespace SnowflakeModel
@@ -105,17 +88,17 @@ int main()
 		auto n=data.size();
 		printf("Got %zu values:\n",n);
 		for(size_t k=0;k<n;++k)
-			{printf("    %s %d",data[k].key,data[k].value);}
+			{printf("    %s %d",data[k].key.begin(),data[k].value);}
 		putchar('\n');
 		}
 
 		{
-		auto reader=dump.arrayGet<char*>("str2");
+		auto reader=dump.arrayGet<SnowflakeModel::DataDump::StringHolder>("str2");
 		auto data=reader.dataRead();
 		auto n=data.size();
 		printf("Got %zu values:\n",n);
 		for(size_t k=0;k<n;++k)
-			{printf("    %s\n",data[k]);}
+			{printf("    %s\n",data[k].begin());}
 		putchar('\n');
 		}
 	
