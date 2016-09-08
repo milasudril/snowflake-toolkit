@@ -127,7 +127,7 @@ struct DataDump::ArrayReaderImpl
 	{
 	ArrayReaderImpl(const H5::H5File& src,const H5::DataType& type
 		,const char* objname):ds(src.openDataSet(objname))
-		,space(ds.getSpace()),r_type(type),offset(0)
+		,space(ds.getSpace()),m_type(type),offset(0)
 		{
 		auto rank=space.getSimpleExtentNdims();
 		if(rank!=1)
@@ -137,7 +137,7 @@ struct DataDump::ArrayReaderImpl
 
 	H5::DataSet ds;
 	H5::DataSpace space;
-	H5::DataType r_type;
+	H5::DataType m_type;
 	hsize_t offset;
 	hsize_t size;
 	};
@@ -155,7 +155,7 @@ size_t DataDump::dataRead(ArrayReaderImpl& reader,void* buffer,size_t n_elems)
 	H5::DataSpace mem(1,&n);
 	hsize_t zero=0;
 	mem.selectHyperslab(H5S_SELECT_SET, &count, &zero);
-	reader.ds.read(buffer,reader.r_type,mem,reader.space);
+	reader.ds.read(buffer,reader.m_type,mem,reader.space);
 	return count;
 	}
 
@@ -169,6 +169,46 @@ DataDump::ArrayReaderHandle DataDump::arrayReaderCreate(const H5::DataType& type
 	return {new ArrayReaderImpl(*m_file,type,objname),deleter};
 	}
 
+
+
+struct DataDump::MatrixReaderImpl
+	{
+	MatrixReaderImpl(const H5::H5File& src,const H5::DataType& type
+		,const char* objname):ds(src.openDataSet(objname))
+		,space(ds.getSpace()),m_type(type)
+		{
+		auto rank=space.getSimpleExtentNdims();
+		if(rank!=2)
+			{throw "Rank must be equal to 2";}
+		space.getSimpleExtentDims(size);
+		}
+
+	H5::DataSet ds;
+	H5::DataSpace space;
+	H5::DataType m_type;
+	hsize_t size[2];
+	};
+
+void DataDump::dataRead(MatrixReaderImpl& reader,void* buffer,size_t n_rows,size_t n_cols)
+	{
+	hsize_t sizes[2]={n_rows,n_cols};
+	H5::DataSpace mem(2,sizes);
+	reader.ds.read(buffer,reader.m_type,mem,reader.space);
+	}
+
+uintmax_t DataDump::nRowsGet(const MatrixReaderImpl& impl)
+	{return impl.size[0];}
+
+uintmax_t DataDump::nColsGet(const MatrixReaderImpl& impl)
+	{return impl.size[1];}
+
+DataDump::MatrixReaderHandle DataDump::matrixReaderCreate(const H5::DataType& type,const char* objname) const
+	{
+	return {new MatrixReaderImpl(*m_file,type,objname),deleter};
+	}
+
+void DataDump::deleter(MatrixReaderImpl* obj)	
+	{delete obj;}
 
 
 

@@ -72,7 +72,7 @@ namespace SnowflakeModel
 			typedef std::unique_ptr<ArrayReaderImpl,void(*)(ArrayReaderImpl*)>
 				ArrayReaderHandle;
 
-			static size_t dataRead(ArrayReaderImpl& reader,void* data,size_t n_elems);
+			static size_t dataRead(ArrayReaderImpl& reader,void* buffer,size_t n_elems);
 			static uintmax_t size(const ArrayReaderImpl& impl);
 
 			ArrayReaderHandle arrayReaderCreate(const H5::DataType& type,const char* objname) const;
@@ -105,6 +105,16 @@ namespace SnowflakeModel
 				private:
 					ArrayReaderHandle m_impl;
 				};
+
+			class MatrixReaderImpl;
+			typedef std::unique_ptr<MatrixReaderImpl,void(*)(MatrixReaderImpl*)>
+				MatrixReaderHandle;
+			static void dataRead(MatrixReaderImpl& reader,void* buffer,size_t n_rows,size_t n_cols);
+			static uintmax_t nRowsGet(const MatrixReaderImpl& impl);
+			static uintmax_t nColsGet(const MatrixReaderImpl& impl);
+			MatrixReaderHandle matrixReaderCreate(const H5::DataType& type,const char* objname) const;
+			MatrixReaderHandle matrixReaderCreate(H5::DataType&& type,const char* objname) const=delete;
+
 
 			typedef std::unique_ptr<H5::DataType,void(*)(H5::DataType*)> DataTypeHandle;
 			typedef std::unique_ptr<H5::Group,void(*)(H5::Group*)> GroupHandle;
@@ -161,21 +171,37 @@ namespace SnowflakeModel
 
 			template<class T>
 			void write(const char* objname,const T* data,size_t n_elems)
+				{dataWrite(MetaObject<T>().typeGet(),objname,n_elems,data);}
+
+			template<class T>
+			void write(const char* objname,const T* data,size_t n_rows,size_t n_cols)
+				{dataWrite(MetaObject<T>().typeGet(),objname,n_rows,n_cols,data);}
+
+			template<class T>
+			ArrayReader<T> arrayRead(const char* objname) const
+				{return ArrayReader<T>(*this,objname);}
+
+			template<class T>
+			std::vector<T> arrayGet(const char* objname) const
+				{return arrayRead<T>(objname).dataGet();}
+
+			template<class T>
+			std::pair<std::vector<T>,size_t> matrixGet(const char* objname) const
 				{
-				dataWrite(MetaObject<T>().typeGet(),objname,n_elems,data);
+				auto reader=matrixReaderCreate(MetaObject<T>().typeGet(),objname);
+				std::vector<T> ret;
+				auto n_rows=nRowsGet(*reader);
+				auto n_cols=nColsGet(*reader);
+				ret.resize(n_rows*n_cols);
+				dataRead(*reader,ret.data(),n_rows,n_cols);
+				return {std::move(ret),n_cols};
 				}
 
 			template<class T>
-			void write(const char* objname,const T* data,size_t n_rows
-				,size_t n_cols)
+			void matrixGet(const char* objname,T* data,size_t n_rows,size_t n_cols)
 				{
-				dataWrite(MetaObject<T>().typeGet(),objname,n_rows,n_cols,data);
-				}
-
-			template<class T>
-			ArrayReader<T> arrayGet(const char* objname) const
-				{
-				return ArrayReader<T>(*this,objname);
+				auto reader=matrixReaderCreate(MetaObject<T>().typeGet(),objname);
+				dataRead(*reader,data,n_rows,n_cols);				
 				}
 
 			static 
@@ -188,6 +214,7 @@ namespace SnowflakeModel
 			static void deleter(H5::DataType* obj);
 			static void deleter(H5::Group* obj);
 			static void deleter(ArrayReaderImpl* obj);
+			static void deleter(MatrixReaderImpl* obj);
 
 			void dataWrite(const H5::DataType& type,const char* objname
 				,size_t n_elems,const void* data);

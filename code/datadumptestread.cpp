@@ -46,44 +46,9 @@ int main()
 	{
 	SnowflakeModel::DataDump dump("test.h5",SnowflakeModel::DataDump::IOMode::READ);
 
-/*		{
-		int x[3]={0,0,0};
-		auto reader=dump.arrayGet<int>("test_array");
-		size_t n;
-		do
-			{
-			n=reader.dataRead(x,3);
-			printf("Got %zu values:",n);
-			for(size_t k=0;k<n;++k)
-				{printf(" %d",x[k]);}
-			putchar('\n');
-			}
-		while(n==3);
-		}
 
 		{
-		auto reader=dump.arrayGet<int>("test_array");
-		auto data=reader.dataRead();
-		auto n=data.size();
-		printf("Got %zu values:",n);
-		for(size_t k=0;k<n;++k)
-			{printf("    %d",data[k]);}
-		putchar('\n');
-		}
-
-		{
-		auto reader=dump.arrayGet<Y>("simple");
-		auto data=reader.dataRead();
-		auto n=data.size();
-		printf("Got %zu values:",n);
-		for(size_t k=0;k<n;++k)
-			{printf("%d %.7g\n",data[k].a,data[k].b);}
-		putchar('\n');
-		}*/
-
-
-		{
-		auto reader=dump.arrayGet<Foo>("obj");
+		auto reader=dump.arrayRead<Foo>("obj");
 		auto data=reader.dataRead();
 		auto n=data.size();
 		printf("Got %zu values:\n",n);
@@ -93,13 +58,28 @@ int main()
 		}
 
 		{
-		auto reader=dump.arrayGet<SnowflakeModel::DataDump::StringHolder>("str2");
+		auto reader=dump.arrayRead<SnowflakeModel::DataDump::StringHolder>("str2");
 		auto data=reader.dataRead();
 		auto n=data.size();
 		printf("Got %zu values:\n",n);
 		for(size_t k=0;k<n;++k)
 			{printf("    %s\n",data[k].begin());}
 		putchar('\n');
+		}
+
+		{
+		long y[2][3]={{0,0,0},{0,0,0}};
+		dump.matrixGet<long>("y",&y[0][0],2,3);
+
+		for(int k=0;k<2;++k)
+			{
+			for(int l=0;l<3;++l)
+				{printf("%ld ",y[k][l]);}
+			putchar('\n');
+			}
+
+		auto data=dump.matrixGet<long>("y");
+		printf("%zu %zu\n",data.first.size(),data.second);
 		}
 	
 
