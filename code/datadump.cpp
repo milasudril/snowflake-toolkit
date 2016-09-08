@@ -169,27 +169,6 @@ DataDump::ArrayReaderHandle DataDump::arrayReaderCreate(const H5::DataType& type
 	return {new ArrayReaderImpl(*m_file,type,objname),deleter};
 	}
 
-void DataDump::dataRead(const H5::DataType& type,const char* objname
-	,size_t n_elems,void* data) const
-	{
-	auto ds=m_file->openDataSet(objname);
-	auto space=ds.getSpace();
-	auto rank=space.getSimpleExtentNdims();
-	if(rank!=1)
-		{throw "Rank must be 1";}
-	hsize_t dim;
-	space.getSimpleExtentDims(&dim);
-
-	hsize_t n=n_elems;
-	hsize_t offset=0;   // hyperslab offset in the file
-	hsize_t count=std::min(n,dim);
-	space.selectHyperslab(H5S_SELECT_SET, &count, &offset);
-
-	H5::DataSpace mem(1,&n);
-	mem.selectHyperslab(H5S_SELECT_SET, &count, &offset);
-
-	ds.read(data,type,mem,space);
-	}
 
 
 

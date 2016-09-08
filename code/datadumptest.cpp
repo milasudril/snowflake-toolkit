@@ -46,9 +46,15 @@ int main()
 	Foo obj{"Hello, World",1};
 	dump.write("obj",&obj,1);
 
-	std::string str("Flygande bäckasiner söka hwila på mjuka tufvor");
-	dump.write("str",str.data(),str.size());
-	dump.write("str2",&str,1);
+	std::string str[]=
+		{
+		 "Flygande bäckasiner söka hwila på mjuka tufvor"
+		,"Sju sjöskjua sjömän"
+		,"Jackdaws loves my big sphinx of schwartz"
+		,"Lorem ipsum"
+		};
+	dump.write("str",str[0].data(),str[0].size());
+	dump.write("str2",&str[0],4);
 
 	long x[4]={1,2,3,4};
 	dump.write("x",x,4);

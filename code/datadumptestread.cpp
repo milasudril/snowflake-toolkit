@@ -108,6 +108,16 @@ int main()
 			{printf("    %s %d",data[k].key,data[k].value);}
 		putchar('\n');
 		}
+
+		{
+		auto reader=dump.arrayGet<char*>("str2");
+		auto data=reader.dataRead();
+		auto n=data.size();
+		printf("Got %zu values:\n",n);
+		for(size_t k=0;k<n;++k)
+			{printf("    %s\n",data[k]);}
+		putchar('\n');
+		}
 	
 
 	return 0;

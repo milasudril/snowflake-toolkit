@@ -169,9 +169,6 @@ namespace SnowflakeModel
 			void dataWrite(const H5::DataType& type,const char* objname
 				,size_t n_rows,size_t n_cols,const void* data);
 
-			void dataRead(const H5::DataType& type,const char* objname
-				,size_t n_elems,void* data) const;
-
 			std::unique_ptr<H5::H5File> m_file;
 			static H5::StrType s_cstr;
 		};
