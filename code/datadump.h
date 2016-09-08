@@ -9,6 +9,8 @@
 #include <memory>
 #include <string>
 #include <type_traits>
+#include <cstdint>
+#include <vector>
 
 namespace H5
 	{
@@ -37,6 +39,8 @@ namespace SnowflakeModel
 				ArrayReaderHandle;
 
 			static size_t dataRead(ArrayReaderImpl& reader,void* data,size_t n_elems);
+			static uintmax_t size(const ArrayReaderImpl& impl);
+
 			ArrayReaderHandle arrayReaderCreate(const H5::DataType& type,const char* objname) const;
 			ArrayReaderHandle arrayReaderCreate(H5::DataType&& type,const char* objname) const=delete;
 
@@ -52,6 +56,17 @@ namespace SnowflakeModel
 					
 					size_t dataRead(T* data,size_t n_elems)
 						{return DataDump::dataRead(*m_impl,data,n_elems);}
+
+					uintmax_t size() const noexcept
+						{return DataDump::size(*m_impl);}
+
+					std::vector<T> dataRead()
+						{
+						std::vector<T> ret;
+						ret.resize(size());
+						dataRead(ret.data(),ret.size());
+						return std::move(ret);
+						}
 
 				private:
 					ArrayReaderHandle m_impl;
@@ -82,6 +97,17 @@ namespace SnowflakeModel
 
 			template<class T>
 			class MetaObject<T,typename std::enable_if<std::is_same<T,const char*>::value>::type>
+				{
+				public:
+					MetaObject();
+					const H5::DataType& typeGet() const noexcept
+						{return r_cstr;}
+				private:
+					const H5::DataType& r_cstr;
+				};
+
+			template<class T>
+			class MetaObject<T,typename std::enable_if<std::is_same<T,char*>::value>::type>
 				{
 				public:
 					MetaObject();

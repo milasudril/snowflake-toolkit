@@ -10,10 +10,8 @@ struct Bar
 
 struct Foo
 	{
-	Bar obj;
-	int64_t x;
-	double y;
-	const char* str;
+	const char* key;
+	int value;
 	};
 
 namespace SnowflakeModel
@@ -33,21 +31,19 @@ namespace SnowflakeModel
 	template<>
 	const DataDump::FieldDescriptor DataDump::MetaObject<Foo>::fields[]=
 		{
-		 {"obj",SnowflakeModel::offsetOf(&Foo::obj),bar.typeGet()}
-		,{"x",SnowflakeModel::offsetOf(&Foo::x),SnowflakeModel::DataDump::MetaObject<decltype(Foo::x)>().typeGet()}
-		,{"y",SnowflakeModel::offsetOf(&Foo::y),SnowflakeModel::DataDump::MetaObject<decltype(Foo::y)>().typeGet()}
-		,{"str",SnowflakeModel::offsetOf(&Foo::str),SnowflakeModel::DataDump::MetaObject<decltype(Foo::str)>().typeGet()}
+		 {"key",SnowflakeModel::offsetOf(&Foo::key),SnowflakeModel::DataDump::MetaObject<decltype(Foo::key)>().typeGet()}
+		,{"value",SnowflakeModel::offsetOf(&Foo::value),SnowflakeModel::DataDump::MetaObject<decltype(Foo::value)>().typeGet()}
 		};
 
 	template<>
-	const size_t DataDump::MetaObject<Foo>::field_count=4;
+	const size_t DataDump::MetaObject<Foo>::field_count=2;
 	}
 
 int main()
 	{
 	SnowflakeModel::DataDump dump("test.h5");
 
-	Foo obj{{2.2f,245.0f},1,2.0,"Hello, World"};
+	Foo obj{"Hello, World",1};
 	dump.write("obj",&obj,1);
 
 	std::string str("Flygande bäckasiner söka hwila på mjuka tufvor");

@@ -79,6 +79,9 @@ const H5::DataType& DataDump::MetaObject<unsigned long long>::typeGet() const no
 
 template<>
 DataDump::MetaObject<const char*>::MetaObject():r_cstr(s_cstr){}
+
+template<>
+DataDump::MetaObject<char*>::MetaObject():r_cstr(s_cstr){}
 }
 
 
@@ -134,7 +137,7 @@ struct DataDump::ArrayReaderImpl
 
 	H5::DataSet ds;
 	H5::DataSpace space;
-	const H5::DataType& r_type;
+	H5::DataType r_type;
 	hsize_t offset;
 	hsize_t size;
 	};
@@ -154,6 +157,11 @@ size_t DataDump::dataRead(ArrayReaderImpl& reader,void* buffer,size_t n_elems)
 	mem.selectHyperslab(H5S_SELECT_SET, &count, &zero);
 	reader.ds.read(buffer,reader.r_type,mem,reader.space);
 	return count;
+	}
+
+uintmax_t DataDump::size(const ArrayReaderImpl& impl)
+	{
+	return impl.size;
 	}
 
 DataDump::ArrayReaderHandle DataDump::arrayReaderCreate(const H5::DataType& type,const char* objname) const
