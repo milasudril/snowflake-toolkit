@@ -119,13 +119,91 @@ void DataDump::dataWrite(const H5::DataType& type,const char* objname
 	ds.write(data,type);
 	}
 
+
+struct DataDump::ArrayReaderImpl
+	{
+	ArrayReaderImpl(const H5::H5File& src,const H5::DataType& type
+		,const char* objname):ds(src.openDataSet(objname))
+		,space(ds.getSpace()),r_type(type),offset(0)
+		{
+		auto rank=space.getSimpleExtentNdims();
+		if(rank!=1)
+			{throw "Rank must be equal to 1";}
+		space.getSimpleExtentDims(&size);
+		}
+
+	H5::DataSet ds;
+	H5::DataSpace space;
+	const H5::DataType& r_type;
+	hsize_t offset;
+	hsize_t size;
+	};
+
+void DataDump::deleter(ArrayReaderImpl* obj)
+	{delete obj;}
+
+size_t DataDump::dataRead(ArrayReaderImpl& reader,void* buffer,size_t n_elems)
+	{
+	hsize_t n=n_elems;
+	hsize_t count=std::min(n,reader.size-reader.offset);
+	reader.space.selectHyperslab(H5S_SELECT_SET, &count, &reader.offset);
+	reader.offset+=count;
+
+	H5::DataSpace mem(1,&n);
+	hsize_t zero=0;
+	mem.selectHyperslab(H5S_SELECT_SET, &count, &zero);
+	reader.ds.read(buffer,reader.r_type,mem,reader.space);
+	return count;
+	}
+
+DataDump::ArrayReaderHandle DataDump::arrayReaderCreate(const H5::DataType& type,const char* objname) const
+	{
+	return {new ArrayReaderImpl(*m_file,type,objname),deleter};
+	}
+
+void DataDump::dataRead(const H5::DataType& type,const char* objname
+	,size_t n_elems,void* data) const
+	{
+	auto ds=m_file->openDataSet(objname);
+	auto space=ds.getSpace();
+	auto rank=space.getSimpleExtentNdims();
+	if(rank!=1)
+		{throw "Rank must be 1";}
+	hsize_t dim;
+	space.getSimpleExtentDims(&dim);
+
+	hsize_t n=n_elems;
+	hsize_t offset=0;   // hyperslab offset in the file
+	hsize_t count=std::min(n,dim);
+	space.selectHyperslab(H5S_SELECT_SET, &count, &offset);
+
+	H5::DataSpace mem(1,&n);
+	mem.selectHyperslab(H5S_SELECT_SET, &count, &offset);
+
+	ds.read(data,type,mem,space);
+	}
+
+
+
 DataDump::GroupHandle DataDump::groupCreate(const char* name)
 	{
 	return GroupHandle(new H5::Group(m_file->createGroup(name)), deleter);
 	}
 
-DataDump::DataDump(const char* filename):
-	m_file(new H5::H5File(filename, H5F_ACC_TRUNC))
+static int getMode(DataDump::IOMode mode)
+	{
+	switch(mode)
+		{
+		case DataDump::IOMode::WRITE:
+			return H5F_ACC_TRUNC;
+		case DataDump::IOMode::READ:
+			return H5F_ACC_RDONLY;
+		}
+	return H5F_ACC_RDONLY;
+	}
+
+DataDump::DataDump(const char* filename,IOMode mode):
+	m_file(new H5::H5File(filename, getMode(mode)))
 	{}
 
 DataDump::~DataDump()

@@ -12,6 +12,7 @@ The toolkit has been design with so it should not have to many external
 dependencies. But it relies on
 
  * glm - The "OpenGL Mathematics Library"
+ * libhdf5-cpp + its dependencies
 
 Compiling
 --------------
@@ -19,7 +20,7 @@ This is a shell script that can be used to compile the toolkit
 
     #!/bin/bash
 
-    # Download Maike
+    # Download Maike [Any version newer than 0.7.2 should work]
     wget https://github.com/milasudril/maike/archive/0.7.2.tar.gz
 
     # Rename the compressed tarball

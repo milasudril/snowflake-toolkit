@@ -950,25 +950,6 @@ void Simstate::statsDump() const
 				++i;
 				}
 			}
-
-		/*	{
-			char countbuff[32];
-			sprintf(countbuff,"/frame-dropped-%zu.txt",frame);
-			SnowflakeModel::FileOut file_out((r_setup.m_output_dir+countbuff).data());
-			auto i=ice_particles_dropped.begin();
-			file_out.printf("# R_max\tVolume\tSpeed\tL_x\tr_xy\tr_xz\tNumber of sub-volumes\n");
-			while(i!=ice_particles_dropped.end())
-				{
-				auto& bb=i->solidGet().boundingBoxGet();
-				auto L=bb.m_max-bb.m_min;
-					file_out.printf("%.7g\t%.7g\t%.7g\t%.7g\t%.7g\t%.7g\t%zu\n"
-						,i->solidGet().rMaxGet()
-						,i->solidGet().volumeGet()
-						,glm::length(i->velocityGet())
-						,L.x,L.x/L.y,L.x/L.z,i->solidGet().subvolumesCount());
-				++i;
-				}
-			}*/
 	}
 
 void particleDump(const SnowflakeModel::IceParticle& i,const char* prefix,size_t id)

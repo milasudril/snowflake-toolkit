@@ -32,10 +32,38 @@ namespace SnowflakeModel
 	class DataDump
 		{
 		public:
+			class ArrayReaderImpl;
+			typedef std::unique_ptr<ArrayReaderImpl,void(*)(ArrayReaderImpl*)>
+				ArrayReaderHandle;
+
+			static size_t dataRead(ArrayReaderImpl& reader,void* data,size_t n_elems);
+			ArrayReaderHandle arrayReaderCreate(const H5::DataType& type,const char* objname) const;
+			ArrayReaderHandle arrayReaderCreate(H5::DataType&& type,const char* objname) const=delete;
+
+			template<class T>
+			class ArrayReader
+				{
+				public:
+					ArrayReader(DataDump&& dump,const char* objname)=delete;
+
+					ArrayReader(const DataDump& dump,const char* objname):
+						m_impl(dump.arrayReaderCreate(MetaObject<T>().typeGet(),objname))
+						{}
+					
+					size_t dataRead(T* data,size_t n_elems)
+						{return DataDump::dataRead(*m_impl,data,n_elems);}
+
+				private:
+					ArrayReaderHandle m_impl;
+				};
+
 			typedef std::unique_ptr<H5::DataType,void(*)(H5::DataType*)> DataTypeHandle;
 			typedef std::unique_ptr<H5::Group,void(*)(H5::Group*)> GroupHandle;
 
-			DataDump(const char* filename);
+			enum class IOMode:int{READ,WRITE};
+
+			DataDump(const char* filename,IOMode mode=IOMode::WRITE);
+
 			~DataDump();
 
 			struct FieldDescriptor
@@ -92,6 +120,12 @@ namespace SnowflakeModel
 				dataWrite(MetaObject<T>().typeGet(),objname,n_rows,n_cols,data);
 				}
 
+			template<class T>
+			ArrayReader<T> arrayGet(const char* objname) const
+				{
+				return ArrayReader<T>(*this,objname);
+				}
+
 			static 
 			DataTypeHandle compoundMake(const FieldDescriptor* fields
 				,size_t n_fields,size_t struct_size);
@@ -101,12 +135,16 @@ namespace SnowflakeModel
 		private:
 			static void deleter(H5::DataType* obj);
 			static void deleter(H5::Group* obj);
+			static void deleter(ArrayReaderImpl* obj);
 
 			void dataWrite(const H5::DataType& type,const char* objname
 				,size_t n_elems,const void* data);
 
 			void dataWrite(const H5::DataType& type,const char* objname
 				,size_t n_rows,size_t n_cols,const void* data);
+
+			void dataRead(const H5::DataType& type,const char* objname
+				,size_t n_elems,void* data) const;
 
 			std::unique_ptr<H5::H5File> m_file;
 			static H5::StrType s_cstr;
