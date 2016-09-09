@@ -124,8 +124,6 @@ void Solid::boundingBoxCompute() const
 		}
 
 	m_bounding_box=subvolume->boundingBoxGet();
-//	m_bounding_box.m_min=glm::min(m_bounding_box.m_min,bb_temp->m_min);
-//	m_bounding_box.m_max=glm::max(m_bounding_box.m_max,bb_temp->m_max);
 	++subvolume;
 
 	while(subvolume!=subvolumesEnd())
@@ -369,7 +367,7 @@ Solid::Solid(const DataDump& dump,const char* name)
 			{
 			auto group_name_current=defgroup_name + group_name;
 			printf("%s\n",group_name_current.c_str());
-		//	m_subvolumes.push_back(VolumeConvex(dump,group_name_current.c_str()));
+			m_subvolumes.push_back(VolumeConvex(dump,group_name_current.c_str()));
 			});
 		}
 	}

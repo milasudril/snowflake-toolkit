@@ -442,3 +442,22 @@ void VolumeConvex::write(const char* id,DataDump& dump) const
 		}
 	}
 
+VolumeConvex::VolumeConvex(const DataDump& dump,const char* id)
+	{
+	auto group=dump.groupOpen(id);
+	auto group_name=std::string(id);
+	m_vertices=dump.arrayGet<Vertex>((group_name + "/vertices").c_str());
+	m_faces=dump.arrayGet<Face>((group_name + "/faces").c_str());
+	m_faces_out=dump.arrayGet<FaceIndex>((group_name + "/faces_out").c_str());
+
+	m_flags_dirty=BOUNDINGBOX_DIRTY|MIDPOINT_DIRTY
+		|FACES_NORMAL_DIRTY|FACES_MIDPOINT_DIRTY|VOLUME_DIRTY
+		|AREA_VISIBLE_DIRTY;
+
+	auto face_current=facesBegin();
+	while(face_current!=facesEnd())
+		{
+		face_current->parentSet(*this);
+		++face_current;
+		}
+	}

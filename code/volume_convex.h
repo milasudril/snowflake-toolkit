@@ -34,6 +34,8 @@ namespace SnowflakeModel
 			class Face
 				{
 				public:
+					Face(){}
+
 					Face(VertexIndex v0,VertexIndex v1,VertexIndex v2
 						,const VolumeConvex& vc):m_visible(0),r_vc(&vc)
 						{
@@ -42,6 +44,7 @@ namespace SnowflakeModel
 						m_verts[2]=v2;
 						}
 
+				//	TODO: (Perf) Can we avoid storing a reference to the volume here
 					const Vertex& vertexGet(int index) const
 						{return r_vc->vertexGet(m_verts[index]);}
 
@@ -70,6 +73,8 @@ namespace SnowflakeModel
 					|FACES_NORMAL_DIRTY|FACES_MIDPOINT_DIRTY|VOLUME_DIRTY
 					|AREA_VISIBLE_DIRTY)
 				{}
+
+			VolumeConvex(const DataDump& dump,const char* id);
 
 			VolumeConvex(const VolumeConvex& vc);
 
