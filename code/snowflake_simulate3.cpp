@@ -87,6 +87,24 @@ struct DeformationData
 
 struct Setup
 	{
+	struct Data
+		{
+		uint32_t m_actions;
+		uint32_t m_stat_saverate;
+
+		int m_size_x;
+		int m_size_y;
+		int m_size_z;
+
+		size_t m_N;
+		size_t m_N_iter;
+		uint32_t m_seed;
+		float m_droprate;
+		float m_growthrate;
+		float m_meltrate;
+		} m_data;
+
+
 	std::string m_crystal;
 	std::vector<DeformationData> m_deformations;
 	std::string m_output_dir;
@@ -105,50 +123,61 @@ struct Setup
 	static constexpr uint32_t GEOMETRY_DUMP_ICE=32;
 	static constexpr uint32_t PARAM_SHOW=16;
 
-	uint32_t m_actions;
-	uint32_t m_stat_saverate;
-
-	int m_size_x;
-	int m_size_y;
-	int m_size_z;
-
-	size_t m_N;
-	size_t m_N_iter;
-	uint32_t m_seed;
-	float m_droprate;
-	float m_growthrate;
-	float m_meltrate;
-
 	Setup(int argc,char** argv);
 	Setup(const SnowflakeModel::DataDump& dump);
 	Setup()=default;
 
 	void paramsDump();
+	void validate() const;
 	void write(SnowflakeModel::DataDump& dump);
 	};
 
+void Setup::validate() const
+	{
+	if(m_data.m_growthrate<1e-7)
+		{throw "Growthrate must be non-zero";}
+
+	if(m_crystal=="" && !(m_data.m_actions&HELP_SHOW))
+		{
+		throw "Crystal file is not given. "
+			"Try --help for more information.";
+		}
+
+	if(m_deformations.size()==0 && !( (m_data.m_actions&HELP_SHOW) || (m_data.m_actions&PARAM_SHOW)))
+		{
+		throw "No deformation is given. "
+			"Try --param-show together with the chosen crystal file for more "
+			"information.";
+		}
+
+	if( m_output_dir==""
+		&& (m_data.m_actions&GEOMETRY_DUMP || m_data.m_actions&GEOMETRY_SAMPLE
+			|| m_data.m_actions&STATS_DUMP))
+		{throw "No output directory given";}
+	}
+
 Setup::Setup(int argc,char** argv):
-	m_actions(0),m_size_x(1),m_size_y(0),m_size_z(0)
+	m_data{0}
 	{
 	int option_index;
 	int c;
 	const char* sample_geometry=nullptr;
 	std::vector<std::string> deformations;
-	m_seed=time(nullptr);
+	m_data.m_seed=time(nullptr);
 
-	m_N=N;
-	m_droprate=DROPRATE;
-	m_growthrate=GROWTHRATE;
-	m_meltrate=MELTRATE;
-	m_N_iter=N_ITER;
-	m_stat_saverate=256;
+	m_data.m_N=N;
+	m_data.m_droprate=DROPRATE;
+	m_data.m_growthrate=GROWTHRATE;
+	m_data.m_meltrate=MELTRATE;
+	m_data.m_N_iter=N_ITER;
+	m_data.m_stat_saverate=256;
 
 	while( (c=getopt_long(argc,argv,"",PROGRAM_OPTIONS,&option_index))!=-1)
 		{
 		switch(c)
 			{
 			case PARAM_HELP:
-				m_actions|=HELP_SHOW;
+				m_data.m_actions|=HELP_SHOW;
 				break;
 
 			case PARAM_SHAPE:
@@ -167,52 +196,52 @@ Setup::Setup(int argc,char** argv):
 			case PARAM_GEOMETRY_SAMPLE:
 			//	This option takes sub-options.
 				sample_geometry=optarg;
-				m_actions|=GEOMETRY_SAMPLE;
+				m_data.m_actions|=GEOMETRY_SAMPLE;
 				break;
 
 			case PARAM_GEOMETRY_DUMP:
-				m_actions|=GEOMETRY_DUMP;
+				m_data.m_actions|=GEOMETRY_DUMP;
 				break;
 
 			case PARAM_GEOMETRY_DUMP_ICE:
-				m_actions|=GEOMETRY_DUMP_ICE;
+				m_data.m_actions|=GEOMETRY_DUMP_ICE;
 				break;
 
 			case PARAM_STATS_DUMP:
 				{
-				m_actions|=STATS_DUMP;
+				m_data.m_actions|=STATS_DUMP;
 				auto freq=atoi(optarg);
 				if(freq!=0)
-					{m_stat_saverate=freq;}
+					{m_data.m_stat_saverate=freq;}
 				}
 				break;
 
 			case PARAM_SEED:
-				m_seed=atoi(optarg);
+				m_data.m_seed=atoi(optarg);
 				break;
 
 			case PARAM_PARTICLE_COUNT:
-				m_N=atoi(optarg);
+				m_data.m_N=atoi(optarg);
 				break;
 
 			case PARAM_DROPRATE:
-				m_droprate=atof(optarg);
+				m_data.m_droprate=atof(optarg);
 				break;
 
 			case PARAM_GROWTHRATE:
-				m_growthrate=atof(optarg);
+				m_data.m_growthrate=atof(optarg);
 				break;
 
 			case PARAM_MELTRATE:
-				m_meltrate=atof(optarg);
+				m_data.m_meltrate=atof(optarg);
 				break;
 
 			case PARAM_NITER:
-				m_N_iter=atoi(optarg);
+				m_data.m_N_iter=atoi(optarg);
 				break;
 
 			case PARAM_PARAMSHOW:
-				m_actions|=PARAM_SHOW;
+				m_data.m_actions|=PARAM_SHOW;
 				break;
 
 			case PARAM_STATEFILE:
@@ -224,27 +253,6 @@ Setup::Setup(int argc,char** argv):
 
 			}
 		}
-
-	if(m_growthrate<1e-7)
-		{throw "Growthrate must be non-zero";}
-
-	if(m_crystal=="" && !(m_actions&HELP_SHOW))
-		{
-		throw "Crystal file is not given. "
-			"Try --help for more information.";
-		}
-
-	if(deformations.size()==0 && !( (m_actions&HELP_SHOW) || (m_actions&PARAM_SHOW)))
-		{
-		throw "No deformation is given. "
-			"Try --param-show together with the chosen crystal file for more "
-			"information.";
-		}
-
-	if( m_output_dir==""
-		&& (m_actions&GEOMETRY_DUMP || m_actions&GEOMETRY_SAMPLE
-			|| m_actions&STATS_DUMP))
-		{throw "No output directory given";}
 
 	if(sample_geometry!=nullptr)
 		{
@@ -258,13 +266,13 @@ Setup::Setup(int argc,char** argv):
 					switch(k)
 						{
 						case 0:
-							m_size_x=atoi(temp.data());
+							m_data.m_size_x=atoi(temp.data());
 							break;
 						case 1:
-							m_size_y=atoi(temp.data());
+							m_data.m_size_y=atoi(temp.data());
 							break;
 						case 2:
-							m_size_z=atoi(temp.data());
+							m_data.m_size_z=atoi(temp.data());
 							break;
 						}
 					temp.clear();
@@ -276,7 +284,7 @@ Setup::Setup(int argc,char** argv):
 			++sample_geometry;
 			}
 		if(*sample_geometry=='\0')
-			{m_size_z=atoi(temp.data());}
+			{m_data.m_size_z=atoi(temp.data());}
 		}
 
 		{
@@ -350,7 +358,7 @@ void Setup::paramsDump()
 		"growthrate: %.7g\n"
 		"meltrate:   %.7g\n"
 		,m_crystal.data()
-		,m_seed,m_N,m_droprate,m_growthrate,m_meltrate);
+		,m_data.m_seed,m_data.m_N,m_data.m_droprate,m_data.m_growthrate,m_data.m_meltrate);
 	printf("\nDeformations:\n");
 		{
 		auto ptr=m_deformations.data();
@@ -449,23 +457,23 @@ namespace SnowflakeModel
 	const size_t DataDump::MetaObject<DeformationDataIn>::field_count=3;
 
 	template<>
-	const DataDump::FieldDescriptor DataDump::MetaObject<Setup>::fields[]=
+	const DataDump::FieldDescriptor DataDump::MetaObject<Setup::Data>::fields[]=
 		{
-		 {"actions",offsetOf(&Setup::m_actions),DataDump::MetaObject<decltype(Setup::m_actions)>().typeGet()}
-		,{"stat_saverate",offsetOf(&Setup::m_stat_saverate),DataDump::MetaObject<decltype(Setup::m_stat_saverate)>().typeGet()}
-		,{"size_x",offsetOf(&Setup::m_size_x),DataDump::MetaObject<decltype(Setup::m_size_x)>().typeGet()}
-		,{"size_y",offsetOf(&Setup::m_size_y),DataDump::MetaObject<decltype(Setup::m_size_y)>().typeGet()}
-		,{"size_z",offsetOf(&Setup::m_size_z),DataDump::MetaObject<decltype(Setup::m_size_z)>().typeGet()}
-		,{"N",offsetOf(&Setup::m_N),DataDump::MetaObject<decltype(Setup::m_N)>().typeGet()}
-		,{"N_iter",offsetOf(&Setup::m_N_iter),DataDump::MetaObject<decltype(Setup::m_N_iter)>().typeGet()}
-		,{"seed",offsetOf(&Setup::m_seed),DataDump::MetaObject<decltype(Setup::m_seed)>().typeGet()}
-		,{"droprate",offsetOf(&Setup::m_droprate),DataDump::MetaObject<decltype(Setup::m_droprate)>().typeGet()}
-		,{"growthrate",offsetOf(&Setup::m_growthrate),DataDump::MetaObject<decltype(Setup::m_growthrate)>().typeGet()}
-		,{"meltrate",offsetOf(&Setup::m_meltrate),DataDump::MetaObject<decltype(Setup::m_meltrate)>().typeGet()}
+		 {"actions",offsetOf(&Setup::Data::m_actions),DataDump::MetaObject<decltype(Setup::Data::m_actions)>().typeGet()}
+		,{"stat_saverate",offsetOf(&Setup::Data::m_stat_saverate),DataDump::MetaObject<decltype(Setup::Data::m_stat_saverate)>().typeGet()}
+		,{"size_x",offsetOf(&Setup::Data::m_size_x),DataDump::MetaObject<decltype(Setup::Data::m_size_x)>().typeGet()}
+		,{"size_y",offsetOf(&Setup::Data::m_size_y),DataDump::MetaObject<decltype(Setup::Data::m_size_y)>().typeGet()}
+		,{"size_z",offsetOf(&Setup::Data::m_size_z),DataDump::MetaObject<decltype(Setup::Data::m_size_z)>().typeGet()}
+		,{"N",offsetOf(&Setup::Data::m_N),DataDump::MetaObject<decltype(Setup::Data::m_N)>().typeGet()}
+		,{"N_iter",offsetOf(&Setup::Data::m_N_iter),DataDump::MetaObject<decltype(Setup::Data::m_N_iter)>().typeGet()}
+		,{"seed",offsetOf(&Setup::Data::m_seed),DataDump::MetaObject<decltype(Setup::Data::m_seed)>().typeGet()}
+		,{"droprate",offsetOf(&Setup::Data::m_droprate),DataDump::MetaObject<decltype(Setup::Data::m_droprate)>().typeGet()}
+		,{"growthrate",offsetOf(&Setup::Data::m_growthrate),DataDump::MetaObject<decltype(Setup::Data::m_growthrate)>().typeGet()}
+		,{"meltrate",offsetOf(&Setup::Data::m_meltrate),DataDump::MetaObject<decltype(Setup::Data::m_meltrate)>().typeGet()}
 		};
 
 	template<>
-	const size_t DataDump::MetaObject<Setup>::field_count=11;
+	const size_t DataDump::MetaObject<Setup::Data>::field_count=11;
 	}
 
 void Setup::write(SnowflakeModel::DataDump& dump)
@@ -485,14 +493,14 @@ void Setup::write(SnowflakeModel::DataDump& dump)
 			}
 		dump.write("setup/deformations",deformations.data(),deformations.size());
 		}
-	dump.write("setup/data",this,1);
+	dump.write("setup/data",&m_data,1);
 	}
 
 Setup::Setup(const SnowflakeModel::DataDump& dump)
 	{
-	*this=dump.arrayGet<Setup>("setup/data").at(0);
+	m_data=dump.arrayGet<Setup::Data>("setup/data").at(0);
 	m_output_dir=dump.arrayGet<SnowflakeModel::DataDump::StringHolder>("setup/output_dir").at(0);
-	m_crystal=dump.arrayGet<SnowflakeModel::DataDump::StringHolder>("setup/creystal").at(0);
+	m_crystal=dump.arrayGet<SnowflakeModel::DataDump::StringHolder>("setup/crystal").at(0);
 		{
 		auto deformations=dump.arrayGet<DeformationDataIn>("setup/deformations");
 		auto ptr=deformations.data();
@@ -608,7 +616,7 @@ float C_coalesce(size_t k,size_t l
 	}
 
 float C_drop(size_t k,const std::vector<SnowflakeModel::IceParticle>& ice_particles
-	,const Setup& setup)
+	,const Setup::Data& setup)
 	{
 	auto& g_k=ice_particles[k];
 	if(g_k.dead())
@@ -622,7 +630,7 @@ float C_drop(size_t k,const std::vector<SnowflakeModel::IceParticle>& ice_partic
 	}
 
 float C_melt(size_t k,const std::vector<SnowflakeModel::IceParticle>& ice_particles
-	,const Setup& setup)
+	,const Setup::Data& setup)
 	{
 	auto& g_k=ice_particles[k];
 	if(g_k.dead())
@@ -634,7 +642,7 @@ float C_melt(size_t k,const std::vector<SnowflakeModel::IceParticle>& ice_partic
 void matrixRowUpdate(size_t k
 	,const std::vector<SnowflakeModel::IceParticle>& ice_particles
 	,SnowflakeModel::MatrixStorage& C_mat
-	,const Setup& setup)
+	,const Setup::Data& setup)
 	{
 	for(size_t l=0;l<ice_particles.size();++l)
 		{
@@ -773,7 +781,7 @@ class Simstate
 		void prototypesDump() const;
 
 		double progressGet() const noexcept
-			{return frame/static_cast<double>( r_setup.m_N_iter );}
+			{return frame/static_cast<double>( r_setup.m_data.m_N_iter );}
 
 		void geometryDump() const;
 
@@ -843,14 +851,14 @@ void Simstate::write(SnowflakeModel::DataDump& dump) const
 
 Simstate::Simstate(const Setup& setup,const SnowflakeModel::Solid& s_in):
 	 r_setup(setup),r_s_in(s_in),tau(0.0),frame(0),N_particles(0),N_particles_dropped(0)
-	,C_mat(setup.m_N+1,setup.m_N+1)
-	,randgen(setup.m_seed),U_rot(0,5),randomizer(C_mat)
+	,C_mat(setup.m_data.m_N+1,setup.m_data.m_N+1)
+	,randgen(setup.m_data.m_seed),U_rot(0,5),randomizer(C_mat)
 	,frame_data_file(nullptr)
 	{
 //	http://www0.cs.ucl.ac.uk/staff/d.jones/GoodPracticeRNG.pdf
 	randgen.discard(65536);
 
-	auto n=setup.m_N;
+	auto n=setup.m_data.m_N;
 	while(n)
 		{
 		ice_particles.push_back(ice_particlePrepare(s_in,setup,randgen));
@@ -859,14 +867,14 @@ Simstate::Simstate(const Setup& setup,const SnowflakeModel::Solid& s_in):
 		}
 
 	for(size_t k=0;k<ice_particles.size();++k)
-		{matrixRowUpdate(k,ice_particles,C_mat,setup);}
+		{matrixRowUpdate(k,ice_particles,C_mat,setup.m_data);}
 
 	for(size_t k=0;k<ice_particles.size();++k)
 		{
-		C_mat(k,k)=2.0f*setup.m_growthrate/ice_particles.size();
+		C_mat(k,k)=2.0f*setup.m_data.m_growthrate/ice_particles.size();
 		}
 
-	if(setup.m_actions&Setup::STATS_DUMP)
+	if(setup.m_data.m_actions&Setup::STATS_DUMP)
 		{
 		mkdir(setup.m_output_dir.data(),S_IRWXU|S_IRGRP|S_IXGRP);
 		frame_data_file.reset(new SnowflakeModel::FileOut(
@@ -924,31 +932,29 @@ void Simstate::prototypesDump() const
 
 void Simstate::rasterize() const
 	{
+	auto i=ice_particles.begin();
+	size_t count=0;
+	while(i!=ice_particles.end())
 		{
-		auto i=ice_particles.begin();
-		size_t count=0;
-		while(i!=ice_particles.end())
+		if(!i->dead())
 			{
-			if(!i->dead())
-				{
-				char num_buff[32];
-				sprintf(num_buff,"/geom-%zx.adda",count);
-				SnowflakeModel::FileOut file_out((r_setup.m_output_dir+num_buff).data());
-				SnowflakeModel::VoxelbuilderAdda builder(file_out
-					,r_setup.m_size_x,r_setup.m_size_y,r_setup.m_size_z
-					,i->solidGet().boundingBoxGet());
+			char num_buff[32];
+			sprintf(num_buff,"/geom-%zx.adda",count);
+			SnowflakeModel::FileOut file_out((r_setup.m_output_dir+num_buff).data());
+			SnowflakeModel::VoxelbuilderAdda builder(file_out
+				,r_setup.m_data.m_size_x,r_setup.m_data.m_size_y,r_setup.m_data.m_size_z
+				,i->solidGet().boundingBoxGet());
 
-				i->solidGet().geometrySample(builder);
-				++count;
-				}
-			++i;
+			i->solidGet().geometrySample(builder);
+			++count;
 			}
+		++i;
 		}
 	}
 
 void Simstate::statsDump() const
 	{
-	if( !(frame_data_file!=nullptr && frame%r_setup.m_stat_saverate==0) )
+	if( !(frame_data_file!=nullptr && frame%r_setup.m_data.m_stat_saverate==0) )
 		{return;}
 	auto now=time(nullptr);
 
@@ -1056,7 +1062,7 @@ bool Simstate::step()
 			{
 			ice_particles[k]=ice_particlePrepare(r_s_in,r_setup,randgen);
 			++N_particles;
-			matrixRowUpdate(k,ice_particles,C_mat,r_setup);
+			matrixRowUpdate(k,ice_particles,C_mat,r_setup.m_data);
 			++frame;
 			return 1;
 			}
@@ -1075,7 +1081,7 @@ bool Simstate::step()
 		ice_particles[k].kill();
 		--N_particles;
 		++N_particles_dropped;
-		matrixRowUpdate(k,ice_particles,C_mat,r_setup);
+		matrixRowUpdate(k,ice_particles,C_mat,r_setup.m_data);
 		++frame;
 		return 1;
 		}
@@ -1085,7 +1091,7 @@ bool Simstate::step()
 		auto k=pair_merge.first;
 		ice_particles[k].kill();
 		--N_particles;
-		matrixRowUpdate(k,ice_particles,C_mat,r_setup);
+		matrixRowUpdate(k,ice_particles,C_mat,r_setup.m_data);
 		++frame;
 		return 1;
 		}
@@ -1128,8 +1134,8 @@ bool Simstate::step()
 			g_b.velocitySet(vTermCompute(s_b,r_setup)*randomDirection(randgen));
 			g_a.kill();
 			--N_particles;
-			matrixRowUpdate(pair_merge.first,ice_particles,C_mat,r_setup);
-			matrixRowUpdate(pair_merge.second,ice_particles,C_mat,r_setup);
+			matrixRowUpdate(pair_merge.first,ice_particles,C_mat,r_setup.m_data);
+			matrixRowUpdate(pair_merge.second,ice_particles,C_mat,r_setup.m_data);
 			++frame;
 			return 1;
 			}
@@ -1151,11 +1157,21 @@ int main(int argc,char** argv)
 	try
 		{
 		Setup setup(argc,argv);
-		if(setup.m_actions&Setup::HELP_SHOW)
+		if(setup.m_data.m_actions&Setup::HELP_SHOW)
 			{
 			helpShow();
 			return 0;
 			}
+
+		if(setup.m_statefile.size())
+			{
+			SnowflakeModel::DataDump dump(setup.m_statefile.c_str()
+				,SnowflakeModel::DataDump::IOMode::READ);
+			auto statefile=setup.m_statefile;
+			setup=Setup(dump);
+			setup.m_statefile=statefile;
+			}
+		setup.validate();
 
 		SnowflakeModel::Solid s_in;
 			{
@@ -1165,7 +1181,7 @@ int main(int argc,char** argv)
 			parser.commandsRead(loader);
 			}
 
-		if(setup.m_actions&Setup::PARAM_SHOW)
+		if(setup.m_data.m_actions&Setup::PARAM_SHOW)
 			{
 			auto& params=s_in.deformationTemplatesGet();
 			auto ptr=params.data();
@@ -1187,12 +1203,12 @@ int main(int argc,char** argv)
 
 
 		fprintf(stderr,"# Initializing\n");
-		SnowflakeModel::CtrlCHandler stopper;
 		setup.paramsDump();
-		Simstate state(setup,s_in);
 		fflush(stdout);
+		Simstate state(setup,s_in);
 		auto now=SnowflakeModel::getdate();
 		fprintf(stderr,"# Simulation started at %s\n",now.c_str());
+		SnowflakeModel::CtrlCHandler stopper;
 		state.statsDump();
 		while(state.progressGet()<1.0 && !stopper.captured())
 			{
@@ -1201,8 +1217,12 @@ int main(int argc,char** argv)
 			}
 		fprintf(stderr,"\n# Exiting\n");
 			{
-			auto filename_dump=SnowflakeModel::filenameEscape(now.c_str());
-			filename_dump+=".h5";
+			auto filename_dump=setup.m_statefile;
+			if(filename_dump.size()==0)
+				{
+				filename_dump=SnowflakeModel::filenameEscape(now.c_str());
+				filename_dump+=".h5";
+				}
 			fprintf(stderr,"# Dumping simulation state to %s\n",filename_dump.c_str());
 			SnowflakeModel::DataDump dump(filename_dump.c_str());
 			setup.write(dump);
@@ -1212,19 +1232,19 @@ int main(int argc,char** argv)
 
 		state.statsDump();
 
-		if(setup.m_actions&Setup::GEOMETRY_DUMP)
+		if(setup.m_data.m_actions&Setup::GEOMETRY_DUMP)
 			{
 			fprintf(stderr,"# Dumping wavefront files\n");
 			state.geometryDump();
 			}
 
-		if(setup.m_actions&Setup::GEOMETRY_DUMP_ICE)
+		if(setup.m_data.m_actions&Setup::GEOMETRY_DUMP_ICE)
 			{
 			fprintf(stderr,"# Dumping crystal prototype files\n");
 			state.prototypesDump();
 			}
 
-		if(setup.m_actions&Setup::GEOMETRY_SAMPLE)
+		if(setup.m_data.m_actions&Setup::GEOMETRY_SAMPLE)
 			{
 			fprintf(stderr,"# Dumping adda files\n");
 			state.rasterize();
