@@ -347,11 +347,29 @@ Solid::Solid(const DataDump& dump,const char* name)
 		((group_name+"/mirror_flags").c_str()).at(0);
 
 		{
-		auto defgroup=dump.groupOpen((group_name + "/deformation_templates").c_str());
-		printf("Reading solid templates\n");fflush(stdout);
-		dump.iterate(*defgroup,[](const char* group_name)
+		auto defgroup_name=group_name + "/deformation_templates";
+		auto defgroup=dump.groupOpen(defgroup_name.c_str());
+		defgroup_name+='/';
+		
+		dump.iterate(*defgroup,[&defgroup_name,this]
+			(const char* group_name)
 			{
-			printf("Got group %s\n",group_name);
+			auto group_name_current=defgroup_name + group_name;
+			printf("%s\n",group_name_current.c_str());
+		//	m_deformation_templates.push_back(SolidDeformation(dump,group_name_current.c_str()));
+			});
+		}
+
+		{
+		auto defgroup_name=group_name + "/subvolumes";
+		auto defgroup=dump.groupOpen(defgroup_name.c_str());
+		defgroup_name+='/';		
+		dump.iterate(*defgroup,[&defgroup_name,this]
+			(const char* group_name)
+			{
+			auto group_name_current=defgroup_name + group_name;
+			printf("%s\n",group_name_current.c_str());
+		//	m_subvolumes.push_back(VolumeConvex(dump,group_name_current.c_str()));
 			});
 		}
 	}
