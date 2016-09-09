@@ -52,6 +52,7 @@ static constexpr char PARAM_MELTRATE='L';
 static constexpr char PARAM_NITER='M';
 static constexpr char PARAM_PARAMSHOW='N';
 static constexpr char PARAM_GEOMETRY_DUMP_ICE='O';
+static constexpr char PARAM_STATEFILE='S';
 
 
 static const struct option PROGRAM_OPTIONS[]=
@@ -73,6 +74,7 @@ static const struct option PROGRAM_OPTIONS[]=
 		,{"growthrate",required_argument,nullptr,PARAM_GROWTHRATE}
 		,{"meltrate",required_argument,nullptr,PARAM_MELTRATE}
 		,{"param-show",no_argument,nullptr,PARAM_PARAMSHOW}
+		,{"statefile",required_argument,nullptr,PARAM_STATEFILE}
 		,{0,0,0,0}
 	};
 
@@ -88,6 +90,7 @@ struct Setup
 	std::string m_crystal;
 	std::vector<DeformationData> m_deformations;
 	std::string m_output_dir;
+	std::string m_statefile;
 
 	static constexpr size_t N=1023;
 	static constexpr float DROPRATE=100;
@@ -117,6 +120,9 @@ struct Setup
 	float m_meltrate;
 
 	Setup(int argc,char** argv);
+	Setup(const SnowflakeModel::DataDump& dump);
+	Setup()=default;
+
 	void paramsDump();
 	void write(SnowflakeModel::DataDump& dump);
 	};
@@ -207,6 +213,10 @@ Setup::Setup(int argc,char** argv):
 
 			case PARAM_PARAMSHOW:
 				m_actions|=PARAM_SHOW;
+				break;
+
+			case PARAM_STATEFILE:
+				m_statefile=optarg;
 				break;
 
 			case '?':
@@ -357,6 +367,9 @@ void Setup::paramsDump()
 void helpShow()
 	{
 	printf("Options:\n\n"
+		"--statefile=file\n"
+		"    Continue a started simulation whose state is stored in `file`. The simulation setup "
+		"stored in `file` overrides any other command line argument.\n\n"
 		"--shape=crystal_file\n"
 		"    Generate data using the shape stored in crystal_file."
 		" See the reference manal for information about how to create "
@@ -377,26 +390,36 @@ void helpShow()
 		"be imported into 3D modelling software such as blender(1).\n\n"
 		"--dump-geometry-ice\n"
 		"    Same as --dump-geometry but write data as Ice crystal prototype "
-		"files, so they can be used by other tools provided by the toolkit."
+		"files, so they can be used by other tools provided by the toolkit.\n\n"
 		"--sample-geometry=Nx,Ny,Nz\n"
 		"    Sample the output geometry to a grid of size Nx x Ny x Nz\n\n"
 		"--seed=integer\n"
+		"    Sets the random number genererator seed\n\n"
 		"--iterataions=integer\n"
 		"    Sets the number of iterations\n\n"
-		"    Sets the random number genererator seed\n\n"
 		"--N=integer\n"
 		"    The maximum number of crystals\n\n"
 		"--sigma=value\n"
 		"    Standard deviation in particle size\n\n"
 		"--droprate=value\n"
+		"    Model parameter\n\n"
 		"--growthrate=value\n"
+		"    Model parameter\n\n"
 		"--meltrate=value\n"
+		"    Model parameter\n\n"
 		);
 	}
 
-struct DeformationDataTrivial
+struct DeformationDataOut
 	{
 	const char* name;
+	double mean;
+	double standard_deviation;
+	};
+
+struct DeformationDataIn
+	{
+	SnowflakeModel::DataDump::StringHolder name;
 	double mean;
 	double standard_deviation;
 	};
@@ -404,15 +427,26 @@ struct DeformationDataTrivial
 namespace SnowflakeModel
 	{
 	template<>
-	const DataDump::FieldDescriptor DataDump::MetaObject<DeformationDataTrivial>::fields[]=
+	const DataDump::FieldDescriptor DataDump::MetaObject<DeformationDataOut>::fields[]=
 		{
-		 {"name",offsetOf(&DeformationDataTrivial::name),DataDump::MetaObject<decltype(DeformationDataTrivial::name)>().typeGet()}
-		,{"mean",offsetOf(&DeformationDataTrivial::mean),DataDump::MetaObject<decltype(DeformationDataTrivial::mean)>().typeGet()}
-		,{"standard_deviation",offsetOf(&DeformationDataTrivial::standard_deviation),DataDump::MetaObject<decltype(DeformationDataTrivial::standard_deviation)>().typeGet()}
+		 {"name",offsetOf(&DeformationDataOut::name),DataDump::MetaObject<decltype(DeformationDataOut::name)>().typeGet()}
+		,{"mean",offsetOf(&DeformationDataOut::mean),DataDump::MetaObject<decltype(DeformationDataOut::mean)>().typeGet()}
+		,{"standard_deviation",offsetOf(&DeformationDataOut::standard_deviation),DataDump::MetaObject<decltype(DeformationDataOut::standard_deviation)>().typeGet()}
 		};
 
 	template<>
-	const size_t DataDump::MetaObject<DeformationDataTrivial>::field_count=3;
+	const size_t DataDump::MetaObject<DeformationDataOut>::field_count=3;
+
+	template<>
+	const DataDump::FieldDescriptor DataDump::MetaObject<DeformationDataIn>::fields[]=
+		{
+		 {"name",offsetOf(&DeformationDataIn::name),DataDump::MetaObject<decltype(DeformationDataIn::name)>().typeGet()}
+		,{"mean",offsetOf(&DeformationDataIn::mean),DataDump::MetaObject<decltype(DeformationDataIn::mean)>().typeGet()}
+		,{"standard_deviation",offsetOf(&DeformationDataIn::standard_deviation),DataDump::MetaObject<decltype(DeformationDataIn::standard_deviation)>().typeGet()}
+		};
+
+	template<>
+	const size_t DataDump::MetaObject<DeformationDataIn>::field_count=3;
 
 	template<>
 	const DataDump::FieldDescriptor DataDump::MetaObject<Setup>::fields[]=
@@ -441,7 +475,7 @@ void Setup::write(SnowflakeModel::DataDump& dump)
 	dump.write("setup/crystal",&m_crystal,1);
 
 		{
-		std::vector<DeformationDataTrivial> deformations;
+		std::vector<DeformationDataOut> deformations;
 		auto ptr=m_deformations.data();
 		auto ptr_end=ptr+m_deformations.size();
 		while(ptr!=ptr_end)
@@ -454,6 +488,24 @@ void Setup::write(SnowflakeModel::DataDump& dump)
 	dump.write("setup/data",this,1);
 	}
 
+Setup::Setup(const SnowflakeModel::DataDump& dump)
+	{
+	*this=dump.arrayGet<Setup>("setup/data").at(0);
+	m_output_dir=dump.arrayGet<SnowflakeModel::DataDump::StringHolder>("setup/output_dir").at(0);
+	m_crystal=dump.arrayGet<SnowflakeModel::DataDump::StringHolder>("setup/creystal").at(0);
+		{
+		auto deformations=dump.arrayGet<DeformationDataIn>("setup/deformations");
+		auto ptr=deformations.data();
+		auto ptr_end=ptr + deformations.size();
+		while(ptr!=ptr_end)
+			{
+			m_deformations.push_back(
+				DeformationData{std::string(ptr->name),ptr->mean,ptr->standard_deviation}
+				);
+			++ptr;
+			}
+		}
+	}
 
 
 

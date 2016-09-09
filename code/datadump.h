@@ -183,7 +183,7 @@ namespace SnowflakeModel
 
 			template<class T>
 			std::vector<T> arrayGet(const char* objname) const
-				{return arrayRead<T>(objname).dataGet();}
+				{return arrayRead<T>(objname).dataRead();}
 
 			template<class T>
 			std::pair<std::vector<T>,size_t> matrixGet(const char* objname) const
