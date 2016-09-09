@@ -770,6 +770,14 @@ glm::vec2 drawFromTriangle(SnowflakeModel::RandomGenerator& randgen)
 class Simstate
 	{
 	public:
+		struct Data
+			{
+			double tau;
+			size_t frame;
+			size_t N_particles;
+			size_t N_particles_dropped;
+			};
+
 		Simstate(Setup&& setup,SnowflakeModel::Solid&& s_in)=delete;
 		Simstate(Setup&& setup,const SnowflakeModel::Solid& s_in)=delete;
 		Simstate(const Setup& setup,SnowflakeModel::Solid&& s_in)=delete;
@@ -781,7 +789,7 @@ class Simstate
 		void prototypesDump() const;
 
 		double progressGet() const noexcept
-			{return frame/static_cast<double>( r_setup.m_data.m_N_iter );}
+			{return m_data.frame/static_cast<double>( r_setup.m_data.m_N_iter );}
 
 		void geometryDump() const;
 
@@ -792,10 +800,7 @@ class Simstate
 	private:
 		const Setup& r_setup;
 		const SnowflakeModel::Solid& r_s_in;
-		double tau;
-		size_t frame;
-		size_t N_particles;
-		size_t N_particles_dropped;
+		Data m_data;
 		SnowflakeModel::MatrixStorage C_mat;
 		SnowflakeModel::RandomGenerator randgen;
 		std::vector<SnowflakeModel::IceParticle> ice_particles;
@@ -804,28 +809,28 @@ class Simstate
 		std::unique_ptr<SnowflakeModel::FileOut> frame_data_file; //Stateless. Remember to append to this file when restoring state from savefile.
 		std::unique_ptr<SnowflakeModel::FileOut> dropped_stats; //Append mode...
 
-		friend class SnowflakeModel::DataDump::MetaObject<Simstate>;
+		friend class SnowflakeModel::DataDump::MetaObject<Data>;
 	};
 
 namespace SnowflakeModel
 	{
 	template<>
-	const DataDump::FieldDescriptor DataDump::MetaObject<Simstate>::fields[]=
+	const DataDump::FieldDescriptor DataDump::MetaObject<Simstate::Data>::fields[]=
 		{
-		 {"tau",offsetOf(&Simstate::tau),DataDump::MetaObject<decltype(Simstate::tau)>().typeGet()}
-		,{"frame",offsetOf(&Simstate::frame),DataDump::MetaObject<decltype(Simstate::frame)>().typeGet()}
-		,{"N_particles",offsetOf(&Simstate::N_particles),DataDump::MetaObject<decltype(Simstate::N_particles)>().typeGet()}
-		,{"N_particles_dropped",offsetOf(&Simstate::N_particles_dropped),DataDump::MetaObject<decltype(Simstate::N_particles_dropped)>().typeGet()}
+		 {"tau",offsetOf(&Simstate::Data::tau),DataDump::MetaObject<decltype(Simstate::Data::tau)>().typeGet()}
+		,{"frame",offsetOf(&Simstate::Data::frame),DataDump::MetaObject<decltype(Simstate::Data::frame)>().typeGet()}
+		,{"N_particles",offsetOf(&Simstate::Data::N_particles),DataDump::MetaObject<decltype(Simstate::Data::N_particles)>().typeGet()}
+		,{"N_particles_dropped",offsetOf(&Simstate::Data::N_particles_dropped),DataDump::MetaObject<decltype(Simstate::Data::N_particles_dropped)>().typeGet()}
 		};
 
 	template<>
-	const size_t DataDump::MetaObject<Simstate>::field_count=4;
+	const size_t DataDump::MetaObject<Simstate::Data>::field_count=4;
 	}
 
 void Simstate::write(SnowflakeModel::DataDump& dump) const
 	{
 	auto group=dump.groupCreate("simstate");
-	dump.write("simstate/data",this,1);
+	dump.write("simstate/data",&m_data,1);
 	dump.write("simstate/C_mat",C_mat.rowGet(0),C_mat.nRowsGet(),C_mat.nColsGet());
 	dump.write("simstate/randgen",SnowflakeModel::begin(randgen),SnowflakeModel::size(randgen));
 
@@ -846,11 +851,10 @@ void Simstate::write(SnowflakeModel::DataDump& dump) const
 			++k;
 			}
 		}
-
 	}
 
 Simstate::Simstate(const Setup& setup,const SnowflakeModel::Solid& s_in):
-	 r_setup(setup),r_s_in(s_in),tau(0.0),frame(0),N_particles(0),N_particles_dropped(0)
+	 r_setup(setup),r_s_in(s_in),m_data{0}
 	,C_mat(setup.m_data.m_N+1,setup.m_data.m_N+1)
 	,randgen(setup.m_data.m_seed),U_rot(0,5),randomizer(C_mat)
 	,frame_data_file(nullptr)
@@ -954,7 +958,7 @@ void Simstate::rasterize() const
 
 void Simstate::statsDump() const
 	{
-	if( !(frame_data_file!=nullptr && frame%r_setup.m_data.m_stat_saverate==0) )
+	if( !(frame_data_file!=nullptr && m_data.frame%r_setup.m_data.m_stat_saverate==0) )
 		{return;}
 	auto now=time(nullptr);
 
@@ -984,12 +988,12 @@ void Simstate::statsDump() const
 			"%.15g\t"
 			"%zu\t"
 			"%zu\t"
-			"%.15g\n",frame,now,tau,N_particles,N_particles_dropped
-			,C_kl_sum);
+			"%.15g\n",m_data.frame,now,m_data.tau,m_data.N_particles
+			,m_data.N_particles_dropped,C_kl_sum);
 
 			{
 			char countbuff[32];
-			sprintf(countbuff,"/frame-%zu.txt",frame);
+			sprintf(countbuff,"/frame-%zu.txt",m_data.frame);
 			SnowflakeModel::FileOut file_out((r_setup.m_output_dir+countbuff).data());
 			auto i=ice_particles.begin();
 			file_out.printf("# R_max\tVolume\tSpeed\tL_x\tr_xy\tr_xz\tNumber of sub-volumes\n");
@@ -1043,11 +1047,11 @@ void particleDumpStats(const SnowflakeModel::IceParticle& i,SnowflakeModel::File
 bool Simstate::step()
 	{
 	SNOWFLAKEMODEL_TIMED_SCOPE();
-	if(frame%64==0)
+	if(m_data.frame%64==0)
 		{fprintf(stderr,"\r# Running simulation. %.3g%% done.    ",progressGet()*100);}
 
 	auto pair_merge=ice_particlesChoose(randomizer,randgen);
-	tau+=-log(U(0.0,1.0,randgen))/double(C_mat.sumGetMt());
+	m_data.tau+=-log(U(0.0,1.0,randgen))/double(C_mat.sumGetMt());
 
 	if(pair_merge.first==pair_merge.second)
 		{
@@ -1055,15 +1059,15 @@ bool Simstate::step()
 		if(k==ice_particles.size())
 			{
 			fprintf(stderr,"\n# Event rejected %zu: Cloud is full %zu %zu"
-				,frame,N_particles,k);
+				,m_data.frame,m_data.N_particles,k);
 			return 0;
 			}
 		else
 			{
 			ice_particles[k]=ice_particlePrepare(r_s_in,r_setup,randgen);
-			++N_particles;
+			++m_data.N_particles;
+			++m_data.frame;
 			matrixRowUpdate(k,ice_particles,C_mat,r_setup.m_data);
-			++frame;
 			return 1;
 			}
 		}
@@ -1072,17 +1076,18 @@ bool Simstate::step()
 		{
 		auto k=pair_merge.second;
 		auto name_prefix=r_setup.m_output_dir + "/mesh-dropped-";
-		particleDump(ice_particles[k],name_prefix.c_str(),frame+1);
+		particleDump(ice_particles[k],name_prefix.c_str(),m_data.frame+1);
 		if(dropped_stats!=nullptr)
 			{
-			dropped_stats->printf("%zu\t%zu\t%.15g\t",frame+1,time(nullptr),tau);
+			dropped_stats->printf("%zu\t%zu\t%.15g\t",m_data.frame+1,time(nullptr)
+				,m_data.tau);
 			particleDumpStats(ice_particles[k],*dropped_stats);
 			}
 		ice_particles[k].kill();
-		--N_particles;
-		++N_particles_dropped;
+		--m_data.N_particles;
+		++m_data.N_particles_dropped;
 		matrixRowUpdate(k,ice_particles,C_mat,r_setup.m_data);
-		++frame;
+		++m_data.frame;
 		return 1;
 		}
 	else
@@ -1090,9 +1095,9 @@ bool Simstate::step()
 		{
 		auto k=pair_merge.first;
 		ice_particles[k].kill();
-		--N_particles;
+		--m_data.N_particles;
+		++m_data.frame;
 		matrixRowUpdate(k,ice_particles,C_mat,r_setup.m_data);
-		++frame;
 		return 1;
 		}
 	else
@@ -1133,16 +1138,16 @@ bool Simstate::step()
 			s_b.merge(s_a);
 			g_b.velocitySet(vTermCompute(s_b,r_setup)*randomDirection(randgen));
 			g_a.kill();
-			--N_particles;
+			--m_data.N_particles;
+			++m_data.frame;
 			matrixRowUpdate(pair_merge.first,ice_particles,C_mat,r_setup.m_data);
 			matrixRowUpdate(pair_merge.second,ice_particles,C_mat,r_setup.m_data);
-			++frame;
 			return 1;
 			}
 #ifndef NDEBUG
 		else
 			{
-			fprintf(stderr,"# Event %zu rejected: Overlap\n",frame);
+			fprintf(stderr,"# Event %zu rejected: Overlap\n",m_data.frame);
 			}
 #endif
 		return 0;
@@ -1186,8 +1191,6 @@ int main(int argc,char** argv)
 			SnowflakeModel::DataDump dump(setup.m_statefile.c_str()
 				,SnowflakeModel::DataDump::IOMode::READ);
 			s_in=SnowflakeModel::Solid(dump,"solid_in");
-
-			throw "Loader not complete yet...";
 			}
 
 		if(setup.m_data.m_actions&Setup::PARAM_SHOW)
