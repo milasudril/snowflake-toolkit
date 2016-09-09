@@ -204,7 +204,7 @@ namespace SnowflakeModel
 				}
 
 			template<class T>
-			void matrixGet(const char* objname,T* data,size_t n_rows,size_t n_cols)
+			void matrixGet(const char* objname,T* data,size_t n_rows,size_t n_cols) const
 				{
 				auto reader=matrixReaderCreate(MetaObject<T>().typeGet(),objname);
 				dataRead(*reader,data,n_rows,n_cols);				

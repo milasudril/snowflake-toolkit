@@ -24,3 +24,25 @@ void SolidDeformation::write(const char* id,DataDump& dump) const
 			}
 		}
 	}
+
+SolidDeformation::SolidDeformation(const DataDump& dump,const char* id)
+	{
+	auto group=dump.groupOpen(id);
+	std::string group_name(id);
+	dump.matrixGet((group_name + "/matrix").c_str(),&m_matrix[0][0],4,4);
+	m_name=dump.arrayGet<DataDump::StringHolder>((group_name + "/name").c_str())
+		.at(0);
+
+		{
+		auto param_name_base=group_name+"/parameter_map";
+		auto group_params=dump.groupOpen(param_name_base.c_str());
+		param_name_base+='/';
+		dump.iterate(*group_params,[this,&param_name_base,&dump]
+			(const char* group_name)
+			{
+			auto param_name=param_name_base+group_name;
+			parameter_map[group_name]=dump.arrayGet<size_t>(param_name.c_str());
+			});
+		}
+	
+	}

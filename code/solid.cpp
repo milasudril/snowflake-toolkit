@@ -351,12 +351,12 @@ Solid::Solid(const DataDump& dump,const char* name)
 		auto defgroup=dump.groupOpen(defgroup_name.c_str());
 		defgroup_name+='/';
 		
-		dump.iterate(*defgroup,[&defgroup_name,this]
+		dump.iterate(*defgroup,[&dump,&defgroup_name,this]
 			(const char* group_name)
 			{
 			auto group_name_current=defgroup_name + group_name;
 			printf("%s\n",group_name_current.c_str());
-		//	m_deformation_templates.push_back(SolidDeformation(dump,group_name_current.c_str()));
+			m_deformation_templates.push_back(SolidDeformation(dump,group_name_current.c_str()));
 			});
 		}
 
@@ -364,7 +364,7 @@ Solid::Solid(const DataDump& dump,const char* name)
 		auto defgroup_name=group_name + "/subvolumes";
 		auto defgroup=dump.groupOpen(defgroup_name.c_str());
 		defgroup_name+='/';		
-		dump.iterate(*defgroup,[&defgroup_name,this]
+		dump.iterate(*defgroup,[&dump,&defgroup_name,this]
 			(const char* group_name)
 			{
 			auto group_name_current=defgroup_name + group_name;

@@ -21,6 +21,8 @@ namespace SnowflakeModel
 	class SolidDeformation
 		{
 		public:
+			SolidDeformation(const DataDump& dump,const char* id);
+
 			SolidDeformation(const std::string& name):m_name(name)
 				{}
 
@@ -57,19 +59,21 @@ namespace SnowflakeModel
 			const Matrix& matrixGet() const
 				{return m_matrix;}
 
-		/**TODO Only used for help text. Remove and use the map directly instead.
+		/**TODO (perf) Only used for help text. Remove and use the map directly instead.
 		*/
 			const std::string* paramnamesBegin() const
 				{return param_names.data();}
 
 			const std::string* paramnamesEnd() const
 				{return param_names.data()+param_names.size();}
+		/*****/
 
 			void write(const char* id,DataDump& dump) const;
 
 		private:
 			Matrix m_matrix;
 			std::string m_name;
+		//	TODO: (perf) Can there ever be more than 16 parameters (we have a 4x4 matrix)
 			std::map<std::string,std::vector<size_t> > parameter_map;
 			std::vector<std::string> param_names;
 		};
