@@ -843,11 +843,12 @@ Simstate::Simstate(const Setup& setup,const SnowflakeModel::Solid& s_in
 		{
 		auto group=dump.groupOpen("simstate/ice_particles");
 		auto N_objs=dump.objectsCount(*group);
-		printf("Got %zu objects\n",N_objs);
+		ice_particles.resize(std::max(N_objs,setup.m_data.m_N));
 		auto group_name=std::string("simstate/ice_particles/");
-		dump.iterate(*group,[this,&group_name](const char* name)
+		dump.iterate(*group,[this,&group_name,&dump](const char* name)
 			{
-			printf("%s\n",name);
+			auto id=group_name+name;
+			ice_particles[k]=SnowflakeModel::IceParticle(dump,id);
 			});
 		}
 	throw "Feature not complete";

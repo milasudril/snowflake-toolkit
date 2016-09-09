@@ -15,15 +15,15 @@ using namespace SnowflakeModel;
 namespace SnowflakeModel
 	{
 	template<>
-	const DataDump::FieldDescriptor DataDump::MetaObject<IceParticle>::fields[]=
+	const DataDump::FieldDescriptor DataDump::MetaObject<IceParticle::Data>::fields[]=
 		{
-		 {"velocity",offsetOf(&IceParticle::m_velocity),vectorObj().typeGet()}
-		,{"density",offsetOf(&IceParticle::m_density),DataDump::MetaObject<decltype(IceParticle::m_density)>().typeGet()}
-		,{"dead",offsetOf(&IceParticle::m_dead),DataDump::MetaObject<decltype(IceParticle::m_dead)>().typeGet()}
+		 {"velocity",offsetOf(&IceParticle::Data::m_velocity),vectorObj().typeGet()}
+		,{"density",offsetOf(&IceParticle::Data::m_density),DataDump::MetaObject<decltype(IceParticle::Data::m_density)>().typeGet()}
+		,{"dead",offsetOf(&IceParticle::Data::m_dead),DataDump::MetaObject<decltype(IceParticle::Data::m_dead)>().typeGet()}
 		};
 
 	template<>
-	const size_t DataDump::MetaObject<IceParticle>::field_count=3;
+	const size_t DataDump::MetaObject<IceParticle::Data>::field_count=3;
 	}
 
 void IceParticle::solidGenerate() const
@@ -109,11 +109,14 @@ void IceParticle::solidScale(float c)
 	m_solid_generated.transform(S,c<0);
 	}
 
+IceParticle::IceParticle(const DataDump& dump,const char* name)
+	{}
+
 void IceParticle::write(const char* id,DataDump& dump) const
 	{
 	auto group=dump.groupCreate(id);
 	std::string path(id);
-	dump.write((path + "/data").c_str(),this,1);
+	dump.write((path + "/data").c_str(),&m_data,1);
 
 		{
 		auto deformation_group=path + "/deformations";

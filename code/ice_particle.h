@@ -23,14 +23,25 @@ namespace SnowflakeModel
 	class IceParticle
 		{
 		public:
-			IceParticle():m_flags_dirty(0),m_dead(0)
-				{}
+			struct Data
+				{
+				Vector m_velocity;
+				float m_density;
+				bool m_dead;
+				};
+
+			IceParticle(const DataDump& dump,const char* name);
+
+			IceParticle():r_solid(nullptr),m_flags_dirty(0)
+			//	,m_data{{0.0f,0.0f,0.0f},1.0f,1}
+				{
+				}
 
 			void solidSet(const Solid& solid)
 				{
 				r_solid=&solid;
 				m_flags_dirty|=VOLUME_DIRTY|DEFORMATIONS_DIRTY;
-				m_dead=0;
+				m_data.m_dead=0;
 				}
 
 			const Solid& solidGet() const
@@ -52,22 +63,22 @@ namespace SnowflakeModel
 			void solidScale(float c);
 
 			const Vector& velocityGet() const
-				{return m_velocity;}
+				{return m_data.m_velocity;}
 
 			void velocitySet(const Vector& v)
-				{m_velocity=v;}
+				{m_data.m_velocity=v;}
 
 			float densityGet() const
-				{return m_density;}
+				{return m_data.m_density;}
 
 			void densitySet(float density)
-				{m_density=density;}
+				{m_data.m_density=density;}
 
 			void kill()
-				{m_dead=1;}
+				{m_data.m_dead=1;}
 
 			bool dead() const
-				{return m_dead;}
+				{return m_data.m_dead;}
 
 			void write(const char* id,DataDump& dump) const;
 
@@ -79,14 +90,12 @@ namespace SnowflakeModel
 			static constexpr uint32_t DEFORMATIONS_DIRTY=0x1;
 			static constexpr uint32_t VOLUME_DIRTY=0x2;
 
-
-			Vector m_velocity; //Saved
-			float m_density; //Saved
-			bool m_dead; //Saved
+			Data m_data;
 
 			void solidGenerate() const;
 
-			friend class DataDump::MetaObject<IceParticle>;
+
+			friend class DataDump::MetaObject<Data>;
 		};
 	}
 
