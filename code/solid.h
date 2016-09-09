@@ -34,6 +34,8 @@ namespace SnowflakeModel
 				,m_mirror_flags(0)
 				{}
 
+			Solid(const DataDump& dump,const char* name);
+
 			VolumeConvex& subvolumeAdd(const VolumeConvex& volume)
 				{
 				m_subvolumes.push_back(volume);

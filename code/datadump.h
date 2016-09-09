@@ -66,6 +66,12 @@ namespace SnowflakeModel
 				private:
 					char* m_buffer;
 				};
+
+			class GroupIterateCallback
+				{
+				public:
+					virtual void groupVisit(const char* group_name)=0;
+				};
 				
 
 			class ArrayReaderImpl;
@@ -210,6 +216,13 @@ namespace SnowflakeModel
 
 			GroupHandle groupCreate(const char* name);
 
+			GroupHandle groupOpen(const char* name) const;
+
+			template<class T>
+			void iterate(const H5::Group& group,T&& callback) const
+				{iterate_impl(group,GroupIterateCallbackImpl<T>(callback));}
+			
+
 		private:
 			static void deleter(H5::DataType* obj);
 			static void deleter(H5::Group* obj);
@@ -224,6 +237,24 @@ namespace SnowflakeModel
 
 			std::unique_ptr<H5::H5File> m_file;
 			static H5::StrType s_cstr;
+
+			template<class T>
+			class GroupIterateCallbackImpl:public GroupIterateCallback
+				{
+				public:
+					explicit GroupIterateCallbackImpl(T& obj):
+						r_object(obj)
+						{}
+					void groupVisit(const char* group_name)
+						{
+						r_object(group_name);
+						}
+
+				private:
+					T& r_object;
+				};
+
+			void iterate_impl(const H5::Group& group,GroupIterateCallback&& cb) const;
 		};
 
 	template<>

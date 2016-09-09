@@ -339,3 +339,19 @@ void Solid::write(const char* id,DataDump& dump) const
 			}
 		}
 	}
+
+Solid::Solid(const DataDump& dump,const char* name)
+	{
+	std::string group_name(name);
+	m_mirror_flags=dump.arrayGet<decltype(m_mirror_flags)>
+		((group_name+"/mirror_flags").c_str()).at(0);
+
+		{
+		auto defgroup=dump.groupOpen((group_name + "/deformation_templates").c_str());
+		printf("Reading solid templates\n");fflush(stdout);
+		dump.iterate(*defgroup,[](const char* group_name)
+			{
+			printf("Got group %s\n",group_name);
+			});
+		}
+	}

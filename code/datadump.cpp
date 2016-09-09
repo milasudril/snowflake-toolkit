@@ -217,6 +217,11 @@ DataDump::GroupHandle DataDump::groupCreate(const char* name)
 	return GroupHandle(new H5::Group(m_file->createGroup(name)), deleter);
 	}
 
+DataDump::GroupHandle DataDump::groupOpen(const char* name) const
+	{
+	return GroupHandle(new H5::Group(m_file->openGroup(name)), deleter);
+	}
+
 static int getMode(DataDump::IOMode mode)
 	{
 	switch(mode)
@@ -257,3 +262,17 @@ void DataDump::write<std::string>(const char* objname,const std::string* data,si
 	dataWrite(s_cstr,objname,strptr.size(),strptr.data());
 	}
 
+static herr_t iterateCallback(hid_t loc_id, const char* name, const H5L_info_t* linfo,void* cb)
+	{
+	reinterpret_cast<DataDump::GroupIterateCallback*>(cb)->groupVisit(name);
+	return 0;
+	}
+
+void DataDump::iterate_impl(const H5::Group& group,GroupIterateCallback&& cb) const
+	{
+	void* callback_param=&cb;
+	H5Literate(group.getId()
+		,H5_INDEX_NAME
+		,H5_ITER_INC
+		,NULL, iterateCallback, callback_param);
+	}

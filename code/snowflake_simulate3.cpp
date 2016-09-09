@@ -1174,11 +1174,20 @@ int main(int argc,char** argv)
 		setup.validate();
 
 		SnowflakeModel::Solid s_in;
+		if(setup.m_statefile.size()==0)
 			{
 			SnowflakeModel::FileIn file_in(setup.m_crystal.data());
 			SnowflakeModel::ConfigParser parser(file_in);
 			SnowflakeModel::SolidLoader loader(s_in);
 			parser.commandsRead(loader);
+			}
+		else
+			{
+			SnowflakeModel::DataDump dump(setup.m_statefile.c_str()
+				,SnowflakeModel::DataDump::IOMode::READ);
+			s_in=SnowflakeModel::Solid(dump,"solid_in");
+
+			throw "Loader not complete yet...";
 			}
 
 		if(setup.m_data.m_actions&Setup::PARAM_SHOW)
