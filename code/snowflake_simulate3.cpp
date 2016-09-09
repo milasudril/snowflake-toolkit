@@ -848,10 +848,10 @@ Simstate::Simstate(const Setup& setup,const SnowflakeModel::Solid& s_in
 		dump.iterate(*group,[this,&group_name,&dump](const char* name)
 			{
 			auto id=group_name+name;
-			ice_particles[k]=SnowflakeModel::IceParticle(dump,id);
+			size_t k=strtol(name,nullptr,16);
+			ice_particles[k]=SnowflakeModel::IceParticle(dump,id.c_str());
 			});
 		}
-	throw "Feature not complete";
 	}
 
 void Simstate::write(SnowflakeModel::DataDump& dump) const

@@ -110,7 +110,29 @@ void IceParticle::solidScale(float c)
 	}
 
 IceParticle::IceParticle(const DataDump& dump,const char* name)
-	{}
+	{
+	auto group=dump.groupOpen(name);
+	std::string path(name);
+	m_data=dump.arrayGet<Data>((path + "/data").c_str() ).at(0);
+
+		{
+		auto defgroup_name=path + "/deformations";
+		auto defgroup=dump.groupOpen(defgroup_name.c_str());
+		defgroup_name+='/';
+		
+		dump.iterate(*defgroup,[&dump,&defgroup_name,this]
+			(const char* group_name)
+			{
+			auto group_name_current=defgroup_name + group_name;
+			printf("%s\n",group_name_current.c_str());
+			m_deformations.push_back(SolidDeformation(dump,group_name_current.c_str()));
+			});
+		}
+
+	m_solid_generated=Solid(dump,(path+"/solid_generated").c_str());
+	m_flags_dirty=0;
+	r_solid=nullptr;
+	}
 
 void IceParticle::write(const char* id,DataDump& dump) const
 	{
