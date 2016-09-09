@@ -127,7 +127,7 @@ namespace SnowflakeModel
 
 			enum class IOMode:int{READ,WRITE};
 
-			DataDump(const char* filename,IOMode mode=IOMode::WRITE);
+			explicit DataDump(const char* filename,IOMode mode);
 
 			~DataDump();
 
@@ -219,9 +219,10 @@ namespace SnowflakeModel
 			GroupHandle groupOpen(const char* name) const;
 
 			template<class T>
-			void iterate(const H5::Group& group,T&& callback) const
+			static void iterate(const H5::Group& group,T&& callback)
 				{iterate_impl(group,GroupIterateCallbackImpl<T>(callback));}
 			
+			static size_t objectsCount(const H5::Group& group);
 
 		private:
 			static void deleter(H5::DataType* obj);
@@ -254,7 +255,7 @@ namespace SnowflakeModel
 					T& r_object;
 				};
 
-			void iterate_impl(const H5::Group& group,GroupIterateCallback&& cb) const;
+			static void iterate_impl(const H5::Group& group,GroupIterateCallback&& cb);
 		};
 
 	template<>

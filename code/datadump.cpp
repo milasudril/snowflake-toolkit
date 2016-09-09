@@ -210,11 +210,15 @@ DataDump::MatrixReaderHandle DataDump::matrixReaderCreate(const H5::DataType& ty
 void DataDump::deleter(MatrixReaderImpl* obj)	
 	{delete obj;}
 
+size_t DataDump::objectsCount(const H5::Group& group)
+	{return group.getNumObjs();}
+
 
 
 DataDump::GroupHandle DataDump::groupCreate(const char* name)
 	{
-	return GroupHandle(new H5::Group(m_file->createGroup(name)), deleter);
+	auto x=m_file->createGroup(name);
+	return GroupHandle(new H5::Group(x), deleter);
 	}
 
 DataDump::GroupHandle DataDump::groupOpen(const char* name) const
@@ -268,11 +272,11 @@ static herr_t iterateCallback(hid_t loc_id, const char* name, const H5L_info_t* 
 	return 0;
 	}
 
-void DataDump::iterate_impl(const H5::Group& group,GroupIterateCallback&& cb) const
+void DataDump::iterate_impl(const H5::Group& group,GroupIterateCallback&& cb)
 	{
 	void* callback_param=&cb;
 	H5Literate(group.getId()
-		,H5_INDEX_NAME
+		,H5_INDEX_NAME 
 		,H5_ITER_INC
 		,NULL, iterateCallback, callback_param);
 	}

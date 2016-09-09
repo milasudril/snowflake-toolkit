@@ -124,7 +124,9 @@ void IceParticle::write(const char* id,DataDump& dump) const
 		size_t k=0;
 		while(deformation!=deformations_end)
 			{
-			auto def_name=deformation_group + std::to_string(k);
+			char id[32];
+			sprintf(id,"%016zx",k);
+			auto def_name=deformation_group + id;
 			deformation->write(def_name.c_str(),dump);
 			++deformation;
 			++k;

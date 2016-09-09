@@ -782,6 +782,8 @@ class Simstate
 		Simstate(Setup&& setup,const SnowflakeModel::Solid& s_in)=delete;
 		Simstate(const Setup& setup,SnowflakeModel::Solid&& s_in)=delete;
 
+		Simstate(const Setup& setup,const SnowflakeModel::Solid& s_in
+			,const SnowflakeModel::DataDump& dump);
 		Simstate(const Setup& setup,const SnowflakeModel::Solid& s_in);
 
 		bool step();
@@ -827,6 +829,30 @@ namespace SnowflakeModel
 	const size_t DataDump::MetaObject<Simstate::Data>::field_count=4;
 	}
 
+Simstate::Simstate(const Setup& setup,const SnowflakeModel::Solid& s_in
+	,const SnowflakeModel::DataDump& dump):
+	r_setup(setup),r_s_in(s_in),C_mat(setup.m_data.m_N+1,setup.m_data.m_N+1)
+	,U_rot(0,5),randomizer(C_mat)
+	{
+	m_data=dump.arrayGet<Data>("simstate/data").at(0);
+	dump.matrixGet<double>("simstate/C_mat",C_mat.rowGet(0),C_mat.nRowsGet()
+		,C_mat.nColsGet());
+	dump.arrayRead<uint32_t>("simstate/randgen").dataRead(SnowflakeModel::begin(randgen)
+		,SnowflakeModel::size(randgen));
+
+		{
+		auto group=dump.groupOpen("simstate/ice_particles");
+		auto N_objs=dump.objectsCount(*group);
+		printf("Got %zu objects\n",N_objs);
+		auto group_name=std::string("simstate/ice_particles/");
+		dump.iterate(*group,[this,&group_name](const char* name)
+			{
+			printf("%s\n",name);
+			});
+		}
+	throw "Feature not complete";
+	}
+
 void Simstate::write(SnowflakeModel::DataDump& dump) const
 	{
 	auto group=dump.groupCreate("simstate");
@@ -844,7 +870,9 @@ void Simstate::write(SnowflakeModel::DataDump& dump) const
 			{
 			if(!ptr->dead())
 				{
-				auto name=group_name+std::to_string(k);
+				char id[32];
+				sprintf(id,"%016zx",k);
+				auto name=group_name+id;
 				ptr->write(name.c_str(),dump);
 				}
 			++ptr;
@@ -853,11 +881,12 @@ void Simstate::write(SnowflakeModel::DataDump& dump) const
 		}
 	}
 
+
+
 Simstate::Simstate(const Setup& setup,const SnowflakeModel::Solid& s_in):
 	 r_setup(setup),r_s_in(s_in),m_data{0}
 	,C_mat(setup.m_data.m_N+1,setup.m_data.m_N+1)
 	,randgen(setup.m_data.m_seed),U_rot(0,5),randomizer(C_mat)
-	,frame_data_file(nullptr)
 	{
 //	http://www0.cs.ucl.ac.uk/staff/d.jones/GoodPracticeRNG.pdf
 	randgen.discard(65536);
@@ -1017,7 +1046,9 @@ void Simstate::statsDump() const
 void particleDump(const SnowflakeModel::IceParticle& i,const char* prefix,size_t id)
 	{
 	std::string name(prefix);
-	name+=std::to_string(id);
+	char id_str[32];
+	sprintf(id_str,"%016zx",id);
+	name+=id_str;
 		{
 		SnowflakeModel::FileOut file_out(
 			(name+".obj").data());
@@ -1217,15 +1248,23 @@ int main(int argc,char** argv)
 		fprintf(stderr,"# Initializing\n");
 		setup.paramsDump();
 		fflush(stdout);
-		Simstate state(setup,s_in);
+		std::unique_ptr<Simstate> state;
+		if(setup.m_statefile.size()==0)
+			{state.reset(new Simstate(setup,s_in));}
+		else
+			{
+			state.reset(new Simstate(setup,s_in
+				,SnowflakeModel::DataDump(setup.m_statefile.c_str()
+					,SnowflakeModel::DataDump::IOMode::READ)));
+			}
 		auto now=SnowflakeModel::getdate();
 		fprintf(stderr,"# Simulation started at %s\n",now.c_str());
 		SnowflakeModel::CtrlCHandler stopper;
-		state.statsDump();
-		while(state.progressGet()<1.0 && !stopper.captured())
+		state->statsDump();
+		while(state->progressGet()<1.0 && !stopper.captured())
 			{
-			if(state.step())
-				{state.statsDump();}
+			if(state->step())
+				{state->statsDump();}
 			}
 		fprintf(stderr,"\n# Exiting\n");
 			{
@@ -1236,30 +1275,31 @@ int main(int argc,char** argv)
 				filename_dump+=".h5";
 				}
 			fprintf(stderr,"# Dumping simulation state to %s\n",filename_dump.c_str());
-			SnowflakeModel::DataDump dump(filename_dump.c_str());
+			SnowflakeModel::DataDump dump(filename_dump.c_str()
+				,SnowflakeModel::DataDump::IOMode::WRITE);
 			setup.write(dump);
-			state.write(dump);
+			state->write(dump);
 			s_in.write("solid_in",dump);
 			}
 
-		state.statsDump();
+		state->statsDump();
 
 		if(setup.m_data.m_actions&Setup::GEOMETRY_DUMP)
 			{
 			fprintf(stderr,"# Dumping wavefront files\n");
-			state.geometryDump();
+			state->geometryDump();
 			}
 
 		if(setup.m_data.m_actions&Setup::GEOMETRY_DUMP_ICE)
 			{
 			fprintf(stderr,"# Dumping crystal prototype files\n");
-			state.prototypesDump();
+			state->prototypesDump();
 			}
 
 		if(setup.m_data.m_actions&Setup::GEOMETRY_SAMPLE)
 			{
 			fprintf(stderr,"# Dumping adda files\n");
-			state.rasterize();
+			state->rasterize();
 			}
 		}
 	catch(const char* message)

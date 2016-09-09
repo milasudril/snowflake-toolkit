@@ -315,7 +315,9 @@ void Solid::write(const char* id,DataDump& dump) const
 		auto defgroup_name=group_name + "/deformation_templates/"; 
 		while(deformations_begin!=deformations_end)
 			{
-			auto group_name_current=defgroup_name + std::to_string(k);
+			char id[32];
+			sprintf(id,"%016zx",k);
+			auto group_name_current=defgroup_name + id;
 			deformations_begin->write(group_name_current.c_str(),dump);
 			++deformations_begin;
 			++k;
@@ -330,7 +332,9 @@ void Solid::write(const char* id,DataDump& dump) const
 		auto defgroup_name=group_name + "/subvolumes/"; 
 		while(subvols_begin!=subvols_end)
 			{
-			auto group_name_current=defgroup_name + std::to_string(k);
+			char id[32];
+			sprintf(id,"%016zx",k);
+			auto group_name_current=defgroup_name + id;
 			subvols_begin->write(group_name_current.c_str(),dump);
 			++subvols_begin;
 			++k;

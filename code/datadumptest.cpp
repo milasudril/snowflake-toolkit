@@ -41,7 +41,7 @@ namespace SnowflakeModel
 
 int main()
 	{
-	SnowflakeModel::DataDump dump("test.h5");
+	SnowflakeModel::DataDump dump("test.h5",SnowflakeModel::DataDump::IOMode::WRITE);
 
 	Foo obj{"Hello, World",1};
 	dump.write("obj",&obj,1);
