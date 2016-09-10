@@ -1269,7 +1269,7 @@ int main(int argc,char** argv)
 			}
 		fprintf(stderr,"\n# Exiting\n");
 			{
-			auto filename_dump=setup.m_statefile;
+		/*	auto filename_dump=setup.m_statefile;
 			if(filename_dump.size()==0)
 				{
 				filename_dump=SnowflakeModel::filenameEscape(now.c_str());
@@ -1280,7 +1280,7 @@ int main(int argc,char** argv)
 				,SnowflakeModel::DataDump::IOMode::WRITE);
 			setup.write(dump);
 			state->write(dump);
-			s_in.write("solid_in",dump);
+			s_in.write("solid_in",dump);*/
 			}
 
 		state->statsDump();

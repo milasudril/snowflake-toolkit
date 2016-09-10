@@ -374,4 +374,7 @@ Solid::Solid(const DataDump& dump,const char* name)
 			m_subvolumes.push_back(VolumeConvex(dump,group_name_current.c_str()));
 			});
 		}
+
+	m_flags_dirty|=BOUNDINGBOX_DIRTY|MIDPOINT_DIRTY|RMAX_DIRTY
+		|VOLUME_DIRTY;
 	}

@@ -33,7 +33,7 @@ namespace SnowflakeModel
 			IceParticle(const DataDump& dump,const char* name);
 
 			IceParticle():r_solid(nullptr),m_flags_dirty(0)
-			//	,m_data{{0.0f,0.0f,0.0f},1.0f,1}
+				,m_data{{0.0f,0.0f,0.0f},1.0f,1}
 				{
 				}
 
