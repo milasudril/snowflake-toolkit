@@ -21,15 +21,16 @@ namespace SnowflakeModel
 		public:
 			FileOut(const FileOut&)=delete;
 			FileOut& operator=(const FileOut&)=delete;
+
+			enum class OpenMode:int{TRUNCATE,APPEND};
 			
-			explicit FileOut(const char* dest)
+			explicit FileOut(const char* dest,OpenMode mode=OpenMode::TRUNCATE)
 				{
-				file_out=fopen(dest,"wb");
+				file_out=fopen(dest,mode==OpenMode::TRUNCATE?"wb":"ab");
 				if(file_out==NULL)
 					{throw "Could not open source file";}
 				m_own=1;
 				}
-
 			
 			explicit FileOut(FILE* dest)
 				{

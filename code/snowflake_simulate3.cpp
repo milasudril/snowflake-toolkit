@@ -856,13 +856,17 @@ Simstate::Simstate(const Setup& setup,const SnowflakeModel::Solid& s_in
 			});
 		}
 
-/*	for(size_t k=0;k<ice_particles.size();++k)
-		{matrixRowUpdate(k,ice_particles,C_mat,setup.m_data);}
-
-	for(size_t k=0;k<ice_particles.size();++k)
+	if(setup.m_data.m_actions&Setup::STATS_DUMP)
 		{
-		C_mat(k,k)=2.0f*setup.m_data.m_growthrate/ice_particles.size();
-		}*/
+		frame_data_file.reset(new SnowflakeModel::FileOut(
+				 (setup.m_output_dir+"/frame_data.txt").data()
+				,SnowflakeModel::FileOut::OpenMode::APPEND
+			));
+		dropped_stats.reset(new SnowflakeModel::FileOut(
+				 (setup.m_output_dir+"/dropped_stats.txt").data()
+				,SnowflakeModel::FileOut::OpenMode::APPEND
+			));
+		}
 	}
 
 void Simstate::write(SnowflakeModel::DataDump& dump) const
@@ -1260,13 +1264,6 @@ int main(int argc,char** argv)
 			state.reset(new Simstate(setup,s_in
 				,SnowflakeModel::DataDump(setup.m_statefile.c_str()
 					,SnowflakeModel::DataDump::IOMode::READ)));
-
-		/*	SnowflakeModel::DataDump dump("test2.h5"
-				,SnowflakeModel::DataDump::IOMode::WRITE);
-			setup.write(dump);
-			state->write(dump);
-			s_in.write("solid_in",dump);
-			return 0;*/
 			}
 		auto now=SnowflakeModel::getdate();
 		fprintf(stderr,"# Simulation started at %s\n",now.c_str());
@@ -1280,7 +1277,7 @@ int main(int argc,char** argv)
 		fprintf(stderr,"\n# Exiting\n");
 			{
 			auto filename_dump=setup.m_statefile;
-		//	if(filename_dump.size()==0)
+			if(filename_dump.size()==0)
 				{
 				filename_dump=SnowflakeModel::filenameEscape(now.c_str());
 				filename_dump+=".h5";
