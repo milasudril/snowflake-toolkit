@@ -460,4 +460,15 @@ VolumeConvex::VolumeConvex(const DataDump& dump,const char* id)
 		face_current->parentSet(*this);
 		++face_current;
 		}
+
+		{
+		auto v_group_name_base=group_name + "/vertex_groups";
+		auto v_group=dump.groupOpen(v_group_name_base.c_str());
+		v_group_name_base+='/';
+		dump.iterate(*v_group,[&v_group_name_base,this,&dump](const char* name)
+			{
+			auto group_name_current=v_group_name_base + name;
+			m_vertex_groups[name]=dump.arrayGet<VertexIndex>(group_name_current.c_str());
+			});
+		}
 	}

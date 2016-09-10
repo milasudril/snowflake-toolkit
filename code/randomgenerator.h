@@ -3,6 +3,7 @@
 
 #ifndef SNOWFLAKEMODEL_RANDOMGENERATOR_H
 #define SNOWFLAKEMODEL_RANDOMGENERATOR_H
+
 #include <random>
 #include <cstdint>
 
@@ -10,7 +11,7 @@ namespace SnowflakeModel
 	{
 /**Portable representation of the mersenne twister. GCC uses 64 bit integer
 * as its "fast" 32 bit integer. This instanciation always uses uint32_t
-* of fails.
+* or fails.
 */
 	typedef std::mersenne_twister_engine<std::uint32_t, 32, 624, 397, 31,
 		0x9908b0df, 11,
@@ -21,24 +22,30 @@ namespace SnowflakeModel
 	static_assert(std::is_standard_layout<RandomGenerator>::value
 		,"Random generator must have standard layout");
 
-/**State accessors needed for binary I/O
-*/
-	inline const uint32_t* begin(const RandomGenerator& rng)
-		{return reinterpret_cast<const uint32_t*>(&rng);}
+#ifdef __GNUC__
+	static constexpr int GNUC=1;
+#else
+	static constexpr int GNUC=0;
+#endif
+	static_assert(GNUC==1,"This module requires GCC");
 
-	inline const uint32_t* end(const RandomGenerator& rng)
-		{return begin(rng) + 624;}
+	struct RandomGeneratorTransparent
+		{
+		static constexpr size_t state_size=624;
+		static constexpr size_t size() noexcept
+			{return state_size;}
+		uint32_t state[state_size];
+		size_t position;
+		};
 
-	inline uint32_t* begin(RandomGenerator& rng)
-		{return reinterpret_cast<uint32_t*>(&rng);}
+	static_assert(sizeof(RandomGenerator)==sizeof(RandomGeneratorTransparent)
+		,"Random generator has unexpected size");
 
-	inline uint32_t* end(RandomGenerator& rng)
-		{return begin(rng) + 624;}
+	inline RandomGeneratorTransparent& get(RandomGenerator& rng) noexcept 
+		{return reinterpret_cast<RandomGeneratorTransparent&>(rng);}
 
-	inline constexpr size_t size(const RandomGenerator& rng)
-		{return 624;}
-	
+	inline const RandomGeneratorTransparent& get(const RandomGenerator& rng) noexcept
+		{return reinterpret_cast<const RandomGeneratorTransparent&>(rng);}
 	}
-
 
 #endif

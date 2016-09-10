@@ -17,6 +17,7 @@
 #include "thread.h"
 #include "task.h"
 #include "profile.h"
+#include <cstring>
 
 using namespace SnowflakeModel;
 
@@ -84,6 +85,7 @@ MatrixStorage::MatrixStorage(size_t N_rows,size_t N_cols):
 	,m_data(N_validate(N_rows,N_cols))
 	,m_sums_row(N_rows),m_flags_dirty(SUM_DIRTY)
 	{
+	memset(m_data.data(),0,sizeof(ElementType)*m_data.size());
 	size_t n_threads=Thread::threadsMax();
 	auto n_rows=N_rows/n_threads;
 	for(decltype(n_threads) k=0; k<n_threads;++k)

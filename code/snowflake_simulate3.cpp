@@ -834,11 +834,14 @@ Simstate::Simstate(const Setup& setup,const SnowflakeModel::Solid& s_in
 	r_setup(setup),r_s_in(s_in),C_mat(setup.m_data.m_N+1,setup.m_data.m_N+1)
 	,U_rot(0,5),randomizer(C_mat)
 	{
-	m_data=dump.arrayGet<Data>("simstate/data").at(0);
+	dump.arrayRead<Data>("simstate/data")
+		.dataRead(&m_data,1);
 	dump.matrixGet<double>("simstate/C_mat",C_mat.rowGet(0),C_mat.nRowsGet()
 		,C_mat.nColsGet());
-	dump.arrayRead<uint32_t>("simstate/randgen").dataRead(SnowflakeModel::begin(randgen)
-		,SnowflakeModel::size(randgen));
+	dump.arrayRead<uint32_t>("simstate/randgen_state")
+		.dataRead(SnowflakeModel::get(randgen).state,SnowflakeModel::get(randgen).size());
+	dump.arrayRead<size_t>("simstate/randgen_position")
+		.dataRead(&SnowflakeModel::get(randgen).position,1);
 
 		{
 		auto group=dump.groupOpen("simstate/ice_particles");
@@ -852,6 +855,14 @@ Simstate::Simstate(const Setup& setup,const SnowflakeModel::Solid& s_in
 			ice_particles[k]=SnowflakeModel::IceParticle(dump,id.c_str());
 			});
 		}
+
+/*	for(size_t k=0;k<ice_particles.size();++k)
+		{matrixRowUpdate(k,ice_particles,C_mat,setup.m_data);}
+
+	for(size_t k=0;k<ice_particles.size();++k)
+		{
+		C_mat(k,k)=2.0f*setup.m_data.m_growthrate/ice_particles.size();
+		}*/
 	}
 
 void Simstate::write(SnowflakeModel::DataDump& dump) const
@@ -859,7 +870,10 @@ void Simstate::write(SnowflakeModel::DataDump& dump) const
 	auto group=dump.groupCreate("simstate");
 	dump.write("simstate/data",&m_data,1);
 	dump.write("simstate/C_mat",C_mat.rowGet(0),C_mat.nRowsGet(),C_mat.nColsGet());
-	dump.write("simstate/randgen",SnowflakeModel::begin(randgen),SnowflakeModel::size(randgen));
+	dump.write("simstate/randgen_state"
+		,SnowflakeModel::get(randgen).state,SnowflakeModel::get(randgen).size());
+	dump.write("simstate/randgen_position"
+		,&SnowflakeModel::get(randgen).position,1);
 
 		{
 		auto ptr=ice_particles.data();
@@ -892,21 +906,10 @@ Simstate::Simstate(const Setup& setup,const SnowflakeModel::Solid& s_in):
 //	http://www0.cs.ucl.ac.uk/staff/d.jones/GoodPracticeRNG.pdf
 	randgen.discard(65536);
 
-	auto n=setup.m_data.m_N;
-	while(n)
-		{
-		ice_particles.push_back(ice_particlePrepare(s_in,setup,randgen));
-		(ice_particles.end()-1)->kill();
-		--n;
-		}
+	ice_particles.resize(setup.m_data.m_N);
 
 	for(size_t k=0;k<ice_particles.size();++k)
-		{matrixRowUpdate(k,ice_particles,C_mat,setup.m_data);}
-
-	for(size_t k=0;k<ice_particles.size();++k)
-		{
-		C_mat(k,k)=2.0f*setup.m_data.m_growthrate/ice_particles.size();
-		}
+		{C_mat(k,k)=2.0f*setup.m_data.m_growthrate/ice_particles.size();}
 
 	if(setup.m_data.m_actions&Setup::STATS_DUMP)
 		{
@@ -1257,6 +1260,13 @@ int main(int argc,char** argv)
 			state.reset(new Simstate(setup,s_in
 				,SnowflakeModel::DataDump(setup.m_statefile.c_str()
 					,SnowflakeModel::DataDump::IOMode::READ)));
+
+		/*	SnowflakeModel::DataDump dump("test2.h5"
+				,SnowflakeModel::DataDump::IOMode::WRITE);
+			setup.write(dump);
+			state->write(dump);
+			s_in.write("solid_in",dump);
+			return 0;*/
 			}
 		auto now=SnowflakeModel::getdate();
 		fprintf(stderr,"# Simulation started at %s\n",now.c_str());
@@ -1269,8 +1279,8 @@ int main(int argc,char** argv)
 			}
 		fprintf(stderr,"\n# Exiting\n");
 			{
-		/*	auto filename_dump=setup.m_statefile;
-			if(filename_dump.size()==0)
+			auto filename_dump=setup.m_statefile;
+		//	if(filename_dump.size()==0)
 				{
 				filename_dump=SnowflakeModel::filenameEscape(now.c_str());
 				filename_dump+=".h5";
@@ -1280,7 +1290,7 @@ int main(int argc,char** argv)
 				,SnowflakeModel::DataDump::IOMode::WRITE);
 			setup.write(dump);
 			state->write(dump);
-			s_in.write("solid_in",dump);*/
+			s_in.write("solid_in",dump);
 			}
 
 		state->statsDump();

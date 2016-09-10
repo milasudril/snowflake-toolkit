@@ -357,7 +357,6 @@ Solid::Solid(const DataDump& dump,const char* name)
 			(const char* group_name)
 			{
 			auto group_name_current=defgroup_name + group_name;
-			printf("%s\n",group_name_current.c_str());
 			m_deformation_templates.push_back(SolidDeformation(dump,group_name_current.c_str()));
 			});
 		}
@@ -370,7 +369,6 @@ Solid::Solid(const DataDump& dump,const char* name)
 			(const char* group_name)
 			{
 			auto group_name_current=defgroup_name + group_name;
-			printf("%s\n",group_name_current.c_str());
 			m_subvolumes.push_back(VolumeConvex(dump,group_name_current.c_str()));
 			});
 		}

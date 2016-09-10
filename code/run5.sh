@@ -10,7 +10,7 @@ mkdir -p $dir_out
 rm -rf $dir_out/$k-$l-$m
 mkdir $dir_out/$k-$l-$m
 
-__targets_dbg/snowflake_simulate3 \
+gdb --args __targets_dbg/snowflake_simulate3 \
 	--shape=../crystal-prototypes/bullet.ice --deformation=L,1,0.25 \
 	--deformation=a,0.33 --deformation=t,0 \
 	--output-dir=$dir_out/$k-$l-$m --dump-stats=256 --N=4999 \

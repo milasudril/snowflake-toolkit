@@ -124,7 +124,6 @@ IceParticle::IceParticle(const DataDump& dump,const char* name)
 			(const char* group_name)
 			{
 			auto group_name_current=defgroup_name + group_name;
-			printf("%s\n",group_name_current.c_str());
 			m_deformations.push_back(SolidDeformation(dump,group_name_current.c_str()));
 			});
 		}
