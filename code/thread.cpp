@@ -18,6 +18,8 @@
 #include <unistd.h>
 #include <pthread.h>
 #include <cstdlib>
+#include <cstdio>
+#include <cerrno>
 
 using namespace SnowflakeModel;
 
@@ -39,8 +41,15 @@ struct Thread::Impl
 	{
 	Impl(Task& task,uint32_t thread_count)
 		{
-		if(pthread_create(&handle,nullptr,thread_startup,&task)!=0)
-			{throw "Could not create a new thread";}
+		int res;
+		do
+			{res=pthread_create(&handle,nullptr,thread_startup,&task);}
+		while(res==EAGAIN);
+		if(res!=0)
+			{
+			fprintf(stderr,"Errno: %d\n",res);
+			throw "Could not create a new thread";
+			}
 
 		cpu_set_t cpuset;
 		CPU_ZERO(&cpuset);
