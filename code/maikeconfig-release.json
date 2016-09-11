@@ -25,7 +25,7 @@
                     ],
                     "name":"g++"
                 },
-                "cflags_extra":["O2","march=native","DNDEBUG"],
+                "cflags_extra":["O2","march=native","DNDEBUG","fno-stack-protector"],
                 "cflags_format":"-^",
                 "cxxversion_max":-1,
                 "cxxversion_min":201103,
