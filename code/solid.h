@@ -31,7 +31,8 @@ namespace SnowflakeModel
 			Solid() noexcept:
 				 m_n_faces_tot(0)
 				,m_r_max(0)
-				,m_flags_dirty(DMAX_DIRTY|BOUNDINGBOX_DIRTY|MIDPOINT_DIRTY|RMAX_DIRTY|VOLUME_DIRTY)
+				,m_volume(0)
+				,m_flags_dirty(DMAX_DIRTY|BOUNDINGBOX_DIRTY|MIDPOINT_DIRTY|RMAX_DIRTY)
 				,m_mirror_flags(0)
 				{}
 
@@ -41,8 +42,9 @@ namespace SnowflakeModel
 				{
 				m_subvolumes.push_back(volume);
 				m_flags_dirty|=BOUNDINGBOX_DIRTY|MIDPOINT_DIRTY|RMAX_DIRTY
-					|VOLUME_DIRTY|DMAX_DIRTY;
+					|DMAX_DIRTY;
 				m_n_faces_tot+=volume.facesCount();
+				m_volume+=volume.volumeGet();
 				return m_subvolumes.back();
 				}
 
@@ -50,8 +52,8 @@ namespace SnowflakeModel
 				{
 				m_n_faces_tot+=volume.facesCount();
 				m_subvolumes.push_back(std::move(volume));
-				m_flags_dirty|=BOUNDINGBOX_DIRTY|MIDPOINT_DIRTY|RMAX_DIRTY
-					|VOLUME_DIRTY|DMAX_DIRTY;
+				m_volume+=volume.volumeGet();
+				m_flags_dirty|=BOUNDINGBOX_DIRTY|MIDPOINT_DIRTY|RMAX_DIRTY|DMAX_DIRTY;
 				return m_subvolumes.back();
 				}
 
@@ -157,8 +159,10 @@ namespace SnowflakeModel
 				m_n_faces_tot=0;
 				m_subvolumes.clear();
 				m_deformation_templates.clear();
-				m_flags_dirty=BOUNDINGBOX_DIRTY|MIDPOINT_DIRTY
-					|RMAX_DIRTY|VOLUME_DIRTY|DMAX_DIRTY;
+				m_volume=0;
+				m_r_max=0;
+				m_d_max=0;
+				m_flags_dirty=BOUNDINGBOX_DIRTY|MIDPOINT_DIRTY;
 				}
 
 			void write(const char* id,DataDump& dump) const;
@@ -179,8 +183,8 @@ namespace SnowflakeModel
 			mutable Point m_mid;
 			mutable float m_r_max;
 			mutable float m_volume;
-			mutable uint32_t m_flags_dirty;
 			mutable float m_d_max;
+			mutable uint32_t m_flags_dirty;
 
 			uint32_t m_mirror_flags;
 

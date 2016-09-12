@@ -16,17 +16,21 @@ void Solid::merge(const Matrix& T,const Solid& volume,bool mirrored)
 	{
 	auto n=m_subvolumes.size();
 		{
+	//	Copy all volumes
 		auto subvolume=volume.subvolumesBegin();
-		while(subvolume!=volume.subvolumesEnd())
+		auto vols_end=volume.subvolumesEnd();
+		while(subvolume!=vols_end)
 			{
-			m_subvolumes.push_back(*subvolume);
+			subvolumeAdd(*subvolume);
 			++subvolume;
 			}
 		}
 
 		{
+	//	Transform them
 		auto subvolume=subvolumesBegin()+n;
-		while(subvolume!=subvolumesEnd())
+		auto vols_end=subvolumesEnd();
+		while(subvolume!=vols_end)
 			{
 			subvolume->transform(T);
 			if(mirrored)
@@ -35,7 +39,7 @@ void Solid::merge(const Matrix& T,const Solid& volume,bool mirrored)
 			}
 		}
 	m_n_faces_tot+=volume.facesCount();
-	m_flags_dirty|=BOUNDINGBOX_DIRTY|MIDPOINT_DIRTY|RMAX_DIRTY|VOLUME_DIRTY|DMAX_DIRTY;
+	m_flags_dirty|=BOUNDINGBOX_DIRTY|MIDPOINT_DIRTY|RMAX_DIRTY|DMAX_DIRTY|VOLUME_DIRTY;
 	}
 
 void Solid::merge(const Solid& volume)
@@ -46,8 +50,8 @@ void Solid::merge(const Solid& volume)
 		m_subvolumes.push_back(*subvolume);
 		++subvolume;
 		}
-	m_flags_dirty|=BOUNDINGBOX_DIRTY|MIDPOINT_DIRTY|RMAX_DIRTY|VOLUME_DIRTY|DMAX_DIRTY;
-
+	m_flags_dirty|=BOUNDINGBOX_DIRTY|MIDPOINT_DIRTY|RMAX_DIRTY|DMAX_DIRTY;
+	m_volume+=volume.volumeGet();
 	m_n_faces_tot+=volume.facesCount();
 	}
 
@@ -87,7 +91,7 @@ void Solid::transform(const Matrix& T,bool mirrored)
 			{subvolume->normalsFlip();}
 		++subvolume;
 		}
-
+//TODO (perf) Use determinant of T to compute the new volume
 	m_flags_dirty|=BOUNDINGBOX_DIRTY|MIDPOINT_DIRTY|RMAX_DIRTY|VOLUME_DIRTY|DMAX_DIRTY;
 	}
 
@@ -128,21 +132,23 @@ void Solid::boundingBoxCompute() const
 void Solid::midpointCompute() const
 	{
 	auto subvolume=subvolumesBegin();
-	m_mid={0,0,0,0};
-	while(subvolume!=subvolumesEnd())
+	glm::vec4 mid{0.0f,0.0f,0.0f,0.0f};
+	auto vol_end=subvolumesEnd();
+	while(subvolume!=vol_end)
 		{
-		m_mid+=subvolume->midpointGet();
+		mid+=subvolume->midpointGet();
 		++subvolume;
 		}
-	m_mid/=subvolumesCount();
-	m_mid=Point{Vector(m_mid),1};
+	mid/=subvolumesCount();
+	m_mid=Point{Vector(mid),1};
 	m_flags_dirty&=~MIDPOINT_DIRTY;
 	}
 
 void Solid::geometrySample(VoxelBuilder& builder) const
 	{
 	auto subvolume=subvolumesBegin();
-	while(subvolume!=subvolumesEnd())
+	auto vol_end=subvolumesEnd();
+	while(subvolume!=vol_end)
 		{
 		subvolume->geometrySample(builder);
 		++subvolume;
@@ -152,7 +158,8 @@ void Solid::geometrySample(VoxelBuilder& builder) const
 const VolumeConvex* Solid::inside(const Point& v) const
 	{
 	auto subvolume=subvolumesBegin();
-	while(subvolume!=subvolumesEnd())
+	auto vol_end=subvolumesEnd();
+	while(subvolume!=vol_end)
 		{
 		if(subvolume->inside(v))
 			{return subvolume;}
@@ -165,7 +172,8 @@ const VolumeConvex* Solid::inside(const Point& v) const
 const VolumeConvex* Solid::cross(const VolumeConvex::Face& f) const
 	{
 	auto subvolume=subvolumesBegin();
-	while(subvolume!=subvolumesEnd())
+	auto vol_end=subvolumesEnd();
+	while(subvolume!=vol_end)
 		{
 		if(subvolume->cross(f))
 			{return subvolume;}
@@ -180,11 +188,13 @@ void Solid::centerCentroidAt(const Point& pos_new)
 	auto subvolume=subvolumesBegin();
 	Matrix T;
 	T=glm::translate(T,Vector(pos_new-midpointGet()));
-	while(subvolume!=subvolumesEnd())
+	auto vol_end=subvolumesEnd();
+	while(subvolume!=vol_end)
 		{
 		subvolume->transform(T);
 		++subvolume;
 		}
+//TODO (perf) We can deduce a new midpoint [but floating point arithmetic...]
 	m_flags_dirty|=BOUNDINGBOX_DIRTY|MIDPOINT_DIRTY;
 	}
 
@@ -194,43 +204,47 @@ void Solid::centerBoundingBoxAt(const Point& pos_new)
 	Matrix T;
 	T=glm::translate(T,Vector(pos_new-bb_mid));
 	auto subvolume=subvolumesBegin();
-	while(subvolume!=subvolumesEnd())
+	auto vol_end=subvolumesEnd();
+	while(subvolume!=vol_end)
 		{
 		subvolume->transform(T);
 		++subvolume;
 		}
+//TODO (perf) We can deduce a new midpoint [but floating point arithmetic...]
 	m_flags_dirty|=BOUNDINGBOX_DIRTY|MIDPOINT_DIRTY;
 	}
 
 void Solid::rMaxCompute() const
 	{
-	m_r_max=0;
+	float r_max=0;
 	auto mid=midpointGet();
 	auto subvolume=subvolumesBegin();
-	while(subvolume!=subvolumesEnd())
+	auto vol_end=subvolumesEnd();
+	while(subvolume!=vol_end)
 		{
 		auto v_current=subvolume->verticesBegin();
-		while(v_current!=subvolume->verticesEnd())
+		auto v_end=subvolume->verticesEnd();
+		while(v_current!=v_end)
 			{
-			auto r_temp=glm::distance(*v_current,mid);
-			if(r_temp > m_r_max)
-				{m_r_max=r_temp;}
+			r_max=std::max(glm::distance(*v_current,mid), r_max);
 			++v_current;
 			}
 		++subvolume;
 		}
+	m_r_max=r_max;
 	m_flags_dirty&=~RMAX_DIRTY;
 	}
 
 void Solid::volumeCompute() const
 	{
-	m_volume=0;
+	float volume=0;
 	auto subvolume=subvolumesBegin();
 	while(subvolume!=subvolumesEnd())
 		{
 		m_volume+=subvolume->volumeGet();
 		++subvolume;
 		}
+	m_volume=volume;
 	m_flags_dirty&=~VOLUME_DIRTY;
 	}
 
@@ -239,10 +253,12 @@ bool SnowflakeModel::overlap(const Solid& v_a,const Solid& v_b)
 	//	Vertices from v_a inside v_b?
 		{
 		auto subvolume=v_a.subvolumesBegin();
-		while(subvolume!=v_a.subvolumesEnd())
+		auto vol_end=v_a.subvolumesEnd();
+		while(subvolume!=vol_end)
 			{
 			auto vertex=subvolume->verticesBegin();
-			while(vertex!=subvolume->verticesEnd())
+			auto v_end=subvolume->verticesEnd();
+			while(vertex!=v_end)
 				{
 				if(v_b.inside(*vertex)!=nullptr)
 					{return 1;}
@@ -255,10 +271,12 @@ bool SnowflakeModel::overlap(const Solid& v_a,const Solid& v_b)
 	//	Vertices from v_b inside v_a?
 		{
 		auto subvolume=v_b.subvolumesBegin();
-		while(subvolume!=v_b.subvolumesEnd())
+		auto vol_end=v_b.subvolumesEnd();
+		while(subvolume!=vol_end)
 			{
 			auto vertex=subvolume->verticesBegin();
-			while(vertex!=subvolume->verticesEnd())
+			auto v_end=subvolume->verticesEnd();
+			while(vertex!=v_end)
 				{
 				if(v_a.inside(*vertex)!=nullptr)
 					{return 1;}
@@ -271,10 +289,12 @@ bool SnowflakeModel::overlap(const Solid& v_a,const Solid& v_b)
 	//	Triangle overlap
 		{
 		auto subvolume=v_a.subvolumesBegin();
-		while(subvolume!=v_a.subvolumesEnd())
+		auto vol_end=v_a.subvolumesEnd();
+		while(subvolume!=vol_end)
 			{
 			auto face=subvolume->facesBegin();
-			while(face!=subvolume->facesEnd())
+			auto face_end=subvolume->facesEnd();
+			while(face!=face_end)
 				{
 				if(v_b.cross(*face))
 					{return 1;}
@@ -283,9 +303,6 @@ bool SnowflakeModel::overlap(const Solid& v_a,const Solid& v_b)
 			++subvolume;
 			}
 		}
-
-/*	if(v_b.inside(v_a.midpointGet()) || v_a.inside(v_b.midpointGet()))
-		{return 1;}*/
 	return 0;
 	}
 
@@ -365,4 +382,16 @@ Solid::Solid(const DataDump& dump,const char* name)
 
 void Solid::dMaxCompute() const noexcept
 	{
+	m_d_max=0;
+	auto subvolume=subvolumesBegin();
+	while(subvolume!=subvolumesEnd())
+		{
+		auto v_current=subvolume->verticesBegin();
+		while(v_current!=subvolume->verticesEnd())
+			{
+			++v_current;
+			}
+		++subvolume;
+		}
+//	m_flags_dirty&=~DMAX_DIRTY;
 	}
