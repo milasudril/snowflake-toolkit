@@ -18,6 +18,7 @@
 
 #include "volume_convex.h"
 #include "solid_deformation.h"
+#include "twins.h"
 
 namespace SnowflakeModel
 	{
@@ -34,26 +35,30 @@ namespace SnowflakeModel
 				,m_volume(0)
 				,m_flags_dirty(DMAX_DIRTY|BOUNDINGBOX_DIRTY|MIDPOINT_DIRTY|RMAX_DIRTY)
 				,m_mirror_flags(0)
+				,m_dmax_a{0.0f,0.0f,0.0f,1.0f}
+				,m_dmax_b{0.0f,0.0f,0.0f,1.0f}
 				{}
 
 			Solid(const DataDump& dump,const char* name);
 
-			VolumeConvex& subvolumeAdd(const VolumeConvex& volume) noexcept
+			VolumeConvex& subvolumeAdd(const VolumeConvex& volume)
 				{
 				m_subvolumes.push_back(volume);
-				m_flags_dirty|=BOUNDINGBOX_DIRTY|MIDPOINT_DIRTY|RMAX_DIRTY
-					|DMAX_DIRTY;
+				m_flags_dirty|=BOUNDINGBOX_DIRTY|MIDPOINT_DIRTY|RMAX_DIRTY;
 				m_n_faces_tot+=volume.facesCount();
 				m_volume+=volume.volumeGet();
+				dMaxCompute(volume);
 				return m_subvolumes.back();
 				}
 
-			VolumeConvex& subvolumeAdd(VolumeConvex&& volume) noexcept
+			VolumeConvex& subvolumeAdd(VolumeConvex&& volume)
 				{
 				m_n_faces_tot+=volume.facesCount();
-				m_subvolumes.push_back(std::move(volume));
 				m_volume+=volume.volumeGet();
-				m_flags_dirty|=BOUNDINGBOX_DIRTY|MIDPOINT_DIRTY|RMAX_DIRTY|DMAX_DIRTY;
+				dMaxCompute(volume);
+			//	If this fails, the object is in a bad state
+				m_subvolumes.push_back(std::move(volume));
+				m_flags_dirty|=BOUNDINGBOX_DIRTY|MIDPOINT_DIRTY|RMAX_DIRTY;
 				return m_subvolumes.back();
 				}
 
@@ -114,11 +119,9 @@ namespace SnowflakeModel
 				return m_r_max;
 				}
 
-			float dMaxGet() const noexcept
+			Twins<glm::vec4> extremaGet() const noexcept
 				{
-				if(m_flags_dirty&DMAX_DIRTY)
-					{dMaxCompute();}
-				return m_d_max;
+				return {m_dmax_a,m_dmax_b};
 				}
 
 			void geometrySample(VoxelBuilder& builder) const;
@@ -162,6 +165,8 @@ namespace SnowflakeModel
 				m_volume=0;
 				m_r_max=0;
 				m_d_max=0;
+				m_dmax_a={0.0f,0.0f,0.0f,1.0f};
+				m_dmax_b={0.0f,0.0f,0.0f,1.0f};
 				m_flags_dirty=BOUNDINGBOX_DIRTY|MIDPOINT_DIRTY|RMAX_DIRTY;
 				}
 
@@ -187,15 +192,15 @@ namespace SnowflakeModel
 			mutable uint32_t m_flags_dirty;
 			uint32_t m_mirror_flags;
 
-			glm::vec3 m_dmax_a;
-			glm::vec3 m_dmax_b;
+			glm::vec4 m_dmax_a;
+			glm::vec4 m_dmax_b;
 
 
 			void midpointCompute() const;
 			void boundingBoxCompute() const;
 			void rMaxCompute() const;
 			void volumeCompute() const;
-			void dMaxCompute() const noexcept;
+			void dMaxCompute(const VolumeConvex& v) noexcept;
 		};
 
 	Vector strechToBoundingBox(const Vector& v,const Solid& V);
