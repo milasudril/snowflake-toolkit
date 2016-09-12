@@ -392,9 +392,16 @@ void Setup::paramsDump()
 void helpShow()
 	{
 	printf("Options:\n\n"
+		"--help\n"
+		"    Print this text and exit.\n\n"
 		"--statefile=file\n"
 		"    Continue a started simulation whose state is stored in `file`. The simulation setup "
 		"stored in `file` overrides any other command line argument.\n\n"
+		"--stop-condition=condition\n"
+		"    Defines a stop condition. Possible options are\n"
+		"     iterations=iteration_count  Run a fixed number of iterations"
+		"     subvols_max=subvols_max     Run until there is an aggreaget with subvols_max elements\n"
+		"     infinity                    Run forever, or until the simulation is stopped by other means\n\n"
 		"--shape=crystal_file\n"
 		"    Generate data using the shape stored in crystal_file."
 		" See the reference manal for information about how to create "
@@ -403,8 +410,6 @@ void helpShow()
 		"    Crystal file parameter to use for size modification. Use\n\n"
 		"         --param-show\n\n"
 		"    to list the name of available parameters.\n\n"
-		"--help\n"
-		"    Print this text and exit.\n\n"
 		"--output-dir=output_directory\n"
 		"    Directory for storing output data\n\n"
 		"--dump-stats=N\n"
@@ -825,6 +830,12 @@ class Simstate
 
 		size_t frameCurrentGet() const noexcept
 			{return m_data.frame;}
+
+		const SnowflakeModel::IceParticle* particlesBegin() const noexcept
+			{return ice_particles.data();}
+
+		const SnowflakeModel::IceParticle* particlesEnd() const noexcept
+			{return ice_particles.data() + ice_particles.size();}
 
 	private:
 		const Setup& r_setup;
@@ -1258,9 +1269,56 @@ class MonitorIterations:public SimstateMonitor
 	};
 
 static std::unique_ptr<SimstateMonitor> iterations_check(const char* arg)
+	{return std::unique_ptr<SimstateMonitor>( new MonitorIterations(atoi(arg)) );}
+
+
+class MonitorSubvolsMaxCheck:public SimstateMonitor
 	{
-	return std::unique_ptr<SimstateMonitor>( new MonitorIterations(atoi(arg)) );
-	}
+	public:
+		MonitorSubvolsMaxCheck(size_t max):m_max(max)
+			{}
+
+		double progressGet(const Simstate& state) noexcept
+			{
+			auto particles_begin=state.particlesBegin();
+			auto particles_end=state.particlesEnd();
+			size_t subvols_max=0;
+			while(particles_begin!=particles_end)
+				{
+				auto& solid=particles_begin->solidGet();
+
+				subvols_max=std::max(solid.subvolumesCount(),subvols_max);
+				++particles_begin;
+				}
+			return static_cast<double>(subvols_max)/m_max;
+			}
+
+	private:
+		size_t m_max;
+	};
+
+static std::unique_ptr<SimstateMonitor> subvols_max_check(const char* arg)
+	{return std::unique_ptr<SimstateMonitor>( new MonitorSubvolsMaxCheck(atoi(arg)) );}
+
+
+class MonitorInfinity:public SimstateMonitor
+	{
+	public:
+		MonitorInfinity()
+			{}
+
+		double progressGet(const Simstate& state) noexcept
+			{
+			return 0.0;
+			}
+
+	private:
+		size_t m_N_iter;
+	};
+
+static std::unique_ptr<SimstateMonitor> infinity(const char* arg)
+	{return std::unique_ptr<SimstateMonitor>( new MonitorInfinity );}
+
 
 static std::unique_ptr<SimstateMonitor> bad_condition(const char* arg)
 	{throw "Unknown stop condition";}
@@ -1326,11 +1384,11 @@ int main(int argc,char** argv)
 		fprintf(stderr,"# Initializing\n");
 		std::map<std::string,SimstateMonitor::Factory> monitor_selector;
 		monitor_selector["iterations"]=iterations_check;
+		monitor_selector["subvols_max"]=subvols_max_check;
+		monitor_selector["infinity"]=infinity;
 
-		setup.paramsDump();
 		auto monitor=monitor_selector[setup.m_stopcond_name];
 		monitor=(monitor==nullptr)?bad_condition:monitor;
-		fflush(stdout);
 		std::unique_ptr<Simstate> state;
 		if(setup.m_statefile.size()==0)
 			{
@@ -1343,6 +1401,8 @@ int main(int argc,char** argv)
 				,monitor(setup.m_stopcond_arg.c_str())));
 			}
 		auto now=SnowflakeModel::getdate();
+		setup.paramsDump();
+		fflush(stdout);
 		fprintf(stderr,"# Simulation started at %s\n",now.c_str());
 		SnowflakeModel::CtrlCHandler stopper;
 		state->statsDump();
