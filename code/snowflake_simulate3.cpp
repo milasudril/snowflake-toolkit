@@ -1051,7 +1051,7 @@ void Simstate::statsDump() const
 			}
 	}
 
-void particleDump(const SnowflakeModel::IceParticle& i,const char* prefix,size_t id)
+static void particleDump(const SnowflakeModel::IceParticle& i,const char* prefix,size_t id)
 	{
 	std::string name(prefix);
 	char id_str[32];
@@ -1072,7 +1072,7 @@ void particleDump(const SnowflakeModel::IceParticle& i,const char* prefix,size_t
 		}
 	}
 
-void particleDumpStats(const SnowflakeModel::IceParticle& i,SnowflakeModel::FileOut& file_out)
+static void particleDumpStats(const SnowflakeModel::IceParticle& i,SnowflakeModel::FileOut& file_out)
 	{
 	auto& bb=i.solidGet().boundingBoxGet();
 	auto L=bb.m_max-bb.m_min;
@@ -1194,6 +1194,22 @@ bool Simstate::step()
 	return 0;
 	}
 
+static std::string statefileName(const std::string& name_init,const std::string& name_new)
+	{
+	if(name_init.size()==0)
+		{
+		return SnowflakeModel::filenameEscape(name_new.c_str()) + "-0000000000000000.h5";
+		}
+//TODO (perf) This can be done much easier by looping through name_init backwards
+	auto pos_counter=name_init.find_last_of('-');
+	auto ret=name_init.substr(0,pos_counter);
+	auto pos_extension=name_init.find_last_of('.');
+	auto val=name_init.substr(pos_counter + 1,pos_extension - pos_counter-1);
+	size_t counter=strtol(val.c_str(),nullptr,16) + 1;
+	sprintf(const_cast<char*>( val.data() ),"%016zx",counter);
+	auto extension=name_init.substr(pos_extension);	
+	return ret+"-"+val+extension;
+	}
 
 
 int main(int argc,char** argv)
@@ -1276,12 +1292,7 @@ int main(int argc,char** argv)
 			}
 		fprintf(stderr,"\n# Exiting\n");
 			{
-			auto filename_dump=setup.m_statefile;
-			if(filename_dump.size()==0)
-				{
-				filename_dump=SnowflakeModel::filenameEscape(now.c_str());
-				filename_dump+=".h5";
-				}
+			auto filename_dump=statefileName(setup.m_statefile,now);
 			fprintf(stderr,"# Dumping simulation state to %s\n",filename_dump.c_str());
 			SnowflakeModel::DataDump dump(filename_dump.c_str()
 				,SnowflakeModel::DataDump::IOMode::WRITE);
