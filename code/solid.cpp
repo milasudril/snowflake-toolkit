@@ -47,6 +47,7 @@ void Solid::merge(const Solid& volume)
 	auto subvolume=volume.subvolumesBegin();
 	while(subvolume!=volume.subvolumesEnd())
 		{
+	//	subvolumeAdd not needed here (We correct values after the loop)
 		m_subvolumes.push_back(*subvolume);
 		++subvolume;
 		}

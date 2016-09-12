@@ -162,7 +162,7 @@ namespace SnowflakeModel
 				m_volume=0;
 				m_r_max=0;
 				m_d_max=0;
-				m_flags_dirty=BOUNDINGBOX_DIRTY|MIDPOINT_DIRTY;
+				m_flags_dirty=BOUNDINGBOX_DIRTY|MIDPOINT_DIRTY|RMAX_DIRTY;
 				}
 
 			void write(const char* id,DataDump& dump) const;
@@ -185,8 +185,10 @@ namespace SnowflakeModel
 			mutable float m_volume;
 			mutable float m_d_max;
 			mutable uint32_t m_flags_dirty;
-
 			uint32_t m_mirror_flags;
+
+			glm::vec3 m_dmax_a;
+			glm::vec3 m_dmax_b;
 
 
 			void midpointCompute() const;
