@@ -49,7 +49,6 @@ static constexpr char PARAM_SIGMA='I';
 static constexpr char PARAM_DROPRATE='J';
 static constexpr char PARAM_GROWTHRATE='K';
 static constexpr char PARAM_MELTRATE='L';
-static constexpr char PARAM_NITER='M';
 static constexpr char PARAM_PARAMSHOW='N';
 static constexpr char PARAM_GEOMETRY_DUMP_ICE='O';
 static constexpr char PARAM_STATEFILE='S';
@@ -69,7 +68,6 @@ static const struct option PROGRAM_OPTIONS[]=
 		,{"dump-geometry-ice",no_argument,nullptr,PARAM_GEOMETRY_DUMP_ICE}
 
 		,{"seed",required_argument,nullptr,PARAM_SEED}
-		,{"iterations",required_argument,nullptr,PARAM_NITER}
 		,{"N",required_argument,nullptr,PARAM_PARTICLE_COUNT}
 		,{"droprate",required_argument,nullptr,PARAM_DROPRATE}
 		,{"growthrate",required_argument,nullptr,PARAM_GROWTHRATE}
@@ -92,7 +90,7 @@ class Simstate;
 class SimstateMonitor
 	{
 	public:
-		virtual double progressGet(const Simstate& state)=0;
+		virtual double progressGet(const Simstate& state) noexcept=0;
 		typedef std::unique_ptr<SimstateMonitor> (*Factory)(const char* argument);
 	};
 
@@ -108,7 +106,6 @@ struct Setup
 		int m_size_z;
 
 		size_t m_N;
-		size_t m_N_iter;
 		uint32_t m_seed;
 		float m_droprate;
 		float m_growthrate;
@@ -127,7 +124,6 @@ struct Setup
 	static constexpr float DROPRATE=100;
 	static constexpr float GROWTHRATE=100;
 	static constexpr float MELTRATE=100;
-	static constexpr size_t N_ITER=1024;
 
 	static constexpr uint32_t HELP_SHOW=1;
 	static constexpr uint32_t STATS_DUMP=2;
@@ -182,7 +178,6 @@ Setup::Setup(int argc,char** argv):
 	m_data.m_droprate=DROPRATE;
 	m_data.m_growthrate=GROWTHRATE;
 	m_data.m_meltrate=MELTRATE;
-	m_data.m_N_iter=N_ITER;
 	m_data.m_stat_saverate=256;
 
 	while( (c=getopt_long(argc,argv,"",PROGRAM_OPTIONS,&option_index))!=-1)
@@ -249,10 +244,6 @@ Setup::Setup(int argc,char** argv):
 				m_data.m_meltrate=atof(optarg);
 				break;
 
-			case PARAM_NITER:
-				m_data.m_N_iter=atoi(optarg);
-				break;
-
 			case PARAM_PARAMSHOW:
 				m_data.m_actions|=PARAM_SHOW;
 				break;
@@ -264,8 +255,9 @@ Setup::Setup(int argc,char** argv):
 			case PARAM_STOPCOND:
 				{
 				auto temp=std::string(optarg);
-				m_stopcond_name=temp.substr(0,temp.find_first_of('='));
-				printf("%s\n",m_stopcond_name.c_str());
+				auto pos=temp.find_first_of('=');
+				m_stopcond_name=temp.substr(0,pos);
+				m_stopcond_arg=temp.substr(pos+1);
 				}
 				break;
 
@@ -274,7 +266,7 @@ Setup::Setup(int argc,char** argv):
 
 			}
 		}
-	if(m_stopcond_name.size()==0)
+	if(m_stopcond_name.size()==0 && m_statefile.size()==0)
 		{
 		throw "No stop condition is given";
 		}
@@ -428,8 +420,6 @@ void helpShow()
 		"    Sample the output geometry to a grid of size Nx x Ny x Nz\n\n"
 		"--seed=integer\n"
 		"    Sets the random number genererator seed\n\n"
-		"--iterataions=integer\n"
-		"    Sets the number of iterations\n\n"
 		"--N=integer\n"
 		"    The maximum number of crystals\n\n"
 		"--sigma=value\n"
@@ -490,7 +480,6 @@ namespace SnowflakeModel
 		,{"size_y",offsetOf(&Setup::Data::m_size_y),DataDump::MetaObject<decltype(Setup::Data::m_size_y)>().typeGet()}
 		,{"size_z",offsetOf(&Setup::Data::m_size_z),DataDump::MetaObject<decltype(Setup::Data::m_size_z)>().typeGet()}
 		,{"N",offsetOf(&Setup::Data::m_N),DataDump::MetaObject<decltype(Setup::Data::m_N)>().typeGet()}
-		,{"N_iter",offsetOf(&Setup::Data::m_N_iter),DataDump::MetaObject<decltype(Setup::Data::m_N_iter)>().typeGet()}
 		,{"seed",offsetOf(&Setup::Data::m_seed),DataDump::MetaObject<decltype(Setup::Data::m_seed)>().typeGet()}
 		,{"droprate",offsetOf(&Setup::Data::m_droprate),DataDump::MetaObject<decltype(Setup::Data::m_droprate)>().typeGet()}
 		,{"growthrate",offsetOf(&Setup::Data::m_growthrate),DataDump::MetaObject<decltype(Setup::Data::m_growthrate)>().typeGet()}
@@ -498,7 +487,7 @@ namespace SnowflakeModel
 		};
 
 	template<>
-	const size_t DataDump::MetaObject<Setup::Data>::field_count=11;
+	const size_t DataDump::MetaObject<Setup::Data>::field_count=10;
 	}
 
 void Setup::write(SnowflakeModel::DataDump& dump)
@@ -506,6 +495,8 @@ void Setup::write(SnowflakeModel::DataDump& dump)
 	auto group=dump.groupCreate("setup");
 	dump.write("setup/output_dir",&m_output_dir,1);
 	dump.write("setup/crystal",&m_crystal,1);
+	dump.write("setup/stopcond_name",&m_stopcond_name,1);
+	dump.write("setup/stopcond_arg",&m_stopcond_arg,1);
 
 		{
 		std::vector<DeformationDataOut> deformations;
@@ -526,6 +517,9 @@ Setup::Setup(const SnowflakeModel::DataDump& dump)
 	m_data=dump.arrayGet<Setup::Data>("setup/data").at(0);
 	m_output_dir=dump.arrayGet<SnowflakeModel::DataDump::StringHolder>("setup/output_dir").at(0);
 	m_crystal=dump.arrayGet<SnowflakeModel::DataDump::StringHolder>("setup/crystal").at(0);
+	m_stopcond_name=dump.arrayGet<SnowflakeModel::DataDump::StringHolder>("setup/stopcond_name").at(0);
+	m_stopcond_arg=dump.arrayGet<SnowflakeModel::DataDump::StringHolder>("setup/stopcond_arg").at(0);
+
 		{
 		auto deformations=dump.arrayGet<DeformationDataIn>("setup/deformations");
 		auto ptr=deformations.data();
@@ -803,20 +797,25 @@ class Simstate
 			size_t N_particles_dropped;
 			};
 
-		Simstate(Setup&& setup,SnowflakeModel::Solid&& s_in)=delete;
-		Simstate(Setup&& setup,const SnowflakeModel::Solid& s_in)=delete;
-		Simstate(const Setup& setup,SnowflakeModel::Solid&& s_in)=delete;
+		template<class T>
+		Simstate(Setup&& setup,SnowflakeModel::Solid&& s_in,T)=delete;
+		template<class T>
+		Simstate(Setup&& setup,const SnowflakeModel::Solid& s_in,T)=delete;
+		template<class T>
+		Simstate(const Setup& setup,SnowflakeModel::Solid&& s_in,T)=delete;
 
 		Simstate(const Setup& setup,const SnowflakeModel::Solid& s_in
-			,const SnowflakeModel::DataDump& dump);
-		Simstate(const Setup& setup,const SnowflakeModel::Solid& s_in);
+			,const SnowflakeModel::DataDump& dump
+			,std::unique_ptr<SimstateMonitor>&& monitor);
+		Simstate(const Setup& setup,const SnowflakeModel::Solid& s_in
+			,std::unique_ptr<SimstateMonitor>&& monitor);
 
 		bool step();
 		void statsDump() const;
 		void prototypesDump() const;
 
 		double progressGet() const noexcept
-			{return m_data.frame/static_cast<double>( r_setup.m_data.m_N_iter );}
+			{return m_monitor->progressGet(*this);}
 
 		void geometryDump() const;
 
@@ -829,6 +828,7 @@ class Simstate
 
 	private:
 		const Setup& r_setup;
+		std::unique_ptr<SimstateMonitor> m_monitor;
 		const SnowflakeModel::Solid& r_s_in;
 		Data m_data;
 		SnowflakeModel::MatrixStorage C_mat;
@@ -858,8 +858,9 @@ namespace SnowflakeModel
 	}
 
 Simstate::Simstate(const Setup& setup,const SnowflakeModel::Solid& s_in
-	,const SnowflakeModel::DataDump& dump):
-	r_setup(setup),r_s_in(s_in),C_mat(setup.m_data.m_N+1,setup.m_data.m_N+1)
+	,const SnowflakeModel::DataDump& dump
+	,std::unique_ptr<SimstateMonitor>&& monitor):
+	r_setup(setup),m_monitor(std::move(monitor)),r_s_in(s_in),C_mat(setup.m_data.m_N+1,setup.m_data.m_N+1)
 	,U_rot(0,5),randomizer(C_mat)
 	{
 	dump.arrayRead<Data>("simstate/data")
@@ -930,8 +931,9 @@ void Simstate::write(SnowflakeModel::DataDump& dump) const
 
 
 
-Simstate::Simstate(const Setup& setup,const SnowflakeModel::Solid& s_in):
-	 r_setup(setup),r_s_in(s_in),m_data{0}
+Simstate::Simstate(const Setup& setup,const SnowflakeModel::Solid& s_in
+	,std::unique_ptr<SimstateMonitor>&& monitor):
+	 r_setup(setup),m_monitor(std::move(monitor)),r_s_in(s_in),m_data{0}
 	,C_mat(setup.m_data.m_N+1,setup.m_data.m_N+1)
 	,randgen(setup.m_data.m_seed),U_rot(0,5),randomizer(C_mat)
 	{
@@ -1245,7 +1247,7 @@ class MonitorIterations:public SimstateMonitor
 		MonitorIterations(size_t N_iter):m_N_iter(N_iter)
 			{}
 
-		double progressGet(const Simstate& state)
+		double progressGet(const Simstate& state) noexcept
 			{
 			return static_cast<double>(state.frameCurrentGet())
 				/m_N_iter;
@@ -1259,6 +1261,9 @@ static std::unique_ptr<SimstateMonitor> iterations_check(const char* arg)
 	{
 	return std::unique_ptr<SimstateMonitor>( new MonitorIterations(atoi(arg)) );
 	}
+
+static std::unique_ptr<SimstateMonitor> bad_condition(const char* arg)
+	{throw "Unknown stop condition";}
 
 
 int main(int argc,char** argv)
@@ -1323,15 +1328,19 @@ int main(int argc,char** argv)
 		monitor_selector["iterations"]=iterations_check;
 
 		setup.paramsDump();
+		auto monitor=monitor_selector[setup.m_stopcond_name];
+		monitor=(monitor==nullptr)?bad_condition:monitor;
 		fflush(stdout);
 		std::unique_ptr<Simstate> state;
 		if(setup.m_statefile.size()==0)
-			{state.reset(new Simstate(setup,s_in));}
+			{
+			state.reset(new Simstate(setup,s_in,monitor(setup.m_stopcond_arg.c_str())));
+			}
 		else
 			{
 			state.reset(new Simstate(setup,s_in
-				,SnowflakeModel::DataDump(setup.m_statefile.c_str()
-					,SnowflakeModel::DataDump::IOMode::READ)));
+				,SnowflakeModel::DataDump(setup.m_statefile.c_str(),SnowflakeModel::DataDump::IOMode::READ)
+				,monitor(setup.m_stopcond_arg.c_str())));
 			}
 		auto now=SnowflakeModel::getdate();
 		fprintf(stderr,"# Simulation started at %s\n",now.c_str());
