@@ -28,49 +28,52 @@ namespace SnowflakeModel
 		public:
 			static constexpr uint32_t MIRROR_HEADING=1;
 
-			Solid():
-				 m_r_max(0)
-				,m_flags_dirty(BOUNDINGBOX_DIRTY|MIDPOINT_DIRTY|RMAX_DIRTY|VOLUME_DIRTY)
+			Solid() noexcept:
+				 m_n_faces_tot(0)
+				,m_r_max(0)
+				,m_flags_dirty(DMAX_DIRTY|BOUNDINGBOX_DIRTY|MIDPOINT_DIRTY|RMAX_DIRTY|VOLUME_DIRTY)
 				,m_mirror_flags(0)
 				{}
 
 			Solid(const DataDump& dump,const char* name);
 
-			VolumeConvex& subvolumeAdd(const VolumeConvex& volume)
+			VolumeConvex& subvolumeAdd(const VolumeConvex& volume) noexcept
 				{
 				m_subvolumes.push_back(volume);
 				m_flags_dirty|=BOUNDINGBOX_DIRTY|MIDPOINT_DIRTY|RMAX_DIRTY
-					|VOLUME_DIRTY;
+					|VOLUME_DIRTY|DMAX_DIRTY;
+				m_n_faces_tot+=volume.facesCount();
 				return m_subvolumes.back();
 				}
 
-			VolumeConvex& subvolumeAdd(VolumeConvex&& volume)
+			VolumeConvex& subvolumeAdd(VolumeConvex&& volume) noexcept
 				{
+				m_n_faces_tot+=volume.facesCount();
 				m_subvolumes.push_back(std::move(volume));
 				m_flags_dirty|=BOUNDINGBOX_DIRTY|MIDPOINT_DIRTY|RMAX_DIRTY
-					|VOLUME_DIRTY;
+					|VOLUME_DIRTY|DMAX_DIRTY;
 				return m_subvolumes.back();
 				}
 
-			const VolumeConvex* subvolumesBegin() const
+			const VolumeConvex* subvolumesBegin() const noexcept
 				{return m_subvolumes.data();}
 
-			const VolumeConvex* subvolumesEnd() const
+			const VolumeConvex* subvolumesEnd() const noexcept
 				{return m_subvolumes.data()+m_subvolumes.size();}
 
-			VolumeConvex* subvolumesBegin()
+			VolumeConvex* subvolumesBegin() noexcept
 				{return m_subvolumes.data();}
 
-			VolumeConvex* subvolumesEnd()
+			VolumeConvex* subvolumesEnd() noexcept
 				{return m_subvolumes.data()+m_subvolumes.size();}
 
-			size_t subvolumesCount() const
+			size_t subvolumesCount() const noexcept
 				{return m_subvolumes.size();}
 
-			const VolumeConvex& subvolumeGet(size_t index) const
+			const VolumeConvex& subvolumeGet(size_t index) const noexcept
 				{return m_subvolumes[index];}
 
-			VolumeConvex& subvolumeGet(size_t index)
+			VolumeConvex& subvolumeGet(size_t index) noexcept
 				{return m_subvolumes[index];}
 
 
@@ -80,21 +83,21 @@ namespace SnowflakeModel
 			void merge(const Solid& volume);
 
 
-			const BoundingBox& boundingBoxGet() const
+			const BoundingBox& boundingBoxGet() const noexcept
 				{
 				if(m_flags_dirty&BOUNDINGBOX_DIRTY)
 					{boundingBoxCompute();}
 				return m_bounding_box;
 				}
 
-			const Point& midpointGet() const
+			const Point& midpointGet() const noexcept
 				{
 				if(m_flags_dirty&MIDPOINT_DIRTY)
 					{midpointCompute();}
 				return m_mid;
 				}
 
-			float volumeGet() const
+			float volumeGet() const noexcept
 				{
 				if(m_flags_dirty&VOLUME_DIRTY)
 					{volumeCompute();}
@@ -102,7 +105,7 @@ namespace SnowflakeModel
 				}
 
 
-			float rMaxGet() const
+			float rMaxGet() const noexcept
 				{
 				if(m_flags_dirty&RMAX_DIRTY)
 					{rMaxCompute();}
@@ -125,31 +128,30 @@ namespace SnowflakeModel
 			void deformationTemplateAdd(SolidDeformation&& deformation)
 				{m_deformation_templates.push_back(std::move(deformation));}
 
-			const std::vector<SolidDeformation>& deformationTemplatesGet() const
+			const std::vector<SolidDeformation>& deformationTemplatesGet() const noexcept
 				{return m_deformation_templates;}
 
 			void mirrorActivate(uint32_t mirror_flags)
 				{m_mirror_flags|=mirror_flags;}
 
-			bool mirrorFlagTest(uint32_t mirror_flag) const
+			bool mirrorFlagTest(uint32_t mirror_flag) const noexcept
 				{return m_mirror_flags&mirror_flag;}
 
 			void mirrorDeactivate(uint32_t mirror_flags)
 				{m_mirror_flags&=~mirror_flags;}
 
-			size_t facesCount() const
+			size_t facesCount() const noexcept
 				{
-				if(m_flags_dirty&FACES_COUNT_DIRTY)
-					{facesCountCompute();}
-				return m_n_faces;
+				return m_n_faces_tot;
 				}
 
 			void clear()
 				{
+				m_n_faces_tot=0;
 				m_subvolumes.clear();
 				m_deformation_templates.clear();
-				m_flags_dirty=BOUNDINGBOX_DIRTY|MIDPOINT_DIRTY|FACES_COUNT_DIRTY
-					|RMAX_DIRTY|VOLUME_DIRTY;
+				m_flags_dirty=BOUNDINGBOX_DIRTY|MIDPOINT_DIRTY
+					|RMAX_DIRTY|VOLUME_DIRTY|DMAX_DIRTY;
 				}
 
 			void write(const char* id,DataDump& dump) const;
@@ -158,26 +160,26 @@ namespace SnowflakeModel
 		private:
 			static constexpr uint32_t BOUNDINGBOX_DIRTY=1;
 			static constexpr uint32_t MIDPOINT_DIRTY=2;
-			static constexpr uint32_t FACES_COUNT_DIRTY=4;
 			static constexpr uint32_t RMAX_DIRTY=8;
 			static constexpr uint32_t VOLUME_DIRTY=16;
+			static constexpr uint32_t DMAX_DIRTY=4;
 
 			std::vector< VolumeConvex > m_subvolumes;
+			size_t m_n_faces_tot;
 			std::vector<SolidDeformation> m_deformation_templates;
 
 			mutable BoundingBox m_bounding_box;
 			mutable Point m_mid;
-			mutable size_t m_n_faces;
 			mutable float m_r_max;
 			mutable float m_volume;
 			mutable uint32_t m_flags_dirty;
+			mutable float m_d_max;
 
 			uint32_t m_mirror_flags;
 
 
 			void midpointCompute() const;
 			void boundingBoxCompute() const;
-			void facesCountCompute() const;
 			void rMaxCompute() const;
 			void volumeCompute() const;
 		};

@@ -34,9 +34,8 @@ void Solid::merge(const Matrix& T,const Solid& volume,bool mirrored)
 			++subvolume;
 			}
 		}
-
-	m_flags_dirty|=BOUNDINGBOX_DIRTY|MIDPOINT_DIRTY|RMAX_DIRTY|VOLUME_DIRTY
-		|FACES_COUNT_DIRTY;
+	m_n_faces_tot+=volume.facesCount();
+	m_flags_dirty|=BOUNDINGBOX_DIRTY|MIDPOINT_DIRTY|RMAX_DIRTY|VOLUME_DIRTY|DMAX_DIRTY;
 	}
 
 void Solid::merge(const Solid& volume)
@@ -47,20 +46,9 @@ void Solid::merge(const Solid& volume)
 		m_subvolumes.push_back(*subvolume);
 		++subvolume;
 		}
-	m_flags_dirty|=BOUNDINGBOX_DIRTY|MIDPOINT_DIRTY|RMAX_DIRTY|VOLUME_DIRTY
-		|FACES_COUNT_DIRTY;
-	}
+	m_flags_dirty|=BOUNDINGBOX_DIRTY|MIDPOINT_DIRTY|RMAX_DIRTY|VOLUME_DIRTY|DMAX_DIRTY;
 
-void Solid::facesCountCompute() const
-	{
-	m_n_faces=0;
-	auto subvolume=subvolumesBegin();
-	while(subvolume!=subvolumesEnd())
-		{
-		m_n_faces+=subvolume->facesCount();
-		++subvolume;
-		}
-	m_flags_dirty&=~FACES_COUNT_DIRTY;
+	m_n_faces_tot+=volume.facesCount();
 	}
 
 Vector SnowflakeModel::strechToBoundingBox(const Vector& v,const Solid& V)
@@ -100,7 +88,7 @@ void Solid::transform(const Matrix& T,bool mirrored)
 		++subvolume;
 		}
 
-	m_flags_dirty|=BOUNDINGBOX_DIRTY|MIDPOINT_DIRTY|RMAX_DIRTY|VOLUME_DIRTY;
+	m_flags_dirty|=BOUNDINGBOX_DIRTY|MIDPOINT_DIRTY|RMAX_DIRTY|VOLUME_DIRTY|DMAX_DIRTY;
 	}
 
 void Solid::normalsFlip()
@@ -369,10 +357,7 @@ Solid::Solid(const DataDump& dump,const char* name)
 			(const char* group_name)
 			{
 			auto group_name_current=defgroup_name + group_name;
-			m_subvolumes.push_back(VolumeConvex(dump,group_name_current.c_str()));
+			subvolumeAdd(VolumeConvex(dump,group_name_current.c_str()));
 			});
 		}
-
-	m_flags_dirty|=BOUNDINGBOX_DIRTY|MIDPOINT_DIRTY|RMAX_DIRTY
-		|VOLUME_DIRTY;
 	}
