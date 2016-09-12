@@ -332,6 +332,7 @@ void Solid::write(const char* id,DataDump& dump) const
 
 Solid::Solid(const DataDump& dump,const char* name)
 	{
+	clear();
 	std::string group_name(name);
 	m_mirror_flags=dump.arrayGet<decltype(m_mirror_flags)>
 		((group_name+"/mirror_flags").c_str()).at(0);
@@ -360,4 +361,8 @@ Solid::Solid(const DataDump& dump,const char* name)
 			subvolumeAdd(VolumeConvex(dump,group_name_current.c_str()));
 			});
 		}
+	}
+
+void Solid::dMaxCompute() const noexcept
+	{
 	}

@@ -112,6 +112,13 @@ namespace SnowflakeModel
 				return m_r_max;
 				}
 
+			float dMaxGet() const noexcept
+				{
+				if(m_flags_dirty&DMAX_DIRTY)
+					{dMaxCompute();}
+				return m_d_max;
+				}
+
 			void geometrySample(VoxelBuilder& builder) const;
 
 			void transform(const Matrix& T,bool mirrored);
@@ -182,6 +189,7 @@ namespace SnowflakeModel
 			void boundingBoxCompute() const;
 			void rMaxCompute() const;
 			void volumeCompute() const;
+			void dMaxCompute() const noexcept;
 		};
 
 	Vector strechToBoundingBox(const Vector& v,const Solid& V);
