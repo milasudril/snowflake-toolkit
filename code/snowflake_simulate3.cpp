@@ -53,6 +53,7 @@ static constexpr char PARAM_NITER='M';
 static constexpr char PARAM_PARAMSHOW='N';
 static constexpr char PARAM_GEOMETRY_DUMP_ICE='O';
 static constexpr char PARAM_STATEFILE='S';
+static constexpr char PARAM_STOPCOND='s';
 
 
 static const struct option PROGRAM_OPTIONS[]=
@@ -75,6 +76,7 @@ static const struct option PROGRAM_OPTIONS[]=
 		,{"meltrate",required_argument,nullptr,PARAM_MELTRATE}
 		,{"param-show",no_argument,nullptr,PARAM_PARAMSHOW}
 		,{"statefile",required_argument,nullptr,PARAM_STATEFILE}
+		,{"stop-cond",required_argument,nullptr,PARAM_STOPCOND}
 		,{0,0,0,0}
 	};
 
@@ -83,6 +85,15 @@ struct DeformationData
 	std::string name;
 	double mean;
 	double standard_deviation;
+	};
+
+class Simstate;
+
+class SimstateMonitor
+	{
+	public:
+		virtual double progressGet(const Simstate& state)=0;
+		typedef std::unique_ptr<SimstateMonitor> (*Factory)(const char* argument);
 	};
 
 struct Setup
@@ -109,6 +120,8 @@ struct Setup
 	std::vector<DeformationData> m_deformations;
 	std::string m_output_dir;
 	std::string m_statefile;
+	std::string m_stopcond_name;
+	std::string m_stopcond_arg;
 
 	static constexpr size_t N=1023;
 	static constexpr float DROPRATE=100;
@@ -248,10 +261,22 @@ Setup::Setup(int argc,char** argv):
 				m_statefile=optarg;
 				break;
 
+			case PARAM_STOPCOND:
+				{
+				auto temp=std::string(optarg);
+				m_stopcond_name=temp.substr(0,temp.find_first_of('='));
+				printf("%s\n",m_stopcond_name.c_str());
+				}
+				break;
+
 			case '?':
 				throw "Invalid parameter given";
 
 			}
+		}
+	if(m_stopcond_name.size()==0)
+		{
+		throw "No stop condition is given";
 		}
 
 	if(sample_geometry!=nullptr)
@@ -799,6 +824,9 @@ class Simstate
 
 		void write(SnowflakeModel::DataDump& dump) const;
 
+		size_t frameCurrentGet() const noexcept
+			{return m_data.frame;}
+
 	private:
 		const Setup& r_setup;
 		const SnowflakeModel::Solid& r_s_in;
@@ -1211,6 +1239,27 @@ static std::string statefileName(const std::string& name_init,const std::string&
 	return ret+"-"+val+extension;
 	}
 
+class MonitorIterations:public SimstateMonitor
+	{
+	public:
+		MonitorIterations(size_t N_iter):m_N_iter(N_iter)
+			{}
+
+		double progressGet(const Simstate& state)
+			{
+			return static_cast<double>(state.frameCurrentGet())
+				/m_N_iter;
+			}
+
+	private:
+		size_t m_N_iter;
+	};
+
+static std::unique_ptr<SimstateMonitor> iterations_check(const char* arg)
+	{
+	return std::unique_ptr<SimstateMonitor>( new MonitorIterations(atoi(arg)) );
+	}
+
 
 int main(int argc,char** argv)
 	{
@@ -1270,6 +1319,9 @@ int main(int argc,char** argv)
 
 
 		fprintf(stderr,"# Initializing\n");
+		std::map<std::string,SimstateMonitor::Factory> monitor_selector;
+		monitor_selector["iterations"]=iterations_check;
+
 		setup.paramsDump();
 		fflush(stdout);
 		std::unique_ptr<Simstate> state;

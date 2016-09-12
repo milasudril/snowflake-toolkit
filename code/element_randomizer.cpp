@@ -95,6 +95,7 @@ namespace
 		if(element==end)
 			{
 			fprintf(stderr,"# WARNING: No match\n");
+			abort();
 			return 0;
 			}
 		return 1;

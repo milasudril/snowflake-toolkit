@@ -50,7 +50,8 @@ void Solid::merge(const Matrix& T,const Solid& volume,bool mirrored)
 void Solid::merge(const Solid& volume)
 	{
 	auto subvolume=volume.subvolumesBegin();
-	while(subvolume!=volume.subvolumesEnd())
+	auto vols_end=volume.subvolumesEnd();
+	while(subvolume!=vols_end)
 		{
 	//	subvolumeAdd not needed here (We correct values after the loop)
 		m_subvolumes.push_back(*subvolume);
@@ -247,9 +248,10 @@ void Solid::volumeCompute() const
 	{
 	float volume=0;
 	auto subvolume=subvolumesBegin();
-	while(subvolume!=subvolumesEnd())
+	auto subvols_end=subvolumesEnd();
+	while(subvolume!=subvols_end)
 		{
-		m_volume+=subvolume->volumeGet();
+		volume+=subvolume->volumeGet();
 		++subvolume;
 		}
 	m_volume=volume;

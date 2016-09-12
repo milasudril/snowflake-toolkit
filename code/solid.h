@@ -106,7 +106,7 @@ namespace SnowflakeModel
 
 			float volumeGet() const noexcept
 				{
-				if(m_flags_dirty&VOLUME_DIRTY)
+				if(m_flags_dirty&VOLUME_DIRTY || m_volume<1e-7)
 					{volumeCompute();}
 				return m_volume;
 				}
