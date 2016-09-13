@@ -404,6 +404,32 @@ void Solid::extremaUpdate(const VolumeConvex& vol) noexcept
 	auto v_begin_0=vol.verticesBegin();
 	auto v_end=vol.verticesEnd();
 
+	if(subvolumesCount()==0)
+		{
+	//	There are no subvolumes yet. Only consider vertices in vol.
+		auto v_begin=v_begin_0;
+		while(v_begin!=v_end)
+			{
+			auto v=*v_begin;
+			auto w_ptr=v_begin + 1;
+			while(w_ptr!=v_end)
+				{
+				auto w=*w_ptr;
+				auto d=glm::distance(v,w);
+				if(d>d_max)
+					{
+					d_max=d;
+					extrema_in={v,w};
+					}
+				++w_ptr;
+				}
+			++v_begin;
+			}
+		m_extrema=extrema_in;
+		return;
+		}
+
+
 //	TODO (perf) is this the most optimal loop order?
 	while(subvol_this!=subvol_this_end)
 		{
