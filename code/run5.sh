@@ -16,4 +16,5 @@ __targets_rel/snowflake_simulate3 \
 	--output-dir=$dir_out/$k-$l-$m --dump-stats=256 --N=4999 \
 	--growthrate=$k --meltrate=$l --droprate=$m \
 	--seed=0 --dump-geometry \
-	--stop-cond=subvols_max=2 | tee $dir_out/$k-$l-$m/params.txt
+	--stop-cond=subvols_max=2 \
+	| tee $dir_out/$k-$l-$m/params.txt

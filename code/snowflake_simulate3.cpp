@@ -266,7 +266,8 @@ Setup::Setup(int argc,char** argv):
 
 			}
 		}
-	if(m_stopcond_name.size()==0 && m_statefile.size()==0)
+	if(m_stopcond_name.size()==0 && m_statefile.size()==0
+		&& !(m_data.m_actions&HELP_SHOW || m_data.m_actions&PARAM_SHOW) )
 		{
 		throw "No stop condition is given";
 		}
@@ -399,7 +400,7 @@ void helpShow()
 		"stored in `file` overrides any other command line argument.\n\n"
 		"--stop-condition=condition\n"
 		"    Defines a stop condition. Possible options are\n"
-		"     iterations=iteration_count  Run a fixed number of iterations"
+		"     iterations=iteration_count  Run a fixed number of iterations\n"
 		"     subvols_max=subvols_max     Run until there is an aggreaget with subvols_max elements\n"
 		"     d_max_max=d_max             Run until there is an aggreaget with d_max as largest extent\n"
 		"     infinity                    Run forever, or until the simulation is stopped by other means\n\n"
