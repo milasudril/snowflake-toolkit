@@ -37,7 +37,8 @@ void IceParticle::solidGenerate() const
 	auto subvolume=r_solid->subvolumesBegin();
 	while(subvolume!=r_solid->subvolumesEnd())
 		{
-		VolumeConvex& vc=m_solid_generated.subvolumeAdd(*subvolume);
+	//	VolumeConvex& vc=m_solid_generated.subvolumeAdd(*subvolume);
+		auto vc=*subvolume;
 		auto deformation=m_deformations.data();
 		auto deformations_end=deformation + m_deformations.size();
 		while(deformation!=deformations_end)
@@ -53,6 +54,7 @@ void IceParticle::solidGenerate() const
 				{throw "Reserved group name";}
 			++deformation;
 			}
+		m_solid_generated.subvolumeAdd(std::move(vc));
 		++subvolume;
 		}
 

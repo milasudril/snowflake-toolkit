@@ -203,6 +203,8 @@ void Solid::centerCentroidAt(const Point& pos_new)
 		subvolume->transform(T);
 		++subvolume;
 		}
+	m_dmax_a=T*m_dmax_a;
+	m_dmax_b=T*m_dmax_b;
 //TODO (perf) We can deduce a new midpoint [but floating point arithmetic...]
 	m_flags_dirty|=BOUNDINGBOX_DIRTY|MIDPOINT_DIRTY;
 	}
@@ -219,6 +221,8 @@ void Solid::centerBoundingBoxAt(const Point& pos_new)
 		subvolume->transform(T);
 		++subvolume;
 		}
+	m_dmax_a=T*m_dmax_a;
+	m_dmax_b=T*m_dmax_b;
 //TODO (perf) We can deduce a new midpoint [but floating point arithmetic...]
 	m_flags_dirty|=BOUNDINGBOX_DIRTY|MIDPOINT_DIRTY;
 	}
@@ -468,16 +472,18 @@ void Solid::dMaxCompute(const VolumeConvex& vol) noexcept
 		}
 
 //	Now choose the largest of d_max, d_a, and d_b
-	float d[3]={d_max,d_a,d_b};
-	auto p_max=std::max_element(d,d+3) - d;
-	if(p_max==0)
-		{return;}
-	if(p_max==1)
 		{
-		d_max=d_a;
-		m_dmax_a=a_new;
-		return;
+		float d[3]={d_max,d_a,d_b};
+		auto p_max=std::max_element(d,d+3) - d;
+		if(p_max==0)
+			{return;}
+		if(p_max==1)
+			{
+			d_max=d_a;
+			m_dmax_a=a_new;
+			return;
+			}
+		d_max=d_b;
+		m_dmax_a=b_new;
 		}
-	d_max=d_b;
-	m_dmax_a=b_new;
 	}

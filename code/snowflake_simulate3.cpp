@@ -817,7 +817,7 @@ class Simstate
 			,std::unique_ptr<SimstateMonitor>&& monitor);
 
 		bool step();
-		void statsDump() const;
+		void statsDump(bool force=0) const;
 		void prototypesDump() const;
 
 		double progressGet() const noexcept
@@ -967,7 +967,7 @@ Simstate::Simstate(const Setup& setup,const SnowflakeModel::Solid& s_in
 				(setup.m_output_dir+"/dropped_stats.txt").data()
 			));
 
-		frame_data_file->printf("# Frame\tClock time\tSimulation time\tN_cloud\tN_drop\tC_kl_sum\n");
+		frame_data_file->printf("# Frame\tClock time\tSimulation time\tN_cloud\tN_drop\n");
 		dropped_stats->printf("# Frame\tClock time\tSimulation time\tR_max\tVolume\tSpeed\tL_x\tr_xy\tr_xz\tNumber of sub-volumes\n");
 		}
 	}
@@ -1035,9 +1035,9 @@ void Simstate::rasterize() const
 		}
 	}
 
-void Simstate::statsDump() const
+void Simstate::statsDump(bool force) const
 	{
-	if( !(frame_data_file!=nullptr && m_data.frame%r_setup.m_data.m_stat_saverate==0) )
+	if( !(frame_data_file!=nullptr && m_data.frame%r_setup.m_data.m_stat_saverate==0) && !force )
 		{return;}
 	auto now=time(nullptr);
 
@@ -1442,7 +1442,7 @@ int main(int argc,char** argv)
 			s_in.write("solid_in",dump);
 			}
 
-		state->statsDump();
+		state->statsDump(1);
 
 		if(setup.m_data.m_actions&Setup::GEOMETRY_DUMP)
 			{
