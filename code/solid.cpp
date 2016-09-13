@@ -430,8 +430,10 @@ void Solid::dMaxCompute(const VolumeConvex& vol) noexcept
 
 //	The new value of D_max has to be the distance between a point
 //	in this object, and a point in the other object, if the addition
-//	of a subvolume change D_max at all. There are two points we can move:
-//	A and B, but not both.
+//	of a subvolume change D_max at all.
+
+//	Test which point that gives the largest estimate. This algorithm
+//	Only gives a lower bound on of the longest diagonal.
 
 	auto b_new=dmax_b;
 	auto d_b=d_max;
