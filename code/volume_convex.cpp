@@ -43,7 +43,8 @@ VolumeConvex::VolumeConvex(const VolumeConvex& vc):
 	,m_flags_dirty(vc.m_flags_dirty)
 	{
 	auto face_current=facesBegin();
-	while(face_current!=facesEnd())
+	auto faces_end=facesEnd();
+	while(face_current!=faces_end)
 		{
 		face_current->parentSet(*this);
 		++face_current;
@@ -53,7 +54,8 @@ VolumeConvex::VolumeConvex(const VolumeConvex& vc):
 void VolumeConvex::transform(const Matrix& T)
 	{
 	auto vertex_current=verticesBegin();
-	while(vertex_current!=verticesEnd())
+	auto verts_end=verticesEnd();
+	while(vertex_current!=verts_end)
 		{
 		*vertex_current = T * (*vertex_current);
 		++vertex_current;
@@ -71,9 +73,10 @@ void VolumeConvex::transformGroup(const std::string& name,const Matrix& T)
 
 	auto vertex_current=i->second.data();
 	auto vertex_end=i->second.data() + i->second.size();
+	auto verts=m_vertices.begin();
 	while(vertex_current!=vertex_end)
 		{
-		m_vertices[*vertex_current] = T * m_vertices[*vertex_current];
+		verts[*vertex_current] = T * verts[*vertex_current];
 		++vertex_current;
 		}
 	m_flags_dirty|=BOUNDINGBOX_DIRTY|MIDPOINT_DIRTY|FACES_NORMAL_DIRTY
@@ -105,7 +108,8 @@ void VolumeConvex::geometrySample(VoxelBuilder& builder) const
 void VolumeConvex::facesNormalCompute() const
 	{
 	auto face_current=facesBegin();
-	while(face_current!=facesEnd())
+	auto faces_end=facesEnd();
+	while(face_current!=faces_end)
 		{
 		auto& v_0=face_current->vertexGet(0);
 		auto& v_1=face_current->vertexGet(1);
@@ -115,8 +119,9 @@ void VolumeConvex::facesNormalCompute() const
 		Vector u=Vector(v_1 - v_0);
 		Vector v=Vector(v_2 - v_0);
 
-		face_current->m_normal_raw=glm::cross(u,v);
-		face_current->m_normal=glm::normalize(face_current->m_normal_raw);
+		auto N=glm::cross(u,v);
+		face_current->m_normal_raw=N;
+		face_current->m_normal=glm::normalize(N);
 
 		++face_current;
 		}
@@ -126,7 +131,8 @@ void VolumeConvex::facesNormalCompute() const
 void VolumeConvex::facesMidpointCompute() const
 	{
 	auto face_current=facesBegin();
-	while(face_current!=facesEnd())
+	auto faces_end=facesEnd();
+	while(face_current!=faces_end)
 		{
 		Point mid={0,0,0,1};
 		size_t k;
@@ -147,7 +153,8 @@ bool VolumeConvex::inside(const Point& v) const
 	if(m_flags_dirty&FACES_NORMAL_DIRTY)
 		{facesNormalCompute();}
 	auto face_current=facesBegin();
-	while(face_current!=facesEnd())
+	auto faces_end=facesEnd();
+	while(face_current!=faces_end)
 		{
 		auto x=glm::dot(Vector(v - face_current->m_mid)
 			+ 1e-6f*face_current->m_normal,face_current->m_normal);
@@ -160,8 +167,8 @@ bool VolumeConvex::inside(const Point& v) const
 
 namespace
 	{
-	float Pi(const Vector& plane_normal,const VolumeConvex::Vertex& V_0
-		,const Point& P)
+	inline float Pi(const Vector& plane_normal,const VolumeConvex::Vertex& V_0
+		,const Point& P) noexcept
 		{
 		return glm::dot(plane_normal,Vector(P-V_0));
 		}
@@ -177,7 +184,7 @@ namespace
 		};
 
 	template<class T>
-	Tripple<int> i_other(const Tripple<T>& Pi)
+	inline Tripple<int> i_other(const Tripple<T>& Pi) noexcept
 		{
 		if(Pi[0]*Pi[1]>0)
 			{return Tripple<int>{1,2,0};}
@@ -187,12 +194,12 @@ namespace
 		}
 
 	template<class T>
-	Twins<T> sort(const Twins<T>& t)
+	inline Twins<T> sort(const Twins<T>& t) noexcept
 		{
 		return t.first<t.second? t : Twins<T>{t.second,t.first};
 		}
 
-	bool overlap(const Twins<float> a,const Twins<float>& b)
+	inline bool overlap(const Twins<float> a,const Twins<float>& b) noexcept
 		{
 		if(a.second<=b.first+1e-6f || b.second<=a.first+1e-6f)
 			{return 0;}
@@ -201,7 +208,7 @@ namespace
 
 
 
-	bool triangle_intersect(const VolumeConvex::Face& T_1,const VolumeConvex::Face& T_2)
+	inline bool triangle_intersect(const VolumeConvex::Face& T_1,const VolumeConvex::Face& T_2) noexcept
 		{
 		assert(&T_1!=&T_2);
 		auto d=glm::cross(T_1.m_normal,T_2.m_normal);
@@ -253,28 +260,6 @@ namespace
 			});
 
 		auto ret=overlap(t_1,t_2);
-#if 0
-		if(ret)
-			{
-			fprintf(stderr,"T_1=[%.7g,%.7g,%.7g"
-				,T_1.vertexGet(0).x,T_1.vertexGet(0).y,T_1.vertexGet(0).z);
-			for(unsigned int k=1;k<VolumeConvex::VERTEX_COUNT;++k)
-				{
-				auto& v=T_1.vertexGet(k);
-				fprintf(stderr,";\n%.7g,%.7g,%.7g",v.x,v.y,v.z);
-				}
-			fprintf(stderr,"]';\n");
-
-			fprintf(stderr,"T_2=[%.7g,%.7g,%.7g"
-				,T_2.vertexGet(0).x,T_2.vertexGet(0).y,T_2.vertexGet(0).z);
-			for(unsigned int k=1;k<VolumeConvex::VERTEX_COUNT;++k)
-				{
-				auto& v=T_2.vertexGet(k);
-				fprintf(stderr,";\n%.7g,%.7g,%.7g",v.x,v.y,v.z);
-				}
-			fprintf(stderr,"]';\ntriangle_intersect(T_1,T_2)\ntitle('%zu')\ndrawnow\n",g_event_count);
-			}
-#endif
 
 		return ret;
 		}
@@ -298,34 +283,36 @@ const VolumeConvex::Face* VolumeConvex::cross(const Face& face) const
 void VolumeConvex::boundingBoxCompute() const
 	{
 	auto vertex_current=verticesBegin();
-	if(vertex_current==verticesEnd())
+	auto vertices_end=verticesEnd();
+	if(vertex_current==vertices_end)
 		{
 		m_bounding_box={{0,0,0},{0,0,0}};
 		m_flags_dirty&=~BOUNDINGBOX_DIRTY;
 		return;
 		}
-	m_bounding_box.m_min=Vector(*vertex_current);
-	m_bounding_box.m_max=Vector(*vertex_current);
+
+	BoundingBox bb{Vector(*vertex_current),Vector(*vertex_current)};
 
 	++vertex_current;
-	while(vertex_current!=verticesEnd())
+	while(vertex_current!=vertices_end)
 		{
-		m_bounding_box.m_min=glm::min(m_bounding_box.m_min,Vector(*vertex_current));
-		m_bounding_box.m_max=glm::max(m_bounding_box.m_max,Vector(*vertex_current));
+		bb.m_min=glm::min(bb.m_min,Vector(*vertex_current));
+		bb.m_max=glm::max(bb.m_max,Vector(*vertex_current));
 
 		++vertex_current;
 		}
-
+	m_bounding_box=bb;
 	m_flags_dirty&=~BOUNDINGBOX_DIRTY;
 	}
 
 void VolumeConvex::midpointCompute() const
 	{
-	m_mid={0,0,0,0};
+	Point mid={0,0,0,0};
 	if(m_flags_dirty&FACES_NORMAL_DIRTY)
 		{facesNormalCompute();}
 	auto face_current=facesBegin();
-	while(face_current!=facesEnd())
+	auto faces_end=facesEnd();
+	while(face_current!=faces_end)
 		{
 		auto a=Vector(face_current->vertexGet(0));
 		auto b=Vector(face_current->vertexGet(1));
@@ -337,33 +324,36 @@ void VolumeConvex::midpointCompute() const
 		auto s3=c+a;
 
 		auto x=n*(s1*s1 + s2*s2 + s3*s3);
-		m_mid+=Point(x,0);
+		mid+=Point(x,0);
 
 		++face_current;
 		}
-	m_mid/=(48*volumeGet());
-	m_mid.w=1;
+	mid/=(48*volumeGet());
+	mid.w=1;
+	m_mid=mid;
 	m_flags_dirty&=~MIDPOINT_DIRTY;
 	}
 
 void VolumeConvex::volumeCompute() const
 	{
+	double volume=0;
 	m_volume=0;
 	auto face_current=facesBegin();
 	if(m_flags_dirty&FACES_NORMAL_DIRTY)
 		{facesNormalCompute();}
 
-	while(face_current!=facesEnd())
+	auto faces_end=facesEnd();
+	while(face_current!=faces_end)
 		{
-		m_volume+=glm::dot(Vector(face_current->vertexGet(0))
+		volume+=glm::dot(Vector(face_current->vertexGet(0))
 			,face_current->m_normal_raw);
 		++face_current;
 		}
-
-	if(m_volume<0)
+#ifndef NDEBUG
+	if(volume<0)
 		{
 		face_current=facesBegin();
-		while(face_current!=facesEnd())
+		while(face_current!=faces_end)
 			{
 			fprintf(stderr,"%.7g\n",glm::dot(Vector(face_current->vertexGet(0))
 				,face_current->m_normal_raw));
@@ -371,28 +361,18 @@ void VolumeConvex::volumeCompute() const
 			}
 		abort();
 		}
-	m_volume/=6;
+#endif
+	m_volume=volume/6;
 	m_flags_dirty&=~VOLUME_DIRTY;
 	}
 
 void VolumeConvex::normalsFlip()
 	{
 	auto face_current=facesBegin();
-	while(face_current!=facesEnd())
+	auto faces_end=facesEnd();
+	while(face_current!=faces_end)
 		{
 		face_current->directionChange();
-#ifndef NDEBUG
-		auto& v_0=face_current->vertexGet(0);
-		auto& v_1=face_current->vertexGet(1);
-		auto& v_2=face_current->vertexGet(2);
-
-
-		Vector u=Vector(v_1 - v_0);
-		Vector v=Vector(v_2 - v_0);
-
-		auto n=glm::cross(u,v);
-		n=glm::normalize(n);
-#endif
 		++face_current;
 		}
 	m_flags_dirty|=FACES_NORMAL_DIRTY;
@@ -400,18 +380,20 @@ void VolumeConvex::normalsFlip()
 
 void VolumeConvex::areaVisibleCompute() const
 	{
+	double A=0;
 	m_area_visible=0;
 	if(m_flags_dirty&FACES_NORMAL_DIRTY)
 		{facesNormalCompute();}
 
 	auto i=m_faces_out.data();
 	auto end=m_faces_out.data()+m_faces_out.size();
+	auto faces=facesBegin();
 	while(i!=end)
 		{
-		m_area_visible+=glm::length(m_faces[*i].m_normal_raw);
+		A+=glm::length(faces[*i].m_normal_raw);
 		++i;
 		}
-	m_area_visible/=2;
+	m_area_visible=A/2;
 	m_flags_dirty&=~AREA_VISIBLE_DIRTY;
 	}
 

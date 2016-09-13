@@ -1041,52 +1041,35 @@ void Simstate::statsDump() const
 		{return;}
 	auto now=time(nullptr);
 
-	double C_kl_sum=0;
-		{
-		auto elem_current=C_mat.rowGet(1);
-		auto n=C_mat.nColsGet();
-		size_t k=1;
-		while(elem_current!=C_mat.rowGet(C_mat.nRowsGet() -1 ))
-			{
-			size_t l=0;
-			while(l!=k)
-				{
-				C_kl_sum+=*elem_current;
-				++l;
-				++elem_current;
-				}
-			elem_current+=n-l;
-			++k;
-			}
-		}
-
 	//	Frame\tClock time\tSimulation time\tN_cloud\tN_drop\tC_kl_sum
 		frame_data_file->printf(
 			"%zu\t"
 			"%zu\t"
 			"%.15g\t"
 			"%zu\t"
-			"%zu\t"
-			"%.15g\n",m_data.frame,now,m_data.tau,m_data.N_particles
-			,m_data.N_particles_dropped,C_kl_sum);
+			"%zu\n",m_data.frame,now,m_data.tau,m_data.N_particles
+			,m_data.N_particles_dropped);
 
 			{
 			char countbuff[32];
 			sprintf(countbuff,"/frame-%zu.txt",m_data.frame);
 			SnowflakeModel::FileOut file_out((r_setup.m_output_dir+countbuff).data());
 			auto i=ice_particles.begin();
-			file_out.printf("# R_max\tVolume\tSpeed\tL_x\tr_xy\tr_xz\tNumber of sub-volumes\n");
+			file_out.printf("# R_max\tD_max\tVolume\tSpeed\tL_x\tr_xy\tr_xz\tNumber of sub-volumes\n");
 			while(i!=ice_particles.end())
 				{
 				if(!i->dead())
 					{
-					auto& bb=i->solidGet().boundingBoxGet();
+					auto& solid=i->solidGet();
+					auto& bb=solid.boundingBoxGet();
+					auto extrema=solid.extremaGet();
 					auto L=bb.m_max-bb.m_min;
-					file_out.printf("%.7g\t%.7g\t%.7g\t%.7g\t%.7g\t%.7g\t%zu\n"
-						,i->solidGet().rMaxGet()
-						,i->solidGet().volumeGet()
+					file_out.printf("%.7g\t%.7g\t%.7g\t%.7g\t%.7g\t%.7g\t%.7g\t%zu\n"
+						,solid.rMaxGet()
+						,glm::distance(extrema.first,extrema.second)
+						,solid.volumeGet()
 						,glm::length(i->velocityGet())
-						,L.x,L.x/L.y,L.x/L.z,i->solidGet().subvolumesCount());
+						,L.x,L.x/L.y,L.x/L.z,solid.subvolumesCount());
 					}
 				++i;
 				}
