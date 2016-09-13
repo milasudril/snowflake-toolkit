@@ -56,7 +56,8 @@ namespace SnowflakeModel
 				m_n_faces_tot+=volume.facesCount();
 				m_volume+=volume.volumeGet();
 				dMaxCompute(volume);
-			//	If this fails, the object is in a bad state
+
+			//	If this fails, the object is in a bad state hmm
 				m_subvolumes.push_back(std::move(volume));
 				m_flags_dirty|=BOUNDINGBOX_DIRTY|MIDPOINT_DIRTY|RMAX_DIRTY;
 				return m_subvolumes.back();
@@ -154,6 +155,7 @@ namespace SnowflakeModel
 
 			size_t facesCount() const noexcept
 				{
+				assert(m_n_faces_tot!=0);
 				return m_n_faces_tot;
 				}
 

@@ -401,6 +401,7 @@ void helpShow()
 		"    Defines a stop condition. Possible options are\n"
 		"     iterations=iteration_count  Run a fixed number of iterations"
 		"     subvols_max=subvols_max     Run until there is an aggreaget with subvols_max elements\n"
+		"     d_max_max=d_max             Run until there is an aggreaget with d_max as largest extent\n"
 		"     infinity                    Run forever, or until the simulation is stopped by other means\n\n"
 		"--shape=crystal_file\n"
 		"    Generate data using the shape stored in crystal_file."
@@ -1285,9 +1286,11 @@ class MonitorSubvolsMaxCheck:public SimstateMonitor
 			size_t subvols_max=0;
 			while(particles_begin!=particles_end)
 				{
-				auto& solid=particles_begin->solidGet();
-
-				subvols_max=std::max(solid.subvolumesCount(),subvols_max);
+				if(!particles_begin->dead())
+					{
+					auto& solid=particles_begin->solidGet();
+					subvols_max=std::max(solid.subvolumesCount(),subvols_max);
+					}
 				++particles_begin;
 				}
 			return static_cast<double>(subvols_max)/m_max;
@@ -1299,6 +1302,39 @@ class MonitorSubvolsMaxCheck:public SimstateMonitor
 
 static std::unique_ptr<SimstateMonitor> subvols_max_check(const char* arg)
 	{return std::unique_ptr<SimstateMonitor>( new MonitorSubvolsMaxCheck(atoi(arg)) );}
+
+
+class MonitorDMaxMaxCheck:public SimstateMonitor
+	{
+	public:
+		MonitorDMaxMaxCheck(double max):m_max(max)
+			{}
+
+		double progressGet(const Simstate& state) noexcept
+			{
+			auto particles_begin=state.particlesBegin();
+			auto particles_end=state.particlesEnd();
+			float d_max_max=0.0f;
+			while(particles_begin!=particles_end)
+				{
+				if(!particles_begin->dead())
+					{
+					auto& solid=particles_begin->solidGet();
+					auto extrema=solid.extremaGet();
+					auto d_max=glm::distance(extrema.first,extrema.second);
+					d_max_max=std::max(d_max,d_max_max);
+					}
+				++particles_begin;
+				}
+			return d_max_max/m_max;
+			}
+
+	private:
+		double m_max;
+	};
+
+static std::unique_ptr<SimstateMonitor> d_max_max_check(const char* arg)
+	{return std::unique_ptr<SimstateMonitor>( new MonitorDMaxMaxCheck(atof(arg)) );}
 
 
 class MonitorInfinity:public SimstateMonitor
@@ -1316,7 +1352,7 @@ class MonitorInfinity:public SimstateMonitor
 		size_t m_N_iter;
 	};
 
-static std::unique_ptr<SimstateMonitor> infinity(const char* arg)
+static std::unique_ptr<SimstateMonitor> infinity_check(const char* arg)
 	{return std::unique_ptr<SimstateMonitor>( new MonitorInfinity );}
 
 
@@ -1385,7 +1421,8 @@ int main(int argc,char** argv)
 		std::map<std::string,SimstateMonitor::Factory> monitor_selector;
 		monitor_selector["iterations"]=iterations_check;
 		monitor_selector["subvols_max"]=subvols_max_check;
-		monitor_selector["infinity"]=infinity;
+		monitor_selector["infinity"]=infinity_check;
+		monitor_selector["d_max_max"]=d_max_max_check;
 
 		auto monitor=monitor_selector[setup.m_stopcond_name];
 		monitor=(monitor==nullptr)?bad_condition:monitor;
