@@ -194,7 +194,7 @@ size_t Solid::cross(const VolumeConvex::Face& f,size_t count_max) const
 	size_t count=0;
 	while(subvolume!=vol_end)
 		{
-		count+=subvolume->cross(f,count_max);
+		count+=subvolume->cross(f,count_max-count);
 		if(count >= count_max)
 			{return count;}
 		++subvolume;
@@ -285,8 +285,29 @@ bool SnowflakeModel::overlap(const Solid& v_a,const Solid& v_b,double overlap_ma
 		auto face_end=subvolume->facesEnd();
 		while(face!=face_end)
 			{
-			cross_count+=v_b.cross(*face,cross_count_tot);
+			cross_count+=v_b.cross(*face,cross_count_tot-cross_count);
 			if(static_cast<double>(cross_count)/cross_count_tot > overlap_max)
+				{return 1;}
+			++face;
+			}
+		++subvolume;
+		}	
+	return 0;
+	}
+
+bool SnowflakeModel::overlap(const Solid& v_a,const Solid& v_b,size_t subvols)
+	{
+	size_t cross_count=0;
+	auto subvolume=v_a.subvolumesBegin();
+	auto vol_end=v_a.subvolumesEnd();
+	while(subvolume!=vol_end)
+		{
+		auto face=subvolume->facesBegin();
+		auto face_end=subvolume->facesEnd();
+		while(face!=face_end)
+			{
+			cross_count+=(v_b.cross(*face)!=nullptr);
+			if(cross_count > subvols)
 				{return 1;}
 			++face;
 			}

@@ -210,6 +210,7 @@ namespace SnowflakeModel
 	Vector strechToSurface(const Vector& v,const Solid& V,float tolerance);
 	bool overlap(const Solid& v_a,const Solid& v_b);
 	bool overlap(const Solid& v_a,const Solid& v_b,double overlap_max);
+	bool overlap(const Solid& v_a,const Solid& v_b,size_t subvols);
 
 	}
 
