@@ -173,6 +173,8 @@ namespace SnowflakeModel
 
 			const Face* cross(const Face& face) const;
 
+			size_t cross(const Face& face,size_t count_max) const;
+
 			void geometrySample(VoxelBuilder& builder) const;
 
 			void normalsFlip();

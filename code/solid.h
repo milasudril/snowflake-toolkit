@@ -133,6 +133,8 @@ namespace SnowflakeModel
 
 			const VolumeConvex* cross(const VolumeConvex::Face& face) const;
 
+			size_t cross(const VolumeConvex::Face& face,size_t count_max) const;
+
 			void centerCentroidAt(const Point& pos_new);
 			void centerBoundingBoxAt(const Point& pos_new);
 			void normalsFlip();
@@ -207,6 +209,7 @@ namespace SnowflakeModel
 	Vector strechToBoundingBox(const Vector& v,const Solid& V);
 	Vector strechToSurface(const Vector& v,const Solid& V,float tolerance);
 	bool overlap(const Solid& v_a,const Solid& v_b);
+	bool overlap(const Solid& v_a,const Solid& v_b,double overlap_max);
 
 	}
 

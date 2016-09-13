@@ -398,7 +398,7 @@ void helpShow()
 		"--statefile=file\n"
 		"    Continue a started simulation whose state is stored in `file`. The simulation setup "
 		"stored in `file` overrides any other command line argument.\n\n"
-		"--stop-condition=condition\n"
+		"--stop-cond=condition\n"
 		"    Defines a stop condition. Possible options are\n"
 		"     iterations=iteration_count   Run a fixed number of iterations\n"
 		"     subvols_max=N                Run until there is an aggreaget with N elements\n"
@@ -1171,35 +1171,40 @@ bool Simstate::step()
 		auto& g_b=ice_particles[pair_merge.first];
 		auto& s_b=g_b.solidGet();
 		s_b.centerBoundingBoxAt(SnowflakeModel::Point(0,0,0,1));
-		auto f_b=faceChoose(s_b,randgen);
-		auto coords=drawFromTriangle(randgen);
-		auto u=f_b.vertexGet(0)
-			+ coords.x*(f_b.vertexGet(1) - f_b.vertexGet(0))
-			+ coords.y*(f_b.vertexGet(2) - f_b.vertexGet(0));
 
 		auto& g_a=ice_particles[pair_merge.second];
 		auto s_a=g_a.solidGet();
 		s_a.centerBoundingBoxAt(SnowflakeModel::Point(0,0,0,1));
-		auto f_a=faceChoose(s_a,randgen);
-		coords=drawFromTriangle(randgen);
-		auto v=f_a.vertexGet(0)
-			+ coords.x*(f_a.vertexGet(1) - f_a.vertexGet(0))
-			+ coords.y*(f_a.vertexGet(2) - f_a.vertexGet(0));
+	//	do	//Insist on merging these two particles
+			{
+			auto f_b=faceChoose(s_b,randgen);
+			auto coords=drawFromTriangle(randgen);
+			auto u=f_b.vertexGet(0)
+				+ coords.x*(f_b.vertexGet(1) - f_b.vertexGet(0))
+				+ coords.y*(f_b.vertexGet(2) - f_b.vertexGet(0));
+
+			auto f_a=faceChoose(s_a,randgen);
+			coords=drawFromTriangle(randgen);
+			auto v=f_a.vertexGet(0)
+				+ coords.x*(f_a.vertexGet(1) - f_a.vertexGet(0))
+				+ coords.y*(f_a.vertexGet(2) - f_a.vertexGet(0));
 
 
-		auto R=SnowflakeModel::vectorsAlign(f_a.m_normal, -f_b.m_normal);
+			auto R=SnowflakeModel::vectorsAlign(f_a.m_normal, -f_b.m_normal);
 
-		auto pos=SnowflakeModel::Vector(u - R.first*v);
+			auto pos=SnowflakeModel::Vector(u - R.first*v);
 
-		SnowflakeModel::Matrix T;
-		T=glm::translate(T,pos);
-		SnowflakeModel::Matrix R_x;
-		R_x=glm::translate(R_x,SnowflakeModel::Vector(v));
-		R_x=glm::rotate(R_x,2*glm::pi<float>()*float(U_rot(randgen))
-			/(U_rot.max()+1),f_a.m_normal);
-		R_x=glm::translate(R_x,SnowflakeModel::Vector(-v));
-		s_a.transform(T*R.first*R_x,R.second);
-		if(!overlap(s_b,s_a))
+			SnowflakeModel::Matrix T;
+			T=glm::translate(T,pos);
+			SnowflakeModel::Matrix R_x;
+			R_x=glm::translate(R_x,SnowflakeModel::Vector(v));
+			R_x=glm::rotate(R_x,2*glm::pi<float>()*float(U_rot(randgen))
+				/(U_rot.max()+1),f_a.m_normal);
+			R_x=glm::translate(R_x,SnowflakeModel::Vector(-v));
+			s_a.transform(T*R.first*R_x,R.second);
+			}
+	//	while(overlap(s_b,s_a));
+		if(!overlap(s_a,s_b,0.25))
 			{
 			s_b.merge(s_a);
 			g_b.velocitySet(vTermCompute(s_b,r_setup)*randomDirection(randgen));
@@ -1210,12 +1215,13 @@ bool Simstate::step()
 			matrixRowUpdate(pair_merge.second,ice_particles,C_mat,r_setup.m_data);
 			return 1;
 			}
+/*
 #ifndef NDEBUG
 		else
 			{
 			fprintf(stderr,"# Event %zu rejected: Overlap\n",m_data.frame);
 			}
-#endif
+#endif*/
 		return 0;
 		}
 	return 0;

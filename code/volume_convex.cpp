@@ -280,6 +280,24 @@ const VolumeConvex::Face* VolumeConvex::cross(const Face& face) const
 	return nullptr;
 	}
 
+size_t VolumeConvex::cross(const Face& face,size_t count_max) const
+	{
+	size_t ret=0;
+	if(m_flags_dirty&FACES_NORMAL_DIRTY)
+		{facesNormalCompute();}
+
+	auto face_current=facesBegin();
+	while(face_current!=facesEnd())
+		{
+		ret+=triangle_intersect(face,*face_current);
+		if(ret>=count_max)
+			{return ret;}
+		++face_current;
+		}
+	return ret;
+	}
+
+
 void VolumeConvex::boundingBoxCompute() const
 	{
 	auto vertex_current=verticesBegin();
