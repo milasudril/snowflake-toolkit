@@ -400,10 +400,11 @@ void helpShow()
 		"stored in `file` overrides any other command line argument.\n\n"
 		"--stop-condition=condition\n"
 		"    Defines a stop condition. Possible options are\n"
-		"     iterations=iteration_count  Run a fixed number of iterations\n"
-		"     subvols_max=subvols_max     Run until there is an aggreaget with subvols_max elements\n"
-		"     d_max_max=d_max             Run until there is an aggreaget with d_max as largest extent\n"
-		"     infinity                    Run forever, or until the simulation is stopped by other means\n\n"
+		"     iterations=iteration_count   Run a fixed number of iterations\n"
+		"     subvols_max=N                Run until there is an aggreaget with N elements\n"
+		"     d_max_max=d_max              Run until there is an aggreaget with d_max as largest extent\n"
+		"     v_max=V                      Run until there is an aggreaget with volume V\n"
+		"     infinity                     Run forever, or until the simulation is stopped externally\n\n"
 		"--shape=crystal_file\n"
 		"    Generate data using the shape stored in crystal_file."
 		" See the reference manal for information about how to create "
@@ -1321,6 +1322,39 @@ static std::unique_ptr<SimstateMonitor> d_max_max_check(const char* arg)
 	{return std::unique_ptr<SimstateMonitor>( new MonitorDMaxMaxCheck(atof(arg)) );}
 
 
+
+class MonitorVMaxCheck:public SimstateMonitor
+	{
+	public:
+		MonitorVMaxCheck(double max):m_max(max)
+			{}
+
+		double progressGet(const Simstate& state) noexcept
+			{
+			auto particles_begin=state.particlesBegin();
+			auto particles_end=state.particlesEnd();
+			float d_max_max=0.0f;
+			while(particles_begin!=particles_end)
+				{
+				if(!particles_begin->dead())
+					{
+					auto& solid=particles_begin->solidGet();
+					d_max_max=std::max(solid.volumeGet(),d_max_max);
+					}
+				++particles_begin;
+				}
+			return d_max_max/m_max;
+			}
+
+	private:
+		double m_max;
+	};
+
+static std::unique_ptr<SimstateMonitor> v_max_check(const char* arg)
+	{return std::unique_ptr<SimstateMonitor>( new MonitorVMaxCheck(atof(arg)) );}
+
+
+
 class MonitorInfinity:public SimstateMonitor
 	{
 	public:
@@ -1407,6 +1441,7 @@ int main(int argc,char** argv)
 		monitor_selector["subvols_max"]=subvols_max_check;
 		monitor_selector["infinity"]=infinity_check;
 		monitor_selector["d_max_max"]=d_max_max_check;
+		monitor_selector["v_max"]=v_max_check;
 
 		auto monitor=monitor_selector[setup.m_stopcond_name];
 		monitor=(monitor==nullptr)?bad_condition:monitor;
