@@ -15,48 +15,41 @@ using namespace SnowflakeModel;
 
 void Solid::merge(const Matrix& T,const Solid& volume,bool mirrored)
 	{
-	auto n=m_subvolumes.size();
+//	Copy input volume.
+	auto v_temp=volume;
+//	Transform it 
+	v_temp.transform(T,mirrored);
+
+//	Accumulate quantities
+	m_n_faces_tot+=v_temp.facesCount();
+	m_volume+=v_temp.volumeGet();
+
+//	Update extreme vertices
+	extremaUpdate(v_temp);
+
+//	Merge
+	auto v_temp_begin=v_temp.subvolumesBegin();
+	auto v_temp_end=v_temp.subvolumesEnd();
+	while(v_temp_begin!=v_temp_end)
 		{
-	//	Copy all volumes
-		auto subvolume=volume.subvolumesBegin();
-		auto vols_end=volume.subvolumesEnd();
-		while(subvolume!=vols_end)
-			{
-		//	SubvolumeAdd not needed. We must do these things later due to the 
-		//	transformation.
-			m_subvolumes.push_back(*subvolume);
-			++subvolume;
-			}
+	//	subvolumeAdd does too mutch in this case
+		m_subvolumes.push_back(std::move(*v_temp_begin));
+		++v_temp_begin;
 		}
 
-		{
-	//	Transform them
-		auto subvolume=subvolumesBegin()+n;
-		auto vols_end=subvolumesEnd();
-		while(subvolume!=vols_end)
-			{
-			subvolume->transform(T);
-			if(mirrored)
-				{subvolume->normalsFlip();}
-			dMaxCompute(*subvolume);
-			m_volume+=subvolume->volumeGet();
-			++subvolume;
-			}
-		}
-	m_n_faces_tot+=volume.facesCount();
-	m_flags_dirty|=BOUNDINGBOX_DIRTY|MIDPOINT_DIRTY|RMAX_DIRTY|DMAX_DIRTY;
+//	Mark things as dirty
+	m_flags_dirty|=BOUNDINGBOX_DIRTY|MIDPOINT_DIRTY|RMAX_DIRTY;
 	}
 
 void Solid::merge(const Solid& volume)
 	{
+	extremaUpdate(volume);
 	auto subvolume=volume.subvolumesBegin();
 	auto vols_end=volume.subvolumesEnd();
 	while(subvolume!=vols_end)
 		{
-	//	subvolumeAdd not needed here (We correct values after the loop)
+	//	subvolumeAdd does too mutch in this case
 		m_subvolumes.push_back(*subvolume);
-	//	This must be done here [Incremental computation based on subvolumes]
-		dMaxCompute(*subvolume);
 		++subvolume;
 		}
 	m_flags_dirty|=BOUNDINGBOX_DIRTY|MIDPOINT_DIRTY|RMAX_DIRTY;
@@ -100,6 +93,8 @@ void Solid::transform(const Matrix& T,bool mirrored)
 			{subvolume->normalsFlip();}
 		++subvolume;
 		}
+	m_extrema.first=T*m_extrema.first;
+	m_extrema.second=T*m_extrema.second;
 //TODO (perf) Use determinant of T to compute the new volume
 	m_flags_dirty|=BOUNDINGBOX_DIRTY|MIDPOINT_DIRTY|RMAX_DIRTY|VOLUME_DIRTY|DMAX_DIRTY;
 	}
@@ -203,8 +198,8 @@ void Solid::centerCentroidAt(const Point& pos_new)
 		subvolume->transform(T);
 		++subvolume;
 		}
-	m_dmax_a=T*m_dmax_a;
-	m_dmax_b=T*m_dmax_b;
+	m_extrema.first=T*m_extrema.first;
+	m_extrema.second=T*m_extrema.second;
 //TODO (perf) We can deduce a new midpoint [but floating point arithmetic...]
 	m_flags_dirty|=BOUNDINGBOX_DIRTY|MIDPOINT_DIRTY;
 	}
@@ -221,8 +216,8 @@ void Solid::centerBoundingBoxAt(const Point& pos_new)
 		subvolume->transform(T);
 		++subvolume;
 		}
-	m_dmax_a=T*m_dmax_a;
-	m_dmax_b=T*m_dmax_b;
+	m_extrema.first=T*m_extrema.first;
+	m_extrema.second=T*m_extrema.second;
 //TODO (perf) We can deduce a new midpoint [but floating point arithmetic...]
 	m_flags_dirty|=BOUNDINGBOX_DIRTY|MIDPOINT_DIRTY;
 	}
@@ -250,7 +245,7 @@ void Solid::rMaxCompute() const
 
 void Solid::volumeCompute() const
 	{
-	float volume=0;
+	double volume=0;
 	auto subvolume=subvolumesBegin();
 	auto subvols_end=subvolumesEnd();
 	while(subvolume!=subvols_end)
@@ -361,7 +356,8 @@ void Solid::write(const char* id,DataDump& dump) const
 		}
 	}
 
-Solid::Solid(const DataDump& dump,const char* name)
+Solid::Solid(const DataDump& dump,const char* name):
+	m_extrema{{0.0f,0.0f,0.0f,1.0f},{0.0f,0.0f,0.0f,1.0f}}
 	{
 	clear();
 	std::string group_name(name);
@@ -394,98 +390,54 @@ Solid::Solid(const DataDump& dump,const char* name)
 		}
 	}
 
-void Solid::dMaxCompute(const VolumeConvex& vol) noexcept
+void Solid::extremaUpdate(const VolumeConvex& vol) noexcept
 	{
-	auto dmax_a=m_dmax_a; //Initial boundary points
-	auto dmax_b=m_dmax_b;
+//	It is sufficent to check all vertices in *this against
+//	all vertices in v. This is because we are adding v to *this,
+//	which is the reason for the change in extrema.
 
-	auto d_max=glm::distance(dmax_a,dmax_b);
-//	Init case
-	if(d_max < 1e-7f)
+	auto extrema_in=extremaGet(); //retrieve current values.
+	auto d_max=glm::distance(extrema_in.first,extrema_in.second);
+
+	auto subvol_this=subvolumesBegin();
+	auto subvol_this_end=subvolumesEnd();
+	auto v_begin_0=vol.verticesBegin();
+	auto v_end=vol.verticesEnd();
+
+//	TODO (perf) is this the most optimal loop order?
+	while(subvol_this!=subvol_this_end)
 		{
-		auto v_current=vol.verticesBegin();
-		auto v_end=vol.verticesEnd();
-		while(v_current!=v_end)
+		auto v_this=subvol_this->verticesBegin();
+		auto v_this_end=subvol_this->verticesEnd();
+		while(v_this!=v_this_end)
 			{
-			auto v=*v_current;
-			auto w=v_current + 1;
-			while(w!=v_end)
+			auto v=*v_this;
+			auto v_begin=v_begin_0;
+			while(v_begin!=v_end)
 				{
-				auto b=*w;
-				auto d=glm::distance(v,b);
+				auto w=*v_begin;
+				auto d=glm::distance(v,w);
 				if(d>d_max)
 					{
-					dmax_a=v;
-					dmax_b=b;
 					d_max=d;
+					extrema_in={v,w};
 					}
-				++w;
+				++v_begin;
 				}
-			++v_current;
+			++v_this;
 			}
-		m_dmax_a=dmax_a;
-		m_dmax_b=dmax_b;
-		return;
+		++subvol_this;
 		}
+	m_extrema=extrema_in;
+	}
 
-//	The new value of D_max has to be the distance between a point
-//	in this object, and a point in the other object, if the addition
-//	of a subvolume change D_max at all.
-
-//	Test which point that gives the largest estimate. This algorithm
-//	Only gives a lower bound on of the longest diagonal.
-
-	auto b_new=dmax_b;
-	auto d_b=d_max;
-//	Can we find a point in v, that is longer from a than b?
+void Solid::extremaUpdate(const Solid& solid) noexcept
+	{
+	auto s_begin=solid.subvolumesBegin();
+	auto s_end=solid.subvolumesEnd();
+	while(s_begin!=s_end)
 		{
-		auto v_current=vol.verticesBegin();
-		auto v_end=vol.verticesEnd();
-		while(v_current!=v_end)
-			{
-			auto v=*v_current;
-			auto d=glm::distance(v,dmax_a);
-			if(d>d_b)
-				{
-				d_b=d;
-				b_new=v;
-				}
-			++v_current;
-			}
-		}
-
-//	Can we find a point in v, that is longer from b than a?
-	auto a_new=dmax_a;
-	auto d_a=d_max;
-		{
-		auto v_current=vol.verticesBegin();
-		auto v_end=vol.verticesEnd();
-		while(v_current!=v_end)
-			{
-			auto v=*v_current;
-			auto d=glm::distance(v,dmax_b);
-			if(d>d_a)
-				{
-				d_a=d;
-				a_new=v;
-				}
-			++v_current;
-			}
-		}
-
-//	Now choose the largest of d_max, d_a, and d_b
-		{
-		float d[3]={d_max,d_a,d_b};
-		auto p_max=std::max_element(d,d+3) - d;
-		if(p_max==0)
-			{return;}
-		if(p_max==1)
-			{
-			d_max=d_a;
-			m_dmax_a=a_new;
-			return;
-			}
-		d_max=d_b;
-		m_dmax_a=b_new;
+		extremaUpdate(*s_begin);
+		++s_begin;
 		}
 	}

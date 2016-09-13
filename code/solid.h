@@ -35,19 +35,19 @@ namespace SnowflakeModel
 				,m_volume(0)
 				,m_flags_dirty(DMAX_DIRTY|BOUNDINGBOX_DIRTY|MIDPOINT_DIRTY|RMAX_DIRTY)
 				,m_mirror_flags(0)
-				,m_dmax_a{0.0f,0.0f,0.0f,1.0f}
-				,m_dmax_b{0.0f,0.0f,0.0f,1.0f}
+				,m_extrema{{0.0f,0.0f,0.0f,1.0f},{0.0f,0.0f,0.0f,1.0f}}
 				{}
 
 			Solid(const DataDump& dump,const char* name);
 
 			VolumeConvex& subvolumeAdd(const VolumeConvex& volume)
 				{
+			//	If this fails, the object is in a bad state hmm
+				extremaUpdate(volume);
 				m_subvolumes.push_back(volume);
 				m_flags_dirty|=BOUNDINGBOX_DIRTY|MIDPOINT_DIRTY|RMAX_DIRTY;
 				m_n_faces_tot+=volume.facesCount();
 				m_volume+=volume.volumeGet();
-				dMaxCompute(volume);
 				return m_subvolumes.back();
 				}
 
@@ -55,7 +55,7 @@ namespace SnowflakeModel
 				{
 				m_n_faces_tot+=volume.facesCount();
 				m_volume+=volume.volumeGet();
-				dMaxCompute(volume);
+				extremaUpdate(volume);
 
 			//	If this fails, the object is in a bad state hmm
 				m_subvolumes.push_back(std::move(volume));
@@ -122,7 +122,7 @@ namespace SnowflakeModel
 
 			Twins<glm::vec4> extremaGet() const noexcept
 				{
-				return {m_dmax_a,m_dmax_b};
+				return m_extrema;
 				}
 
 			void geometrySample(VoxelBuilder& builder) const;
@@ -167,8 +167,7 @@ namespace SnowflakeModel
 				m_volume=0;
 				m_r_max=0;
 				m_d_max=0;
-				m_dmax_a={0.0f,0.0f,0.0f,1.0f};
-				m_dmax_b={0.0f,0.0f,0.0f,1.0f};
+				m_extrema={{0.0f,0.0f,0.0f,1.0f},{0.0f,0.0f,0.0f,1.0f}};
 				m_flags_dirty=BOUNDINGBOX_DIRTY|MIDPOINT_DIRTY|RMAX_DIRTY;
 				}
 
@@ -194,15 +193,15 @@ namespace SnowflakeModel
 			mutable uint32_t m_flags_dirty;
 			uint32_t m_mirror_flags;
 
-			glm::vec4 m_dmax_a;
-			glm::vec4 m_dmax_b;
+			Twins<glm::vec4> m_extrema;
 
 
 			void midpointCompute() const;
 			void boundingBoxCompute() const;
 			void rMaxCompute() const;
 			void volumeCompute() const;
-			void dMaxCompute(const VolumeConvex& v) noexcept;
+			void extremaUpdate(const VolumeConvex& v) noexcept;
+			void extremaUpdate(const Solid& s) noexcept;
 		};
 
 	Vector strechToBoundingBox(const Vector& v,const Solid& V);
