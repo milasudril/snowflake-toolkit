@@ -1116,7 +1116,7 @@ bool Simstate::step()
 	if(m_data.frame%64==0)
 		{
 		fprintf(stderr,"\r# Running simulation. %.3g%% done.  Fill ratio %.3g%%   "
-			,progressGet()*100,static_cast<double>(m_data.N_particles)/ice_particles.size());
+			,progressGet()*100,100*static_cast<double>(m_data.N_particles)/ice_particles.size());
 		}
 
 	auto pair_merge=ice_particlesChoose(randomizer,randgen);

@@ -220,8 +220,9 @@ void Solid::centerCentroidAt(const Point& pos_new)
 		}
 	m_extrema.first=T*m_extrema.first;
 	m_extrema.second=T*m_extrema.second;
-//TODO (perf) We can deduce a new midpoint [but floating point arithmetic...]
-	m_flags_dirty|=BOUNDINGBOX_DIRTY|MIDPOINT_DIRTY;
+	m_mid=pos_new; //By definition
+	m_bounding_box.m_min=Vector(T*Point(m_bounding_box.m_min,1.0f));
+	m_bounding_box.m_max=Vector(T*Point(m_bounding_box.m_max,1.0f));
 	}
 
 void Solid::centerBoundingBoxAt(const Point& pos_new)
@@ -238,8 +239,9 @@ void Solid::centerBoundingBoxAt(const Point& pos_new)
 		}
 	m_extrema.first=T*m_extrema.first;
 	m_extrema.second=T*m_extrema.second;
-//TODO (perf) We can deduce a new midpoint [but floating point arithmetic...]
-	m_flags_dirty|=BOUNDINGBOX_DIRTY|MIDPOINT_DIRTY;
+	m_mid=T*m_mid;
+	m_bounding_box.m_min=Vector(T*Point(m_bounding_box.m_min,1.0f));
+	m_bounding_box.m_max=Vector(T*Point(m_bounding_box.m_max,1.0f));
 	}
 
 void Solid::rMaxCompute() const
