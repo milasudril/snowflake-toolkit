@@ -539,6 +539,7 @@ void Solid::boundingBoxUpdate(const VolumeConvex& v) const noexcept
 		bb.m_max=glm::max(bb.m_max,vert);
 		++v_begin;
 		}
+	m_bounding_box=bb;
 	}
 
 
