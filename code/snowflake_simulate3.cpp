@@ -1114,7 +1114,10 @@ bool Simstate::step()
 	{
 	SNOWFLAKEMODEL_TIMED_SCOPE();
 	if(m_data.frame%64==0)
-		{fprintf(stderr,"\r# Running simulation. %.3g%% done.    ",progressGet()*100);}
+		{
+		fprintf(stderr,"\r# Running simulation. %.3g%% done.  Fill ratio %.3g%%   "
+			,progressGet()*100,static_cast<double>(m_data.N_particles)/ice_particles.size());
+		}
 
 	auto pair_merge=ice_particlesChoose(randomizer,randgen);
 	m_data.tau+=-log(U(0.0,1.0,randgen))/double(C_mat.sumGetMt());
