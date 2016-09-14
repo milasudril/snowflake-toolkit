@@ -36,7 +36,6 @@ VolumeConvex::VolumeConvex(const VolumeConvex& vc):
 	,m_faces(vc.m_faces)
 	,m_faces_out(vc.m_faces_out)
 	,m_vertex_groups(vc.m_vertex_groups)
-	,m_bounding_box(vc.m_bounding_box)
 	,m_mid(vc.m_mid)
 	,m_volume(vc.m_volume)
 	,m_area_visible(vc.m_area_visible)
@@ -61,7 +60,7 @@ void VolumeConvex::transform(const Matrix& T)
 		++vertex_current;
 		}
 
-	m_flags_dirty|=BOUNDINGBOX_DIRTY|MIDPOINT_DIRTY|FACES_NORMAL_DIRTY
+	m_flags_dirty|=MIDPOINT_DIRTY|FACES_NORMAL_DIRTY
 		|FACES_MIDPOINT_DIRTY|VOLUME_DIRTY|AREA_VISIBLE_DIRTY;
 	}
 
@@ -79,7 +78,7 @@ void VolumeConvex::transformGroup(const std::string& name,const Matrix& T)
 		verts[*vertex_current] = T * verts[*vertex_current];
 		++vertex_current;
 		}
-	m_flags_dirty|=BOUNDINGBOX_DIRTY|MIDPOINT_DIRTY|FACES_NORMAL_DIRTY
+	m_flags_dirty|=MIDPOINT_DIRTY|FACES_NORMAL_DIRTY
 		|FACES_MIDPOINT_DIRTY|VOLUME_DIRTY|AREA_VISIBLE_DIRTY;
 	}
 
@@ -298,31 +297,6 @@ size_t VolumeConvex::cross(const Face& face,size_t count_max) const
 	}
 
 
-void VolumeConvex::boundingBoxCompute() const
-	{
-	auto vertex_current=verticesBegin();
-	auto vertices_end=verticesEnd();
-	if(vertex_current==vertices_end)
-		{
-		m_bounding_box={{0,0,0},{0,0,0}};
-		m_flags_dirty&=~BOUNDINGBOX_DIRTY;
-		return;
-		}
-
-	BoundingBox bb{Vector(*vertex_current),Vector(*vertex_current)};
-
-	++vertex_current;
-	while(vertex_current!=vertices_end)
-		{
-		bb.m_min=glm::min(bb.m_min,Vector(*vertex_current));
-		bb.m_max=glm::max(bb.m_max,Vector(*vertex_current));
-
-		++vertex_current;
-		}
-	m_bounding_box=bb;
-	m_flags_dirty&=~BOUNDINGBOX_DIRTY;
-	}
-
 void VolumeConvex::midpointCompute() const
 	{
 	Point mid={0,0,0,0};
@@ -450,8 +424,7 @@ VolumeConvex::VolumeConvex(const DataDump& dump,const char* id)
 	m_faces=dump.arrayGet<Face>((group_name + "/faces").c_str());
 	m_faces_out=dump.arrayGet<FaceIndex>((group_name + "/faces_out").c_str());
 
-	m_flags_dirty=BOUNDINGBOX_DIRTY|MIDPOINT_DIRTY
-		|FACES_NORMAL_DIRTY|FACES_MIDPOINT_DIRTY|VOLUME_DIRTY
+	m_flags_dirty=MIDPOINT_DIRTY|FACES_NORMAL_DIRTY|FACES_MIDPOINT_DIRTY|VOLUME_DIRTY
 		|AREA_VISIBLE_DIRTY;
 
 	auto face_current=facesBegin();

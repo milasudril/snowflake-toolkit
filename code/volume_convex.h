@@ -69,7 +69,7 @@ namespace SnowflakeModel
 				};
 
 			VolumeConvex():
-				m_flags_dirty(BOUNDINGBOX_DIRTY|MIDPOINT_DIRTY
+				m_flags_dirty(MIDPOINT_DIRTY
 					|FACES_NORMAL_DIRTY|FACES_MIDPOINT_DIRTY|VOLUME_DIRTY
 					|AREA_VISIBLE_DIRTY)
 				{}
@@ -137,13 +137,6 @@ namespace SnowflakeModel
 
 
 
-			const BoundingBox& boundingBoxGet() const
-				{
-				if(m_flags_dirty&BOUNDINGBOX_DIRTY)
-					{boundingBoxCompute();}
-				return m_bounding_box;
-				}
-
 			const Point& midpointGet() const
 				{
 				if(m_flags_dirty&MIDPOINT_DIRTY)
@@ -181,7 +174,6 @@ namespace SnowflakeModel
 
 			void facesNormalCompute() const;
 			void facesMidpointCompute() const;
-			void boundingBoxCompute() const;
 			void midpointCompute() const;
 			void volumeCompute() const;
 			void areaVisibleCompute() const;
@@ -227,18 +219,16 @@ namespace SnowflakeModel
 			std::vector<FaceIndex> m_faces_out;
 			std::map< std::string, std::vector<VertexIndex> > m_vertex_groups;
 
-			mutable BoundingBox m_bounding_box;
 			mutable Point m_mid;
 			mutable float m_volume;
 			mutable float m_area_visible;
 			mutable uint32_t m_flags_dirty;
 
-			static constexpr uint32_t BOUNDINGBOX_DIRTY=1;
-			static constexpr uint32_t MIDPOINT_DIRTY=2;
-			static constexpr uint32_t FACES_NORMAL_DIRTY=4;
-			static constexpr uint32_t FACES_MIDPOINT_DIRTY=8;
-			static constexpr uint32_t VOLUME_DIRTY=16;
-			static constexpr uint32_t AREA_VISIBLE_DIRTY=32;
+			static constexpr uint32_t MIDPOINT_DIRTY=1;
+			static constexpr uint32_t FACES_NORMAL_DIRTY=2;
+			static constexpr uint32_t FACES_MIDPOINT_DIRTY=4;
+			static constexpr uint32_t VOLUME_DIRTY=8;
+			static constexpr uint32_t AREA_VISIBLE_DIRTY=16;
 		};
 	}
 
