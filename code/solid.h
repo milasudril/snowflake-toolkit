@@ -33,9 +33,9 @@ namespace SnowflakeModel
 				 m_n_faces_tot(0)
 				,m_r_max(0)
 				,m_volume(0)
+				,m_extrema{{0.0f,0.0f,0.0f,1.0f},{0.0f,0.0f,0.0f,1.0f}}
 				,m_flags_dirty(DMAX_DIRTY|BOUNDINGBOX_DIRTY|MIDPOINT_DIRTY|RMAX_DIRTY)
 				,m_mirror_flags(0)
-				,m_extrema{{0.0f,0.0f,0.0f,1.0f},{0.0f,0.0f,0.0f,1.0f}}
 				{}
 
 			Solid(const DataDump& dump,const char* name);
@@ -44,8 +44,9 @@ namespace SnowflakeModel
 				{
 			//	If this fails, the object is in a bad state hmm
 				extremaUpdate(volume);
+				boundingBoxUpdate(volume);
 				m_subvolumes.push_back(volume);
-				m_flags_dirty|=BOUNDINGBOX_DIRTY|MIDPOINT_DIRTY|RMAX_DIRTY;
+				m_flags_dirty|=MIDPOINT_DIRTY|RMAX_DIRTY;
 				m_n_faces_tot+=volume.facesCount();
 				m_volume+=volume.volumeGet();
 				return m_subvolumes.back();
@@ -56,10 +57,11 @@ namespace SnowflakeModel
 				m_n_faces_tot+=volume.facesCount();
 				m_volume+=volume.volumeGet();
 				extremaUpdate(volume);
+				boundingBoxUpdate(volume);
 
 			//	If this fails, the object is in a bad state hmm
 				m_subvolumes.push_back(std::move(volume));
-				m_flags_dirty|=BOUNDINGBOX_DIRTY|MIDPOINT_DIRTY|RMAX_DIRTY;
+				m_flags_dirty|=MIDPOINT_DIRTY|RMAX_DIRTY;
 				return m_subvolumes.back();
 				}
 
@@ -122,22 +124,24 @@ namespace SnowflakeModel
 
 			Twins<glm::vec4> extremaGet() const noexcept
 				{
+				if(m_flags_dirty&DMAX_DIRTY)
+					{dMaxCompute();}
 				return m_extrema;
 				}
 
 			void geometrySample(VoxelBuilder& builder) const;
 
-			void transform(const Matrix& T,bool mirrored);
+			void transform(const Matrix& T,bool mirrored) noexcept;
 
-			const VolumeConvex* inside(const Point& v) const;
+			const VolumeConvex* inside(const Point& v) const noexcept;
 
-			const VolumeConvex* cross(const VolumeConvex::Face& face) const;
+			const VolumeConvex* cross(const VolumeConvex::Face& face) const noexcept;
 
-			size_t cross(const VolumeConvex::Face& face,size_t count_max) const;
+			size_t cross(const VolumeConvex::Face& face,size_t count_max) const noexcept;
 
-			void centerCentroidAt(const Point& pos_new);
-			void centerBoundingBoxAt(const Point& pos_new);
-			void normalsFlip();
+			void centerCentroidAt(const Point& pos_new) noexcept;
+			void centerBoundingBoxAt(const Point& pos_new) noexcept;
+			void normalsFlip() noexcept;
 
 
 			void deformationTemplateAdd(SolidDeformation&& deformation)
@@ -146,13 +150,13 @@ namespace SnowflakeModel
 			const std::vector<SolidDeformation>& deformationTemplatesGet() const noexcept
 				{return m_deformation_templates;}
 
-			void mirrorActivate(uint32_t mirror_flags)
+			void mirrorActivate(uint32_t mirror_flags) noexcept
 				{m_mirror_flags|=mirror_flags;}
 
 			bool mirrorFlagTest(uint32_t mirror_flag) const noexcept
 				{return m_mirror_flags&mirror_flag;}
 
-			void mirrorDeactivate(uint32_t mirror_flags)
+			void mirrorDeactivate(uint32_t mirror_flags) noexcept
 				{m_mirror_flags&=~mirror_flags;}
 
 			size_t facesCount() const noexcept
@@ -161,16 +165,15 @@ namespace SnowflakeModel
 				return m_n_faces_tot;
 				}
 
-			void clear()
+			void clear() noexcept
 				{
 				m_n_faces_tot=0;
 				m_subvolumes.clear();
 				m_deformation_templates.clear();
 				m_volume=0;
 				m_r_max=0;
-				m_d_max=0;
 				m_extrema={{0.0f,0.0f,0.0f,1.0f},{0.0f,0.0f,0.0f,1.0f}};
-				m_flags_dirty=BOUNDINGBOX_DIRTY|MIDPOINT_DIRTY|RMAX_DIRTY;
+				m_bounding_box={{0.0f,0.0f,0.0f},{0.0f,0.0f,0.0f}};
 				}
 
 			void write(const char* id,DataDump& dump) const;
@@ -191,26 +194,28 @@ namespace SnowflakeModel
 			mutable Point m_mid;
 			mutable float m_r_max;
 			mutable float m_volume;
-			mutable float m_d_max;
+			mutable Twins<glm::vec4> m_extrema;
 			mutable uint32_t m_flags_dirty;
+
 			uint32_t m_mirror_flags;
 
-			Twins<glm::vec4> m_extrema;
+			void midpointCompute() const noexcept;
+			void boundingBoxCompute() const noexcept;
+			void rMaxCompute() const noexcept;
+			void dMaxCompute() const noexcept;
+			void volumeCompute() const noexcept;
 
-
-			void midpointCompute() const;
-			void boundingBoxCompute() const;
-			void rMaxCompute() const;
-			void volumeCompute() const;
-			void extremaUpdate(const VolumeConvex& v) noexcept;
-			void extremaUpdate(const Solid& s) noexcept;
+			void extremaUpdate(const VolumeConvex& v) const noexcept;
+			void extremaUpdate(const Solid& s) const noexcept;
+			void boundingBoxUpdate(const VolumeConvex& v) const noexcept;
+			void boundingBoxUpdate(const Solid& v) const noexcept;
 		};
 
-	Vector strechToBoundingBox(const Vector& v,const Solid& V);
-	Vector strechToSurface(const Vector& v,const Solid& V,float tolerance);
-	bool overlap(const Solid& v_a,const Solid& v_b);
-	bool overlap(const Solid& v_a,const Solid& v_b,double overlap_max);
-	bool overlap(const Solid& v_a,const Solid& v_b,size_t subvols);
+	Vector strechToBoundingBox(const Vector& v,const Solid& V) noexcept;
+	Vector strechToSurface(const Vector& v,const Solid& V,float tolerance) noexcept;
+	bool overlap(const Solid& v_a,const Solid& v_b) noexcept;
+	bool overlap(const Solid& v_a,const Solid& v_b,double overlap_max) noexcept;
+	bool overlap(const Solid& v_a,const Solid& v_b,size_t subvols) noexcept;
 
 	}
 
