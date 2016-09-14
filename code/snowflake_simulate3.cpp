@@ -1175,7 +1175,7 @@ bool Simstate::step()
 		auto& g_a=ice_particles[pair_merge.second];
 		auto s_a=g_a.solidGet();
 		s_a.centerBoundingBoxAt(SnowflakeModel::Point(0,0,0,1));
-	//	do	//Insist on merging these two particles
+		do	//Insist on merging these two particles
 			{
 			auto f_b=faceChoose(s_b,randgen);
 			auto coords=drawFromTriangle(randgen);
@@ -1203,8 +1203,8 @@ bool Simstate::step()
 			R_x=glm::translate(R_x,SnowflakeModel::Vector(-v));
 			s_a.transform(T*R.first*R_x,R.second);
 			}
-	//	while(overlap(s_b,s_a));
-		if(!overlap(s_a,s_b,0.25))
+		while(overlap(s_b,s_a,0.125));
+	//	if(!overlap(s_a,s_b))
 			{
 			s_b.merge(s_a);
 			g_b.velocitySet(vTermCompute(s_b,r_setup)*randomDirection(randgen));
