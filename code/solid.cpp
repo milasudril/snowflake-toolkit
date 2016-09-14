@@ -86,7 +86,8 @@ Vector SnowflakeModel::strechToSurface(const Vector& v,const Solid& V,float tole
 void Solid::transform(const Matrix& T,bool mirrored)
 	{
 	auto subvolume=subvolumesBegin();
-	while(subvolume!=subvolumesEnd())
+	auto subvols_end=subvolumesEnd();
+	while(subvolume!=subvols_end)
 		{
 		subvolume->transform(T);
 		if(mirrored)
@@ -102,7 +103,8 @@ void Solid::transform(const Matrix& T,bool mirrored)
 void Solid::normalsFlip()
 	{
 	auto subvolume=subvolumesBegin();
-	while(subvolume!=subvolumesEnd())
+	auto subvols_end=subvolumesEnd();
+	while(subvolume!=subvols_end)
 		{
 		subvolume->normalsFlip();
 		++subvolume;
@@ -112,24 +114,26 @@ void Solid::normalsFlip()
 void Solid::boundingBoxCompute() const
 	{
 	auto subvolume=subvolumesBegin();
-	if(subvolume==subvolumesEnd())
+	auto subvols_end=subvolumesEnd();
+	if(subvolume==subvols_end)
 		{
 		m_bounding_box={{0,0,0},{0,0,0}};
 		m_flags_dirty&=~BOUNDINGBOX_DIRTY;
 		return;
 		}
 
-	m_bounding_box=subvolume->boundingBoxGet();
+	auto bb=subvolume->boundingBoxGet();
 	++subvolume;
 
-	while(subvolume!=subvolumesEnd())
+	while(subvolume!=subvols_end)
 		{
 		auto& bb_temp=subvolume->boundingBoxGet();
-		m_bounding_box.m_min=glm::min(m_bounding_box.m_min,bb_temp.m_min);
-		m_bounding_box.m_max=glm::max(m_bounding_box.m_max,bb_temp.m_max);
+		bb.m_min=glm::min(bb.m_min,bb_temp.m_min);
+		bb.m_max=glm::max(bb.m_max,bb_temp.m_max);
 		++subvolume;
 		}
 
+	m_bounding_box=bb;
 	m_flags_dirty&=~BOUNDINGBOX_DIRTY;
 	}
 
