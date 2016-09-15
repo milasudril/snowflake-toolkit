@@ -43,7 +43,7 @@ void Solid::merge(const Matrix& T,const Solid& volume,bool mirrored)
 	m_flags_dirty|=MIDPOINT_DIRTY|RMAX_DIRTY;
 	}
 
-void Solid::merge(const Solid& volume)
+void Solid::merge(const Solid& volume,double overlap_est)
 	{
 	extremaUpdate(volume);
 	boundingBoxUpdate(volume);
@@ -56,7 +56,7 @@ void Solid::merge(const Solid& volume)
 		++subvolume;
 		}
 	m_flags_dirty|=MIDPOINT_DIRTY|RMAX_DIRTY;
-	m_volume+=volume.volumeGet();
+	m_volume+=volume.volumeGet() - overlap_est;
 	m_n_faces_tot+=volume.facesCount();
 	}
 
@@ -285,8 +285,10 @@ bool SnowflakeModel::overlap(const Solid& v_a,const Solid& v_b,double overlap_ma
 	return 0;
 	}
 
-bool SnowflakeModel::overlap(const Solid& v_a,const Solid& v_b,size_t subvols) noexcept
+bool SnowflakeModel::overlap(const Solid& v_a,const Solid& v_b
+	,size_t subvols,double& vol_overlap) noexcept
 	{
+	double vol_overlap_temp=0;
 	size_t cross_count=0;
 	auto subvolume=v_a.subvolumesBegin();
 	auto vol_end=v_a.subvolumesEnd();
@@ -294,15 +296,25 @@ bool SnowflakeModel::overlap(const Solid& v_a,const Solid& v_b,size_t subvols) n
 		{
 		auto face=subvolume->facesBegin();
 		auto face_end=subvolume->facesEnd();
+		auto V=subvolume->volumeGet();
 		while(face!=face_end)
 			{
-			cross_count+=(v_b.cross(*face)!=nullptr);
-			if(cross_count > subvols)
-				{return 1;}
+			auto subvol=v_b.cross(*face);
+			if(subvol!=nullptr)
+				{
+				++cross_count;
+				if(cross_count > subvols)
+					{return 0;}
+			//	This is a guesstimate of the actual overlap. It is possible
+			//	to find the true value, but that may require a remeshing
+			//	step.
+				vol_overlap_temp+=0.33*std::min(V,subvol->volumeGet());
+				}
 			++face;
 			}
 		++subvolume;
-		}	
+		}
+	vol_overlap=vol_overlap_temp;
 	return 0;
 	}
 
@@ -443,7 +455,9 @@ Solid::Solid(const DataDump& dump,const char* name):
 			(const char* group_name)
 			{
 			auto group_name_current=defgroup_name + group_name;
-			subvolumeAdd(VolumeConvex(dump,group_name_current.c_str()));
+		//	FIXME This may result in a different volume size after restoring 
+		//	state [Overlap]
+			subvolumeAdd(VolumeConvex(dump,group_name_current.c_str()),0);
 			});
 		}
 	}

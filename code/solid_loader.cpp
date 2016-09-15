@@ -49,7 +49,7 @@ std::string SolidLoader::invoke(const ConfigCommand& cmd, const FileIn& source)
 		{
 		if(cmd.m_arguments.size()!=0)
 			{throw "Volume header does not take any arguments";}
-		r_vc_current=&r_solid.subvolumeAdd(VolumeConvex{});
+		r_vc_current=&r_solid.subvolumeAdd(VolumeConvex{},0);
 		}
 	else
 	if(cmd.m_name=="vertex")

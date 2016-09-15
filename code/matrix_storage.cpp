@@ -25,7 +25,9 @@ size_t MatrixStorage::N_validate(size_t N_rows,size_t N_cols)
 	{
 	if(N_cols%4!=0)
 		{throw "Number of columns has to be divisible by 4";}
-
+//	TODO use more flexible division. Simple but not optimal:
+//	N/c + N/c + N/c + ... + remaining rows
+//	Improve by moving the extra rows on to other tasks?
 	if(N_rows%Thread::threadsMax())
 		{throw "Number of rows has to be divisible by the number of cores";}
 

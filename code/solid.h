@@ -40,7 +40,7 @@ namespace SnowflakeModel
 
 			Solid(const DataDump& dump,const char* name);
 
-			VolumeConvex& subvolumeAdd(const VolumeConvex& volume)
+			VolumeConvex& subvolumeAdd(const VolumeConvex& volume,double overlap_est)
 				{
 			//	If this fails, the object is in a bad state hmm
 				extremaUpdate(volume);
@@ -48,14 +48,14 @@ namespace SnowflakeModel
 				m_subvolumes.push_back(volume);
 				m_flags_dirty|=MIDPOINT_DIRTY|RMAX_DIRTY;
 				m_n_faces_tot+=volume.facesCount();
-				m_volume+=volume.volumeGet();
+				m_volume+=volume.volumeGet()-overlap_est;
 				return m_subvolumes.back();
 				}
 
-			VolumeConvex& subvolumeAdd(VolumeConvex&& volume)
+			VolumeConvex& subvolumeAdd(VolumeConvex&& volume,double overlap_est)
 				{
 				m_n_faces_tot+=volume.facesCount();
-				m_volume+=volume.volumeGet();
+				m_volume+=volume.volumeGet() - overlap_est;
 				extremaUpdate(volume);
 				boundingBoxUpdate(volume);
 
@@ -90,7 +90,7 @@ namespace SnowflakeModel
 
 			void merge(const Matrix& T,const Solid& volume,bool mirrored);
 
-			void merge(const Solid& volume);
+			void merge(const Solid& volume,double overlap_est);
 
 
 			const BoundingBox& boundingBoxGet() const noexcept
@@ -215,7 +215,8 @@ namespace SnowflakeModel
 	Vector strechToSurface(const Vector& v,const Solid& V,float tolerance) noexcept;
 	bool overlap(const Solid& v_a,const Solid& v_b) noexcept;
 	bool overlap(const Solid& v_a,const Solid& v_b,double overlap_max) noexcept;
-	bool overlap(const Solid& v_a,const Solid& v_b,size_t subvols) noexcept;
+	bool overlap(const Solid& v_a,const Solid& v_b,size_t subvols
+		,double& overlap_res) noexcept;
 
 	}
 

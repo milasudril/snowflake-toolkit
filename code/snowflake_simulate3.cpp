@@ -1127,6 +1127,7 @@ bool Simstate::step()
 		auto k=ice_particleDeadFind(ice_particles);
 		if(k==ice_particles.size())
 			{
+		//TODO reallocate matrix? 
 			fprintf(stderr,"\n# Event rejected %zu: Cloud is full %zu %zu"
 				,m_data.frame,m_data.N_particles,k);
 			return 0;
@@ -1178,6 +1179,7 @@ bool Simstate::step()
 		auto& g_a=ice_particles[pair_merge.second];
 		auto s_a=g_a.solidGet();
 		s_a.centerBoundingBoxAt(SnowflakeModel::Point(0,0,0,1));
+		double vol_overlap=0;
 		do	//Insist on merging these two particles
 			{
 			auto f_b=faceChoose(s_b,randgen);
@@ -1206,10 +1208,10 @@ bool Simstate::step()
 			R_x=glm::translate(R_x,SnowflakeModel::Vector(-v));
 			s_a.transform(T*R.first*R_x,R.second);
 			}
-		while(overlap(s_b,s_a,0.125));
+		while(overlap(s_b,s_a,2,vol_overlap));
 	//	if(!overlap(s_a,s_b))
 			{
-			s_b.merge(s_a);
+			s_b.merge(s_a,vol_overlap);
 			g_b.velocitySet(vTermCompute(s_b,r_setup)*randomDirection(randgen));
 			g_a.kill();
 			--m_data.N_particles;

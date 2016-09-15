@@ -51,7 +51,7 @@ int main()
 		SnowflakeModel::Matrix T;
 		T=glm::translate(T,pos);
 		solid_deformed.transform(T*R,0);
-		p2.merge(solid_deformed);
+		p2.merge(solid_deformed,9);
 
 		SnowflakeModel::FileOut dest("test.obj");
 		SnowflakeModel::SolidWriter writer(dest);
