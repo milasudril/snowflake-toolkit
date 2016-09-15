@@ -190,6 +190,7 @@ namespace SnowflakeModel
 				{
 				m_faces_out.push_back(i);
 				m_faces[i].m_visible=1;
+				assert(m_flags_dirty&AREA_VISIBLE_DIRTY);
 				}
 
 			void faceOutRemove(size_t i)
@@ -229,6 +230,8 @@ namespace SnowflakeModel
 			static constexpr uint32_t VOLUME_DIRTY=8;
 			static constexpr uint32_t AREA_VISIBLE_DIRTY=16;
 		};
+
+	bool overlap(const VolumeConvex& a,const VolumeConvex& b);
 	}
 
 #endif

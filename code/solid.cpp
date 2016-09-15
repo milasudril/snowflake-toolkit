@@ -330,15 +330,16 @@ bool SnowflakeModel::overlap(const Solid& v_a,const Solid& v_b) noexcept
 		{
 		auto subvolume=v_a.subvolumesBegin();
 		auto vol_end=v_a.subvolumesEnd();
+		auto subvols_b_end=v_b.subvolumesEnd();
+		auto subvol_b_0=v_b.subvolumesBegin();
 		while(subvolume!=vol_end)
 			{
-			auto face=subvolume->facesBegin();
-			auto face_end=subvolume->facesEnd();
-			while(face!=face_end)
+			auto subvol_b=subvol_b_0;
+			while(subvol_b!=subvols_b_end)
 				{
-				if(v_b.cross(*face))
+				if(overlap(*subvol_b,*subvolume))
 					{return 1;}
-				++face;
+				++subvol_b;
 				}
 			++subvolume;
 			}

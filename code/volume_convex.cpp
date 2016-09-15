@@ -164,6 +164,8 @@ bool VolumeConvex::inside(const Point& v) const
 	return 1;
 	}
 
+
+
 namespace
 	{
 	inline float Pi(const Vector& plane_normal,const VolumeConvex::Vertex& V_0
@@ -444,4 +446,10 @@ VolumeConvex::VolumeConvex(const DataDump& dump,const char* id)
 			m_vertex_groups[name]=dump.arrayGet<VertexIndex>(group_name_current.c_str());
 			});
 		}
+	}
+
+bool SnowflakeModel::overlap(const VolumeConvex& a,const VolumeConvex& b)
+	{
+	
+	return 0;
 	}
