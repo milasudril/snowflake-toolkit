@@ -53,6 +53,8 @@ static constexpr char PARAM_PARAMSHOW='N';
 static constexpr char PARAM_GEOMETRY_DUMP_ICE='O';
 static constexpr char PARAM_STATEFILE='S';
 static constexpr char PARAM_STOPCOND='s';
+static constexpr char PARAM_MERGERETRIES='f';
+static constexpr char PARAM_OVERLAP='o';
 
 
 static const struct option PROGRAM_OPTIONS[]=
@@ -75,6 +77,8 @@ static const struct option PROGRAM_OPTIONS[]=
 		,{"param-show",no_argument,nullptr,PARAM_PARAMSHOW}
 		,{"statefile",required_argument,nullptr,PARAM_STATEFILE}
 		,{"stop-cond",required_argument,nullptr,PARAM_STOPCOND}
+		,{"merge-retries",required_argument,nullptr,PARAM_MERGERETRIES}
+		,{"overlap",required_argument,nullptr,PARAM_OVERLAP}
 		,{0,0,0,0}
 	};
 
@@ -98,8 +102,8 @@ struct Setup
 	{
 	struct Data
 		{
-		uint32_t m_actions;
 		uint32_t m_stat_saverate;
+		uint32_t m_actions;
 
 		int m_size_x;
 		int m_size_y;
@@ -110,6 +114,8 @@ struct Setup
 		float m_droprate;
 		float m_growthrate;
 		float m_meltrate;
+		size_t m_overlap;
+		size_t m_merge_retries;
 		} m_data;
 
 
@@ -129,8 +135,8 @@ struct Setup
 	static constexpr uint32_t STATS_DUMP=2;
 	static constexpr uint32_t GEOMETRY_DUMP=4;
 	static constexpr uint32_t GEOMETRY_SAMPLE=8;
-	static constexpr uint32_t GEOMETRY_DUMP_ICE=32;
 	static constexpr uint32_t PARAM_SHOW=16;
+	static constexpr uint32_t GEOMETRY_DUMP_ICE=32;
 
 	Setup(int argc,char** argv);
 	Setup(const SnowflakeModel::DataDump& dump);
@@ -179,6 +185,9 @@ Setup::Setup(int argc,char** argv):
 	m_data.m_growthrate=GROWTHRATE;
 	m_data.m_meltrate=MELTRATE;
 	m_data.m_stat_saverate=256;
+	m_data.m_actions=0;
+	m_data.m_overlap=0;
+	m_data.m_merge_retries=0;
 
 	while( (c=getopt_long(argc,argv,"",PROGRAM_OPTIONS,&option_index))!=-1)
 		{
@@ -259,6 +268,14 @@ Setup::Setup(int argc,char** argv):
 				m_stopcond_name=temp.substr(0,pos);
 				m_stopcond_arg=temp.substr(pos+1);
 				}
+				break;
+
+			case PARAM_MERGERETRIES:
+				m_data.m_merge_retries=atoll(optarg);
+				break;
+
+			case PARAM_OVERLAP:
+				m_data.m_overlap=atoi(optarg);
 				break;
 
 			case '?':
@@ -369,14 +386,17 @@ Setup::Setup(int argc,char** argv):
 void Setup::paramsDump()
 	{
 	printf("Parameters:\n\n"
-		"Shape:      %s\n"
-		"Seed:       %u\n"
-		"N:          %zu\n"
-		"droprate:   %.7g\n"
-		"growthrate: %.7g\n"
-		"meltrate:   %.7g\n"
+		"Shape:         %s\n"
+		"Seed:          %u\n"
+		"N:             %zu\n"
+		"droprate:      %.7g\n"
+		"growthrate:    %.7g\n"
+		"meltrate:      %.7g\n"
+		"overlap:       %zu\n"
+		"merge retries: %zu\n"
 		,m_crystal.data()
-		,m_data.m_seed,m_data.m_N,m_data.m_droprate,m_data.m_growthrate,m_data.m_meltrate);
+		,m_data.m_seed,m_data.m_N,m_data.m_droprate,m_data.m_growthrate,m_data.m_meltrate
+		,m_data.m_overlap,m_data.m_merge_retries);
 	printf("\nDeformations:\n");
 		{
 		auto ptr=m_deformations.data();
@@ -438,6 +458,11 @@ void helpShow()
 		"    Model parameter\n\n"
 		"--meltrate=value\n"
 		"    Model parameter\n\n"
+		"--merge-retries=N\n"
+		"    If the first try to merge two aggregates failed to satisfy the overlap "
+		"constraint, try again N times without skipping the current event.\n\n"
+		"--overlap=N\n"
+		"    When merging particles, accept overlap between at most N subvolumes.\n\n"
 		);
 	}
 
@@ -492,6 +517,7 @@ namespace SnowflakeModel
 		,{"droprate",offsetOf(&Setup::Data::m_droprate),DataDump::MetaObject<decltype(Setup::Data::m_droprate)>().typeGet()}
 		,{"growthrate",offsetOf(&Setup::Data::m_growthrate),DataDump::MetaObject<decltype(Setup::Data::m_growthrate)>().typeGet()}
 		,{"meltrate",offsetOf(&Setup::Data::m_meltrate),DataDump::MetaObject<decltype(Setup::Data::m_meltrate)>().typeGet()}
+		,{"overlap",offsetOf(&Setup::Data::m_overlap),DataDump::MetaObject<decltype(Setup::Data::m_overlap)>().typeGet()}
 		};
 
 	template<>
@@ -840,8 +866,8 @@ class Simstate
 	//	SnowflakeModel::IdGenerator<unsigned int> m_id_gen;
 		std::uniform_int_distribution<int> U_rot; //Stateless
 		SnowflakeModel::ElementRandomizer randomizer; //Stateless
-		std::unique_ptr<SnowflakeModel::FileOut> frame_data_file; //Stateless. Remember to append to this file when restoring state from savefile.
-		std::unique_ptr<SnowflakeModel::FileOut> dropped_stats; //Append mode...
+		std::unique_ptr<SnowflakeModel::FileOut> frame_data_file; //Stateless.
+		std::unique_ptr<SnowflakeModel::FileOut> dropped_stats;
 
 		friend class SnowflakeModel::DataDump::MetaObject<Data>;
 	};
@@ -1182,7 +1208,8 @@ bool Simstate::step()
 		auto s_a=g_a.solidGet();
 		s_a.centerBoundingBoxAt(SnowflakeModel::Point(0,0,0,1));
 		double vol_overlap=0;
-	//	do	//Insist on merging these two particles
+		auto retry_count=r_setup.m_data.m_merge_retries;
+		do
 			{
 			auto f_b=faceChoose(s_b,randgen);
 			auto coords=drawFromTriangle(randgen);
@@ -1209,29 +1236,32 @@ bool Simstate::step()
 				/(U_rot.max()+1),f_a.m_normal);
 			R_x=glm::translate(R_x,SnowflakeModel::Vector(-v));
 			s_a.transform(T*R.first*R_x,R.second);
+			if(overlap(s_b,s_a,r_setup.m_data.m_overlap,vol_overlap))
+				{
+				if(retry_count==0)
+					{
+				#ifndef NDEBUG
+					fprintf(stderr,"# Event %zu rejected: Overlap\n",m_data.frame);
+				#endif
+					return 0;
+					}
+				--retry_count;
+				}
+			else
+				{break;}
 			}
-	//	while(overlap(s_b,s_a,2,vol_overlap));
-		if(!overlap(s_a,s_b))
-			{
-			s_b.merge(s_a,vol_overlap);
-			g_b.velocitySet(vTermCompute(s_b,r_setup)*randomDirection(randgen));
-			g_a.kill();
-			--m_data.N_particles;
-			++m_data.frame;
-			matrixRowUpdate(pair_merge.first,ice_particles,C_mat,r_setup.m_data
-				,m_data.N_particles);
-			matrixRowUpdate(pair_merge.second,ice_particles,C_mat,r_setup.m_data
-				,m_data.N_particles);
-			return 1;
-			}
-/*
-#ifndef NDEBUG
-		else
-			{
-			fprintf(stderr,"# Event %zu rejected: Overlap\n",m_data.frame);
-			}
-#endif*/
-		return 0;
+		while(1);
+
+		s_b.merge(s_a,vol_overlap);
+		g_b.velocitySet(vTermCompute(s_b,r_setup)*randomDirection(randgen));
+		g_a.kill();
+		--m_data.N_particles;
+		++m_data.frame;
+		matrixRowUpdate(pair_merge.first,ice_particles,C_mat,r_setup.m_data
+			,m_data.N_particles);
+		matrixRowUpdate(pair_merge.second,ice_particles,C_mat,r_setup.m_data
+			,m_data.N_particles);
+		return 1;
 		}
 	return 0;
 	}
