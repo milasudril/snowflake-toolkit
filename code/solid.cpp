@@ -308,7 +308,7 @@ bool SnowflakeModel::overlap(const Solid& v_a,const Solid& v_b
 				{
 				++cross_count;
 				if(cross_count > subvols)
-					{return 0;}
+					{return 1;}
 			//	This is a guesstimate of the actual overlap. It is possible
 			//	to find the true value, but that may require a remeshing
 			//	step.
