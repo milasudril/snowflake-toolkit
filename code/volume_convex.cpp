@@ -11,6 +11,7 @@
 #include "volume_convex.h"
 #include "voxel_builder.h"
 #include "twins.h"
+#include "triangle.h"
 #include <stack>
 
 using namespace SnowflakeModel;
@@ -29,25 +30,6 @@ namespace SnowflakeModel
 		};
 	template<>
 	const size_t DataDump::MetaObject<VolumeConvex::Face>::field_count=4;
-	}
-
-VolumeConvex::VolumeConvex(const VolumeConvex& vc):
-	 m_vertices(vc.m_vertices)
-	,m_faces(vc.m_faces)
-	,m_faces_out(vc.m_faces_out)
-	,m_vertex_groups(vc.m_vertex_groups)
-	,m_mid(vc.m_mid)
-	,m_volume(vc.m_volume)
-	,m_area_visible(vc.m_area_visible)
-	,m_flags_dirty(vc.m_flags_dirty)
-	{
-	auto face_current=facesBegin();
-	auto faces_end=facesEnd();
-	while(face_current!=faces_end)
-		{
-		face_current->parentSet(*this);
-		++face_current;
-		}
 	}
 
 void VolumeConvex::transform(const Matrix& T)
@@ -108,11 +90,12 @@ void VolumeConvex::facesNormalCompute() const
 	{
 	auto face_current=facesBegin();
 	auto faces_end=facesEnd();
+	auto verts=verticesBegin();
 	while(face_current!=faces_end)
 		{
-		auto& v_0=face_current->vertexGet(0);
-		auto& v_1=face_current->vertexGet(1);
-		auto& v_2=face_current->vertexGet(2);
+		auto& v_0=verts[ face_current->vertexGet(0) ];
+		auto& v_1=verts[ face_current->vertexGet(1) ];
+		auto& v_2=verts[ face_current->vertexGet(2) ];
 
 
 		Vector u=Vector(v_1 - v_0);
@@ -163,141 +146,6 @@ bool VolumeConvex::inside(const Point& v) const
 		}
 	return 1;
 	}
-
-
-
-namespace
-	{
-	inline float Pi(const Vector& plane_normal,const VolumeConvex::Vertex& V_0
-		,const Point& P) noexcept
-		{
-		return glm::dot(plane_normal,Vector(P-V_0));
-		}
-
-	template<class T>
-	struct Tripple
-		{
-		T objs[3];
-		T& operator[](unsigned int index)
-			{return objs[index];}
-		const T& operator[](unsigned int index) const
-			{return objs[index];}
-		};
-
-	template<class T>
-	inline Tripple<int> i_other(const Tripple<T>& Pi) noexcept
-		{
-		if(Pi[0]*Pi[1]>0)
-			{return Tripple<int>{1,2,0};}
-		if(Pi[0]*Pi[2]>0)
-			{return Tripple<int>{0,1,2};}
-		return Tripple<int>{2,0,1};
-		}
-
-	template<class T>
-	inline Twins<T> sort(const Twins<T>& t) noexcept
-		{
-		return t.first<t.second? t : Twins<T>{t.second,t.first};
-		}
-
-	inline bool overlap(const Twins<float> a,const Twins<float>& b) noexcept
-		{
-		if(a.second<=b.first+1e-6f || b.second<=a.first+1e-6f)
-			{return 0;}
-		return 1;
-		}
-
-
-
-	inline bool triangle_intersect(const VolumeConvex::Face& T_1,const VolumeConvex::Face& T_2) noexcept
-		{
-		assert(&T_1!=&T_2);
-		auto d=glm::cross(T_1.m_normal,T_2.m_normal);
-
-	//	T_1
-		Tripple<float> pi;
-		Tripple<float> t;
-		for(unsigned int k=0;k<VolumeConvex::VERTEX_COUNT;++k)
-			{
-			pi[k]=Pi(T_2.m_normal,T_2.vertexGet(0),T_1.vertexGet(k));
-		//	Robustness check
-			pi[k]=fabs(pi[k])>1.e-6f? pi[k]: 0.0f;
-			}
-
-		//	Triangles are coplanar or does not intersect
-		if(pi[0]*pi[1]>=0.0f && pi[0]*pi[2]>=0.0f)
-			{return 0;}
-
-		auto i_ref=i_other(pi);
-		for(unsigned int k=0;k<VolumeConvex::VERTEX_COUNT;++k)
-			{t[k]=glm::dot(d,Vector( T_1.vertexGet(i_ref[k])) );}
-
-		auto t_1=sort(Twins<float>
-			{
-			 (t[0]*pi[i_ref[1]] - t[1]*pi[i_ref[0]])/(pi[i_ref[1]] - pi[i_ref[0]])
-			,(t[1]*pi[i_ref[2]] - t[2]*pi[i_ref[1]])/(pi[i_ref[2]] - pi[i_ref[1]])
-			});
-
-	//	T_2
-		for(unsigned int k=0;k<VolumeConvex::VERTEX_COUNT;++k)
-			{
-			pi[k]=Pi(T_1.m_normal,T_1.vertexGet(0),T_2.vertexGet(k));
-		//	Robustness check
-			pi[k]=fabs(pi[k])>1.e-6f? pi[k]: 0.0f;
-			}
-
-		//	Triangles are coplanar or does not intersect
-		if(pi[0]*pi[1]>=0.0f && pi[0]*pi[2]>=0.0f)
-			{return 0;}
-
-		i_ref=i_other(pi);
-		for(unsigned int k=0;k<VolumeConvex::VERTEX_COUNT;++k)
-			{t[k]=glm::dot(d,Vector( T_2.vertexGet(i_ref[k]) ) );}
-
-		auto t_2=sort(Twins<float>
-			{
-			 (t[0]*pi[i_ref[1]] - t[1]*pi[i_ref[0]])/(pi[i_ref[1]] - pi[i_ref[0]])
-			,(t[1]*pi[i_ref[2]] - t[2]*pi[i_ref[1]])/(pi[i_ref[2]] - pi[i_ref[1]])
-			});
-
-		auto ret=overlap(t_1,t_2);
-
-		return ret;
-		}
-	}
-
-const VolumeConvex::Face* VolumeConvex::cross(const Face& face) const
-	{
-	if(m_flags_dirty&FACES_NORMAL_DIRTY)
-		{facesNormalCompute();}
-
-	auto face_current=facesBegin();
-	while(face_current!=facesEnd())
-		{
-		if(triangle_intersect(face,*face_current))
-			{return face_current;}
-		++face_current;
-		}
-	return nullptr;
-	}
-
-size_t VolumeConvex::cross(const Face& face,size_t count_max) const
-	{
-	size_t ret=0;
-	if(m_flags_dirty&FACES_NORMAL_DIRTY)
-		{facesNormalCompute();}
-
-	auto face_current=facesBegin();
-	while(face_current!=facesEnd())
-		{
-		ret+=triangle_intersect(face,*face_current);
-		if(ret>=count_max)
-			{return ret;}
-		++face_current;
-		}
-	return ret;
-	}
-
 
 void VolumeConvex::midpointCompute() const
 	{
@@ -429,13 +277,6 @@ VolumeConvex::VolumeConvex(const DataDump& dump,const char* id)
 	m_flags_dirty=MIDPOINT_DIRTY|FACES_NORMAL_DIRTY|FACES_MIDPOINT_DIRTY|VOLUME_DIRTY
 		|AREA_VISIBLE_DIRTY;
 
-	auto face_current=facesBegin();
-	while(face_current!=facesEnd())
-		{
-		face_current->parentSet(*this);
-		++face_current;
-		}
-
 		{
 		auto v_group_name_base=group_name + "/vertex_groups";
 		auto v_group=dump.groupOpen(v_group_name_base.c_str());
@@ -450,6 +291,54 @@ VolumeConvex::VolumeConvex(const DataDump& dump,const char* id)
 
 bool SnowflakeModel::overlap(const VolumeConvex& a,const VolumeConvex& b)
 	{
-	
+//	TODO: check BBs first so we can accept early
+
+	auto face_a=a.facesBegin();
+	auto faces_a_end=a.facesEnd();
+	auto v_a=a.verticesBegin();
+	auto v_b=b.verticesBegin();
+
+	auto face_b_0=b.facesBegin();
+	auto faces_b_end=b.facesEnd();
+
+//	FIXME: Add dirty flags to face? And use Face::normalGet()?
+//	Move dirty test into facesNormalCompute?
+//	Or not??
+	if(a.m_flags_dirty&VolumeConvex::FACES_NORMAL_DIRTY)
+		{a.facesNormalCompute();}
+
+	if(b.m_flags_dirty&VolumeConvex::FACES_NORMAL_DIRTY)
+		{b.facesNormalCompute();}
+
+	while(face_a!=faces_a_end)
+		{
+		auto T_1=Triangle
+			{ 
+				{
+				 v_a[face_a->vertexGet(0)]
+				,v_a[face_a->vertexGet(1)]
+				,v_a[face_a->vertexGet(2)]
+				}
+			,face_a->m_normal
+			};
+		auto face_b=face_b_0;
+		while(face_b!=faces_b_end)
+			{
+			auto T_2=Triangle
+				{ 
+					{
+					 v_b[face_b->vertexGet(0)]
+					,v_b[face_b->vertexGet(1)]
+					,v_b[face_b->vertexGet(2)]
+					}
+				,face_b->m_normal
+				};
+			if(overlap(T_1,T_2))
+				{return 1;}
+			++face_b;
+			}
+		++face_a;
+		}
+
 	return 0;
 	}

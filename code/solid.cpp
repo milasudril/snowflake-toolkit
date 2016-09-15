@@ -161,36 +161,6 @@ const VolumeConvex* Solid::inside(const Point& v) const noexcept
 	}
 
 
-const VolumeConvex* Solid::cross(const VolumeConvex::Face& f) const noexcept
-	{
-	auto subvolume=subvolumesBegin();
-	auto vol_end=subvolumesEnd();
-	while(subvolume!=vol_end)
-		{
-		if(subvolume->cross(f))
-			{return subvolume;}
-		++subvolume;
-		}
-	return nullptr;
-	}
-
-
-size_t Solid::cross(const VolumeConvex::Face& f,size_t count_max) const noexcept
-	{
-	auto subvolume=subvolumesBegin();
-	auto vol_end=subvolumesEnd();
-	size_t count=0;
-	while(subvolume!=vol_end)
-		{
-		count+=subvolume->cross(f,count_max-count);
-		if(count >= count_max)
-			{return count;}
-		++subvolume;
-		}
-	return count;
-	}
-
-
 void Solid::centerCentroidAt(const Point& pos_new) noexcept
 	{
 	auto subvolume=subvolumesBegin();
@@ -263,61 +233,40 @@ void Solid::volumeCompute() const noexcept
 	m_flags_dirty&=~VOLUME_DIRTY;
 	}
 
-bool SnowflakeModel::overlap(const Solid& v_a,const Solid& v_b,double overlap_max) noexcept
-	{
-	if(!overlap(v_a.boundingBoxGet(),v_b.boundingBoxGet()))
-		{return 0;}
-	size_t cross_count=0;
-	auto subvolume=v_a.subvolumesBegin();
-	auto vol_end=v_a.subvolumesEnd();
-	auto cross_count_tot=std::min(v_a.facesCount(),v_b.facesCount());
-	while(subvolume!=vol_end)
-		{
-		auto face=subvolume->facesBegin();
-		auto face_end=subvolume->facesEnd();
-		while(face!=face_end)
-			{
-			cross_count+=v_b.cross(*face,cross_count_tot-cross_count);
-			if(static_cast<double>(cross_count)/cross_count_tot > overlap_max)
-				{return 1;}
-			++face;
-			}
-		++subvolume;
-		}	
-	return 0;
-	}
-
 bool SnowflakeModel::overlap(const Solid& v_a,const Solid& v_b
 	,size_t subvols,double& vol_overlap) noexcept
 	{
-	double vol_overlap_temp=0;
 	if(!overlap(v_a.boundingBoxGet(),v_b.boundingBoxGet()))
-		{return 0;}
+		{
+		vol_overlap=0;
+		return 0;
+		}
+
+	double vol_overlap_temp=0;
 	size_t cross_count=0;
+
 	auto subvolume=v_a.subvolumesBegin();
 	auto vol_end=v_a.subvolumesEnd();
+	auto subvols_b_end=v_b.subvolumesEnd();
+	auto subvol_b_0=v_b.subvolumesBegin();
 	while(subvolume!=vol_end)
 		{
-		auto face=subvolume->facesBegin();
-		auto face_end=subvolume->facesEnd();
 		auto V=subvolume->volumeGet();
-		while(face!=face_end)
+		auto subvol_b=subvol_b_0;
+		while(subvol_b!=subvols_b_end)
 			{
-			auto subvol=v_b.cross(*face);
-			if(subvol!=nullptr)
-				{
-				++cross_count;
-				if(cross_count > subvols)
-					{return 0;}
-			//	This is a guesstimate of the actual overlap. It is possible
-			//	to find the true value, but that may require a remeshing
-			//	step.
-				vol_overlap_temp+=0.33*std::min(V,subvol->volumeGet());
-				}
-			++face;
+			cross_count+=overlap(*subvol_b,*subvolume);
+			if(cross_count > subvols)
+				{return 1;}
+		//	This is a guesstimate of the actual overlap. It is possible
+		//	to find the true value, but that may require a remeshing
+		//	step.
+			vol_overlap_temp+=0.33*std::min(V,subvol_b->volumeGet());
+			++subvol_b;
 			}
 		++subvolume;
 		}
+
 	vol_overlap=vol_overlap_temp;
 	return 0;
 	}
@@ -326,24 +275,23 @@ bool SnowflakeModel::overlap(const Solid& v_a,const Solid& v_b) noexcept
 	{
 	if(!overlap(v_a.boundingBoxGet(),v_b.boundingBoxGet()))
 		{return 0;}
-	//	Triangle overlap
+
+	auto subvolume=v_a.subvolumesBegin();
+	auto vol_end=v_a.subvolumesEnd();
+	auto subvols_b_end=v_b.subvolumesEnd();
+	auto subvol_b_0=v_b.subvolumesBegin();
+	while(subvolume!=vol_end)
 		{
-		auto subvolume=v_a.subvolumesBegin();
-		auto vol_end=v_a.subvolumesEnd();
-		auto subvols_b_end=v_b.subvolumesEnd();
-		auto subvol_b_0=v_b.subvolumesBegin();
-		while(subvolume!=vol_end)
+		auto subvol_b=subvol_b_0;
+		while(subvol_b!=subvols_b_end)
 			{
-			auto subvol_b=subvol_b_0;
-			while(subvol_b!=subvols_b_end)
-				{
-				if(overlap(*subvol_b,*subvolume))
-					{return 1;}
-				++subvol_b;
-				}
-			++subvolume;
+			if(overlap(*subvol_b,*subvolume))
+				{return 1;}
+			++subvol_b;
 			}
+		++subvolume;
 		}
+
 
 
 #if 0 //With current algorithm, subvolumes will never become completely submerged.

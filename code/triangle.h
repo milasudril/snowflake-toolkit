@@ -3,6 +3,9 @@
 //@	,"dependencies_extra":[{"ref":"triangle.o","rel":"implementation"}]
 //@	}
 
+#ifndef SNOWFLAKEMODEL_TRIANGLE_H
+#define SNOWFLAKEMODLE_TRIANGLE_H
+
 #include "vector.h"
 
 namespace SnowflakeModel
@@ -17,3 +20,5 @@ namespace SnowflakeModel
 
 	bool overlap(const Triangle& t_1,const Triangle& t_2) noexcept;
 	}
+
+#endif

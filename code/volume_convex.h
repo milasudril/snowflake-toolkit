@@ -35,35 +35,26 @@ namespace SnowflakeModel
 				public:
 					Face(){}
 
-					Face(VertexIndex v0,VertexIndex v1,VertexIndex v2
-						,const VolumeConvex& vc):m_visible(0),r_vc(&vc)
+					Face(VertexIndex v0,VertexIndex v1,VertexIndex v2):m_visible(0)
 						{
 						m_verts[0]=v0;
 						m_verts[1]=v1;
 						m_verts[2]=v2;
 						}
 
-				//	TODO: (Perf) Can we avoid storing a reference to the volume here
-					const Vertex& vertexGet(int index) const
-						{return r_vc->vertexGet(m_verts[index]);}
-
 					mutable Point m_mid;
 					mutable Vector m_normal;
 					mutable Vector m_normal_raw;
 					bool m_visible;
 
-					void directionChange()
+					void directionChange() noexcept
 						{std::swap(m_verts[0],m_verts[1]);}
 
-					VertexIndex vertexIndexGet(int index) const
+					VertexIndex vertexGet(int index) const noexcept
 						{return m_verts[index];}
-
-					void parentSet(const VolumeConvex& vc)
-						{r_vc=&vc;}
 
 				private:
 					VertexIndex m_verts[VERTEX_COUNT];
-					const VolumeConvex* r_vc;
 					friend class DataDump::MetaObject<Face>;
 				};
 
@@ -75,7 +66,7 @@ namespace SnowflakeModel
 
 			VolumeConvex(const DataDump& dump,const char* id);
 
-			VolumeConvex(const VolumeConvex& vc);
+			VolumeConvex(const VolumeConvex& vc)=default;
 
 			size_t vertexAdd(const Matrix& T,const Point& v)
 				{
@@ -229,6 +220,8 @@ namespace SnowflakeModel
 			static constexpr uint32_t FACES_MIDPOINT_DIRTY=4;
 			static constexpr uint32_t VOLUME_DIRTY=8;
 			static constexpr uint32_t AREA_VISIBLE_DIRTY=16;
+
+			friend bool overlap(const VolumeConvex& a,const VolumeConvex& b);
 		};
 
 	bool overlap(const VolumeConvex& a,const VolumeConvex& b);
