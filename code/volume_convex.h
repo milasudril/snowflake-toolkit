@@ -17,7 +17,6 @@
 #define SNOWFLAKEMODEL_VOLUMECONVEX_H
 
 #include "vector.h"
-#include "bounding_box.h"
 #include <vector>
 #include <map>
 

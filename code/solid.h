@@ -17,6 +17,7 @@
 #define SNOWFLAKEMODEL_SOLID_H
 
 #include "volume_convex.h"
+#include "bounding_box.h"
 #include "solid_deformation.h"
 #include "twins.h"
 

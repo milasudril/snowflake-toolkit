@@ -265,6 +265,8 @@ void Solid::volumeCompute() const noexcept
 
 bool SnowflakeModel::overlap(const Solid& v_a,const Solid& v_b,double overlap_max) noexcept
 	{
+	if(!overlap(v_a.boundingBoxGet(),v_b.boundingBoxGet()))
+		{return 0;}
 	size_t cross_count=0;
 	auto subvolume=v_a.subvolumesBegin();
 	auto vol_end=v_a.subvolumesEnd();
@@ -289,6 +291,8 @@ bool SnowflakeModel::overlap(const Solid& v_a,const Solid& v_b
 	,size_t subvols,double& vol_overlap) noexcept
 	{
 	double vol_overlap_temp=0;
+	if(!overlap(v_a.boundingBoxGet(),v_b.boundingBoxGet()))
+		{return 0;}
 	size_t cross_count=0;
 	auto subvolume=v_a.subvolumesBegin();
 	auto vol_end=v_a.subvolumesEnd();
@@ -320,6 +324,8 @@ bool SnowflakeModel::overlap(const Solid& v_a,const Solid& v_b
 
 bool SnowflakeModel::overlap(const Solid& v_a,const Solid& v_b) noexcept
 	{
+	if(!overlap(v_a.boundingBoxGet(),v_b.boundingBoxGet()))
+		{return 0;}
 	//	Triangle overlap
 		{
 		auto subvolume=v_a.subvolumesBegin();
@@ -456,8 +462,6 @@ Solid::Solid(const DataDump& dump,const char* name):
 			(const char* group_name)
 			{
 			auto group_name_current=defgroup_name + group_name;
-		//	FIXME This may result in a different volume size after restoring 
-		//	state [Overlap]
 			subvolumeAdd(VolumeConvex(dump,group_name_current.c_str()),0);
 			});
 		}
