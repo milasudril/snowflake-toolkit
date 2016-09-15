@@ -737,7 +737,7 @@ void matrixDump(const SnowflakeModel::MatrixStorage& C_mat)
 	putchar('\n');
 	}
 
-const SnowflakeModel::VolumeConvex::Face&
+SnowflakeModel::Triangle
 faceChoose(const SnowflakeModel::Solid& s_a,SnowflakeModel::RandomGenerator& randgen)
 	{
 	std::vector<float> weights;
@@ -758,11 +758,7 @@ faceChoose(const SnowflakeModel::Solid& s_a,SnowflakeModel::RandomGenerator& ran
 		}
 	std::discrete_distribution<size_t> P_f(weights.begin(),weights.end());
 	auto face_out_index=P_f(randgen);
-	auto& ret=subvol_sel.faceOutGet(face_out_index);
-//	subvol_sel.faceOutRemove(face_out_index);
-	subvol_sel.facesMidpointCompute();
-
-	return ret;
+	return subvol_sel.triangleOutGet(face_out_index);
 	}
 
 template<class T>

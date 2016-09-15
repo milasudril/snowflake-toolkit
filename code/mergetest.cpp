@@ -36,13 +36,13 @@ int main()
 		auto& solid_deformed=p.solidGet();
 		solid_deformed.centerCentroidAt(SnowflakeModel::Point(0,0,0,1.0f));
 		auto& vc_a=solid_deformed.subvolumeGet(0);
-		auto& f_a=vc_a.faceGet(0);
+		auto f_a=vc_a.triangleGet(0);
 		auto u=f_a.vertexGet(0) + 0.25f*(f_a.vertexGet(1) - f_a.vertexGet(0))
 			 + 0.25f*(f_a.vertexGet(2) - f_a.vertexGet(0));
 
 		auto p2=solid_deformed;
 		auto& vc_b=p2.subvolumeGet(0);
-		auto& f_b=vc_b.faceGet(2);
+		auto f_b=vc_b.triangleGet(2);
 		auto v=f_b.vertexGet(0) + 0.25f*(f_b.vertexGet(1) - f_b.vertexGet(0))
 			 + 0.25f*(f_b.vertexGet(2) - f_b.vertexGet(0));
 

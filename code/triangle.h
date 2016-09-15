@@ -4,7 +4,7 @@
 //@	}
 
 #ifndef SNOWFLAKEMODEL_TRIANGLE_H
-#define SNOWFLAKEMODLE_TRIANGLE_H
+#define SNOWFLAKEMODEL_TRIANGLE_H
 
 #include "vector.h"
 

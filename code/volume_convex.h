@@ -17,6 +17,7 @@
 #define SNOWFLAKEMODEL_VOLUMECONVEX_H
 
 #include "vector.h"
+#include "triangle.h"
 #include <vector>
 #include <map>
 
@@ -125,6 +126,27 @@ namespace SnowflakeModel
 			void vertexGroupSet(const std::string& name,VertexIndex index)
 				{m_vertex_groups[name].push_back(index);}
 
+			Triangle triangleGet(FaceIndex i) const noexcept
+				{
+				if(m_flags_dirty&FACES_NORMAL_DIRTY)
+					{facesNormalCompute();}
+				auto verts=verticesBegin();
+				auto face=facesBegin() + i;
+				return Triangle
+					{ 
+						{
+						 verts[face->vertexGet(0)]
+						,verts[face->vertexGet(1)]
+						,verts[face->vertexGet(2)]
+						}
+					,face->m_normal
+					};
+				}
+
+			Triangle triangleOutGet(FaceIndex face_index_out) const noexcept
+				{
+				return triangleGet(m_faces_out[face_index_out]);
+				}
 
 
 			const Point& midpointGet() const
@@ -168,10 +190,10 @@ namespace SnowflakeModel
 			void volumeCompute() const;
 			void areaVisibleCompute() const;
 
-			FaceIndex facesOutCount() const
+			FaceIndex facesOutCount() const noexcept
 				{return m_faces_out.size();}
 
-			const FaceIndex* facesOutBegin() const
+			const FaceIndex* facesOutBegin() const noexcept 
 				{return m_faces_out.data();}
 
 			const FaceIndex* facesOutEnd() const
@@ -192,13 +214,13 @@ namespace SnowflakeModel
 				m_flags_dirty|=AREA_VISIBLE_DIRTY;
 				}
 
-			const Face& faceOutGet(size_t i) const
+			const Face& faceOutGet(size_t i) const noexcept
 				{return m_faces[m_faces_out[i]];}
 
-			Face& faceOutGet(size_t i)
+			Face& faceOutGet(size_t i) noexcept
 				{return m_faces[m_faces_out[i]];}
 
-			bool normalsDirty() const
+			bool normalsDirty() const noexcept
 				{return m_flags_dirty&FACES_NORMAL_DIRTY;}
 
 			void write(const char* id,DataDump& dump) const;
