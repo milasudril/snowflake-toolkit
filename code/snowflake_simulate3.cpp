@@ -643,7 +643,7 @@ float C_coalesce(size_t k,size_t l
 	}
 
 float C_drop(size_t k,const std::vector<SnowflakeModel::IceParticle>& ice_particles
-	,const Setup::Data& setup)
+	,const Setup::Data& setup,size_t N_particles)
 	{
 	auto& g_k=ice_particles[k];
 	if(g_k.dead())
@@ -653,7 +653,7 @@ float C_drop(size_t k,const std::vector<SnowflakeModel::IceParticle>& ice_partic
 		{abort();}
 
 	auto v_k=g_k.velocityGet();
-	return 2.0f*glm::length(v_k)*setup.m_droprate*pow(setup.m_N,-1.0f/3);
+	return 2.0f*glm::length(v_k)*setup.m_droprate*pow(N_particles,-1.0f/3);
 	}
 
 float C_melt(size_t k,const std::vector<SnowflakeModel::IceParticle>& ice_particles
@@ -669,7 +669,8 @@ float C_melt(size_t k,const std::vector<SnowflakeModel::IceParticle>& ice_partic
 void matrixRowUpdate(size_t k
 	,const std::vector<SnowflakeModel::IceParticle>& ice_particles
 	,SnowflakeModel::MatrixStorage& C_mat
-	,const Setup::Data& setup)
+	,const Setup::Data& setup
+	,size_t N_particles)
 	{
 	for(size_t l=0;l<ice_particles.size();++l)
 		{
@@ -684,7 +685,7 @@ void matrixRowUpdate(size_t k
 	k=0;
 	while(k!=l)
 		{
-		*elem_current=C_drop(k,ice_particles,setup);
+		*elem_current=C_drop(k,ice_particles,setup,N_particles);
 		++elem_current;
 		++k;
 		}
@@ -708,18 +709,6 @@ void matrixDump(const SnowflakeModel::MatrixStorage& C_mat)
 		putchar('\n');
 		}
 	putchar('\n');
-	}
-
-size_t ice_particleDeadFind(std::vector<SnowflakeModel::IceParticle>& ice_particles)
-	{
-	auto i=ice_particles.begin();
-	while(i!=ice_particles.end())
-		{
-		if(i->dead())
-			{return i-ice_particles.begin();}
-		++i;
-		}
-	return i-ice_particles.begin();
 	}
 
 const SnowflakeModel::VolumeConvex::Face&
@@ -848,6 +837,7 @@ class Simstate
 		SnowflakeModel::MatrixStorage C_mat;
 		SnowflakeModel::RandomGenerator randgen;
 		std::vector<SnowflakeModel::IceParticle> ice_particles;
+	//	SnowflakeModel::IdGenerator<unsigned int> m_id_gen;
 		std::uniform_int_distribution<int> U_rot; //Stateless
 		SnowflakeModel::ElementRandomizer randomizer; //Stateless
 		std::unique_ptr<SnowflakeModel::FileOut> frame_data_file; //Stateless. Remember to append to this file when restoring state from savefile.
@@ -1110,6 +1100,18 @@ static void particleDumpStats(const SnowflakeModel::IceParticle& i,SnowflakeMode
 		,L.x,L.x/L.y,L.x/L.z,i.solidGet().subvolumesCount());
 	}
 
+static size_t ice_particleDeadFind(std::vector<SnowflakeModel::IceParticle>& ice_particles)
+	{
+	auto i=ice_particles.begin();
+	while(i!=ice_particles.end())
+		{
+		if(i->dead())
+			{return i-ice_particles.begin();}
+		++i;
+		}
+	return i-ice_particles.begin();
+}
+
 bool Simstate::step()
 	{
 	SNOWFLAKEMODEL_TIMED_SCOPE();
@@ -1137,7 +1139,7 @@ bool Simstate::step()
 			ice_particles[k]=ice_particlePrepare(r_s_in,r_setup,randgen);
 			++m_data.N_particles;
 			++m_data.frame;
-			matrixRowUpdate(k,ice_particles,C_mat,r_setup.m_data);
+			matrixRowUpdate(k,ice_particles,C_mat,r_setup.m_data,m_data.N_particles);
 			return 1;
 			}
 		}
@@ -1156,7 +1158,7 @@ bool Simstate::step()
 		ice_particles[k].kill();
 		--m_data.N_particles;
 		++m_data.N_particles_dropped;
-		matrixRowUpdate(k,ice_particles,C_mat,r_setup.m_data);
+		matrixRowUpdate(k,ice_particles,C_mat,r_setup.m_data,m_data.N_particles);
 		++m_data.frame;
 		return 1;
 		}
@@ -1167,7 +1169,7 @@ bool Simstate::step()
 		ice_particles[k].kill();
 		--m_data.N_particles;
 		++m_data.frame;
-		matrixRowUpdate(k,ice_particles,C_mat,r_setup.m_data);
+		matrixRowUpdate(k,ice_particles,C_mat,r_setup.m_data,m_data.N_particles);
 		return 1;
 		}
 	else
@@ -1180,7 +1182,7 @@ bool Simstate::step()
 		auto s_a=g_a.solidGet();
 		s_a.centerBoundingBoxAt(SnowflakeModel::Point(0,0,0,1));
 		double vol_overlap=0;
-		do	//Insist on merging these two particles
+	//	do	//Insist on merging these two particles
 			{
 			auto f_b=faceChoose(s_b,randgen);
 			auto coords=drawFromTriangle(randgen);
@@ -1208,16 +1210,18 @@ bool Simstate::step()
 			R_x=glm::translate(R_x,SnowflakeModel::Vector(-v));
 			s_a.transform(T*R.first*R_x,R.second);
 			}
-		while(overlap(s_b,s_a,2,vol_overlap));
-	//	if(!overlap(s_a,s_b))
+	//	while(overlap(s_b,s_a,2,vol_overlap));
+		if(!overlap(s_a,s_b))
 			{
 			s_b.merge(s_a,vol_overlap);
 			g_b.velocitySet(vTermCompute(s_b,r_setup)*randomDirection(randgen));
 			g_a.kill();
 			--m_data.N_particles;
 			++m_data.frame;
-			matrixRowUpdate(pair_merge.first,ice_particles,C_mat,r_setup.m_data);
-			matrixRowUpdate(pair_merge.second,ice_particles,C_mat,r_setup.m_data);
+			matrixRowUpdate(pair_merge.first,ice_particles,C_mat,r_setup.m_data
+				,m_data.N_particles);
+			matrixRowUpdate(pair_merge.second,ice_particles,C_mat,r_setup.m_data
+				,m_data.N_particles);
 			return 1;
 			}
 /*
