@@ -424,6 +424,7 @@ void Solid::write(const char* id,DataDump& dump) const
 			++k;
 			}
 		}
+		dump.write((group_name+"/volume").c_str(),&m_volume,1);
 	}
 
 Solid::Solid(const DataDump& dump,const char* name):
@@ -460,6 +461,8 @@ Solid::Solid(const DataDump& dump,const char* name):
 			subvolumeAdd(VolumeConvex(dump,group_name_current.c_str()),0);
 			});
 		}
+	m_volume=dump.arrayGet<decltype(m_volume)>
+		((group_name+"/volume").c_str()).at(0);
 	}
 
 void Solid::extremaUpdate(const VolumeConvex& vol) const noexcept

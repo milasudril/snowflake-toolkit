@@ -1,20 +1,20 @@
 #!/bin/bash
 
-dir_out=/home/torbjorr/temp
+dir_out=/home/torbjorr/snowflakeout-rates-1
 k=22000000
-l=0
-m=21000
+l=1000
+m=22000
 
 mkdir -p $dir_out
 
 rm -rf $dir_out/$k-$l-$m
 mkdir $dir_out/$k-$l-$m
 
-__targets_rel/snowflake_simulate3 \
+__targets_rel/mainsim \
 	--shape=../crystal-prototypes/bullet.ice --deformation=L,1,0.25 \
 	--deformation=a,0.33 --deformation=t,0 \
-	--output-dir=$dir_out/$k-$l-$m --dump-stats=256 --N=6999 \
+	--output-dir=$dir_out/$k-$l-$m --dump-stats=256 --N=4999 \
 	--growthrate=$k --meltrate=$l --droprate=$m \
 	--seed=0 --dump-geometry \
-	--stop-cond=subvols_max=1000 \
+	--stop-cond=iterations=262144\
 	| tee $dir_out/$k-$l-$m/params.txt
