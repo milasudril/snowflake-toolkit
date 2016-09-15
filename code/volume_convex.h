@@ -43,7 +43,6 @@ namespace SnowflakeModel
 						m_verts[2]=v2;
 						}
 
-					mutable Point m_mid;
 					mutable Vector m_normal;
 					mutable Vector m_normal_raw;
 					bool m_visible;
@@ -185,7 +184,6 @@ namespace SnowflakeModel
 			void normalsFlip();
 
 			void facesNormalCompute() const;
-			void facesMidpointCompute() const;
 			void midpointCompute() const;
 			void volumeCompute() const;
 			void areaVisibleCompute() const;

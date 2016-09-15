@@ -110,35 +110,21 @@ void VolumeConvex::facesNormalCompute() const
 	m_flags_dirty&=~FACES_NORMAL_DIRTY;
 	}
 
-void VolumeConvex::facesMidpointCompute() const
-	{
-	auto face_current=facesBegin();
-	auto faces_end=facesEnd();
-	while(face_current!=faces_end)
-		{
-		Point mid={0,0,0,1};
-		size_t k;
-		for(k=0;k<VERTEX_COUNT;++k)
-			{mid+=face_current->vertexGet(k);}
-		mid/=k;
-		face_current->m_mid=Point{Vector(mid),1};
-
-		++face_current;
-		}
-	m_flags_dirty&=~FACES_MIDPOINT_DIRTY;
-	}
-
 bool VolumeConvex::inside(const Point& v) const
 	{
-	if(m_flags_dirty&FACES_MIDPOINT_DIRTY)
-		{facesMidpointCompute();}
 	if(m_flags_dirty&FACES_NORMAL_DIRTY)
 		{facesNormalCompute();}
 	auto face_current=facesBegin();
 	auto faces_end=facesEnd();
+	auto verts=verticesBegin();
 	while(face_current!=faces_end)
 		{
-		auto x=glm::dot(Vector(v - face_current->m_mid)
+		auto mid=(verts[face_current->vertexGet(0)]
+			+verts[face_current->vertexGet(1)]
+			+verts[face_current->vertexGet(2)])/3.0f;
+		mid.w=1.0f;
+
+		auto x=glm::dot(Vector(v - mid)
 			+ 1e-6f*face_current->m_normal,face_current->m_normal);
 		if(x > 0 )
 			{return 0;}

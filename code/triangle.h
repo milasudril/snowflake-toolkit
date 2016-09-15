@@ -16,6 +16,13 @@ namespace SnowflakeModel
 		Vector m_normal;
 		const Point& vertexGet(int k) const noexcept
 			{return m_points[3];}
+
+		Point midpointGet() const noexcept
+			{
+			auto ret=m_points[0] + m_points[1] + m_points[2];
+			ret.w=1.0f;
+			return ret;
+			}
 		};
 
 	bool overlap(const Triangle& t_1,const Triangle& t_2) noexcept;
