@@ -18,6 +18,7 @@
 
 #include "vector.h"
 #include "triangle.h"
+#include "bounding_box.h"
 #include <vector>
 #include <map>
 
@@ -175,10 +176,6 @@ namespace SnowflakeModel
 
 			bool inside(const Point& v) const;
 
-			const Face* cross(const Face& face) const;
-
-			size_t cross(const Face& face,size_t count_max) const;
-
 			void geometrySample(VoxelBuilder& builder) const;
 
 			void normalsFlip();
@@ -187,6 +184,7 @@ namespace SnowflakeModel
 			void midpointCompute() const;
 			void volumeCompute() const;
 			void areaVisibleCompute() const;
+			void boundingBoxCompute() const noexcept;
 
 			FaceIndex facesOutCount() const noexcept
 				{return m_faces_out.size();}
@@ -221,6 +219,16 @@ namespace SnowflakeModel
 			bool normalsDirty() const noexcept
 				{return m_flags_dirty&FACES_NORMAL_DIRTY;}
 
+			bool boundingBoxDirty() const noexcept
+				{return m_flags_dirty&BOUNDING_BOX_DIRTY;}
+
+			const BoundingBox& boundingBoxGet() const noexcept
+				{
+				if(boundingBoxDirty())
+					{boundingBoxCompute();}
+				return m_bounding_box;
+				}
+
 			void write(const char* id,DataDump& dump) const;
 
 
@@ -231,6 +239,7 @@ namespace SnowflakeModel
 			std::map< std::string, std::vector<VertexIndex> > m_vertex_groups;
 
 			mutable Point m_mid;
+			mutable BoundingBox m_bounding_box;
 			mutable float m_volume;
 			mutable float m_area_visible;
 			mutable uint32_t m_flags_dirty;
@@ -240,8 +249,7 @@ namespace SnowflakeModel
 			static constexpr uint32_t FACES_MIDPOINT_DIRTY=4;
 			static constexpr uint32_t VOLUME_DIRTY=8;
 			static constexpr uint32_t AREA_VISIBLE_DIRTY=16;
-
-			friend bool overlap(const VolumeConvex& a,const VolumeConvex& b);
+			static constexpr uint32_t BOUNDING_BOX_DIRTY=32;
 		};
 
 	bool overlap(const VolumeConvex& a,const VolumeConvex& b);

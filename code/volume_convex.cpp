@@ -277,7 +277,8 @@ VolumeConvex::VolumeConvex(const DataDump& dump,const char* id)
 
 bool SnowflakeModel::overlap(const VolumeConvex& a,const VolumeConvex& b)
 	{
-//	TODO: check BBs first so we can accept early
+	if(!overlap(a.boundingBoxGet(),b.boundingBoxGet()))
+		{return 0;}
 
 	auto face_a=a.facesBegin();
 	auto faces_a_end=a.facesEnd();
@@ -287,13 +288,10 @@ bool SnowflakeModel::overlap(const VolumeConvex& a,const VolumeConvex& b)
 	auto face_b_0=b.facesBegin();
 	auto faces_b_end=b.facesEnd();
 
-//	FIXME: Add dirty flags to face? And use Face::normalGet()?
-//	Move dirty test into facesNormalCompute?
-//	Or not??
-	if(a.m_flags_dirty&VolumeConvex::FACES_NORMAL_DIRTY)
+	if(a.normalsDirty())
 		{a.facesNormalCompute();}
 
-	if(b.m_flags_dirty&VolumeConvex::FACES_NORMAL_DIRTY)
+	if(b.normalsDirty())
 		{b.facesNormalCompute();}
 
 	while(face_a!=faces_a_end)
@@ -327,4 +325,17 @@ bool SnowflakeModel::overlap(const VolumeConvex& a,const VolumeConvex& b)
 		}
 
 	return 0;
+	}
+
+void VolumeConvex::boundingBoxCompute() const noexcept
+	{
+	BoundingBox bb{{0.0f,0.0f,0.0f,1.0f},{0.0f,0.0f,0.0f,1.0f}};
+	auto verts_begin=verticesBegin();
+	auto verts_end=verticesEnd();
+	while(verts_begin!=verts_end)
+		{
+		bb.m_min=glm::min(bb.m_min,*verts_begin);
+		bb.m_max=glm::max(bb.m_max,*verts_begin);
+		++verts_begin;
+		}
 	}

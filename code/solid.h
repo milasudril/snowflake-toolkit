@@ -174,7 +174,7 @@ namespace SnowflakeModel
 				m_volume=0;
 				m_r_max=0;
 				m_extrema={{0.0f,0.0f,0.0f,1.0f},{0.0f,0.0f,0.0f,1.0f}};
-				m_bounding_box={{0.0f,0.0f,0.0f},{0.0f,0.0f,0.0f}};
+				m_bounding_box={{0.0f,0.0f,0.0f,1.0f},{0.0f,0.0f,0.0f,1.0f}};
 				}
 
 			void write(const char* id,DataDump& dump) const;

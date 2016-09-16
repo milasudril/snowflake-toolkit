@@ -116,7 +116,7 @@ void Solid::normalsFlip() noexcept
 
 void Solid::boundingBoxCompute() const noexcept
 	{
-	m_bounding_box={{0,0,0},{0,0,0}};
+	m_bounding_box={{0.0f,0.0f,0.0f,1.0f},{0.0f,0.0f,0.0f,1.0f}};
 	boundingBoxUpdate(*this);
 	m_flags_dirty&=~BOUNDINGBOX_DIRTY;
 	}
@@ -175,13 +175,13 @@ void Solid::centerCentroidAt(const Point& pos_new) noexcept
 	m_extrema.first=T*m_extrema.first;
 	m_extrema.second=T*m_extrema.second;
 	m_mid=pos_new; //By definition
-	m_bounding_box.m_min=Vector(T*Point(m_bounding_box.m_min,1.0f));
-	m_bounding_box.m_max=Vector(T*Point(m_bounding_box.m_max,1.0f));
+	m_bounding_box.m_min=T*m_bounding_box.m_min;
+	m_bounding_box.m_max=T*m_bounding_box.m_max;
 	}
 
 void Solid::centerBoundingBoxAt(const Point& pos_new) noexcept
 	{
-	auto bb_mid=Point(0.5f*(boundingBoxGet().m_max+boundingBoxGet().m_min),1);
+	auto bb_mid=boundingBoxGet().centerGet();
 	Matrix T;
 	T=glm::translate(T,Vector(pos_new-bb_mid));
 	auto subvolume=subvolumesBegin();
@@ -194,8 +194,8 @@ void Solid::centerBoundingBoxAt(const Point& pos_new) noexcept
 	m_extrema.first=T*m_extrema.first;
 	m_extrema.second=T*m_extrema.second;
 	m_mid=T*m_mid;
-	m_bounding_box.m_min=Vector(T*Point(m_bounding_box.m_min,1.0f));
-	m_bounding_box.m_max=Vector(T*Point(m_bounding_box.m_max,1.0f));
+	m_bounding_box.m_min=T*m_bounding_box.m_min;
+	m_bounding_box.m_max=T*m_bounding_box.m_max;
 	}
 
 void Solid::rMaxCompute() const noexcept
@@ -504,7 +504,7 @@ void Solid::boundingBoxUpdate(const VolumeConvex& v) const noexcept
 	auto v_end=v.verticesEnd();
 	while(v_begin!=v_end)
 		{
-		auto vert=Vector(*v_begin);
+		auto vert=*v_begin;
 		bb.m_min=glm::min(bb.m_min,vert);
 		bb.m_max=glm::max(bb.m_max,vert);
 		++v_begin;
