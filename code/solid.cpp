@@ -499,17 +499,9 @@ void Solid::extremaUpdate(const Solid& solid) const noexcept
 void Solid::boundingBoxUpdate(const VolumeConvex& v) const noexcept
 	{
 //	Compute the new bounding box as if v were added to this solid
-	auto bb=m_bounding_box;
-	auto v_begin=v.verticesBegin();
-	auto v_end=v.verticesEnd();
-	while(v_begin!=v_end)
-		{
-		auto vert=*v_begin;
-		bb.m_min=glm::min(bb.m_min,vert);
-		bb.m_max=glm::max(bb.m_max,vert);
-		++v_begin;
-		}
-	m_bounding_box=bb;
+	auto& bb=v.boundingBoxGet();
+	m_bounding_box.m_min=glm::min(bb.m_min,m_bounding_box.m_min);
+	m_bounding_box.m_max=glm::max(bb.m_max,m_bounding_box.m_max);
 	}
 
 

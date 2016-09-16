@@ -43,7 +43,8 @@ void VolumeConvex::transform(const Matrix& T)
 		}
 
 	m_flags_dirty|=MIDPOINT_DIRTY|FACES_NORMAL_DIRTY
-		|FACES_MIDPOINT_DIRTY|VOLUME_DIRTY|AREA_VISIBLE_DIRTY;
+		|FACES_MIDPOINT_DIRTY|VOLUME_DIRTY|AREA_VISIBLE_DIRTY
+		|BOUNDING_BOX_DIRTY;
 	}
 
 void VolumeConvex::transformGroup(const std::string& name,const Matrix& T)
@@ -61,7 +62,7 @@ void VolumeConvex::transformGroup(const std::string& name,const Matrix& T)
 		++vertex_current;
 		}
 	m_flags_dirty|=MIDPOINT_DIRTY|FACES_NORMAL_DIRTY
-		|FACES_MIDPOINT_DIRTY|VOLUME_DIRTY|AREA_VISIBLE_DIRTY;
+		|FACES_MIDPOINT_DIRTY|VOLUME_DIRTY|AREA_VISIBLE_DIRTY|BOUNDING_BOX_DIRTY;
 	}
 
 void VolumeConvex::geometrySample(VoxelBuilder& builder) const
@@ -112,6 +113,7 @@ void VolumeConvex::facesNormalCompute() const
 
 bool VolumeConvex::inside(const Point& v) const
 	{
+//	TODO (perf) check bounding box first
 	if(m_flags_dirty&FACES_NORMAL_DIRTY)
 		{facesNormalCompute();}
 	auto face_current=facesBegin();
@@ -261,7 +263,7 @@ VolumeConvex::VolumeConvex(const DataDump& dump,const char* id)
 	m_faces_out=dump.arrayGet<FaceIndex>((group_name + "/faces_out").c_str());
 
 	m_flags_dirty=MIDPOINT_DIRTY|FACES_NORMAL_DIRTY|FACES_MIDPOINT_DIRTY|VOLUME_DIRTY
-		|AREA_VISIBLE_DIRTY;
+		|AREA_VISIBLE_DIRTY|BOUNDING_BOX_DIRTY;
 
 		{
 		auto v_group_name_base=group_name + "/vertex_groups";
@@ -338,4 +340,6 @@ void VolumeConvex::boundingBoxCompute() const noexcept
 		bb.m_max=glm::max(bb.m_max,*verts_begin);
 		++verts_begin;
 		}
+	m_bounding_box=bb;
+	m_flags_dirty&=~BOUNDING_BOX_DIRTY;
 	}
