@@ -215,8 +215,7 @@ namespace SnowflakeModel
 	Vector strechToBoundingBox(const Vector& v,const Solid& V) noexcept;
 	Vector strechToSurface(const Vector& v,const Solid& V,float tolerance) noexcept;
 	bool overlap(const Solid& v_a,const Solid& v_b) noexcept;
-	bool overlap(const Solid& v_a,const Solid& v_b,double overlap_max) noexcept;
-	bool overlap(const Solid& v_a,const Solid& v_b,size_t subvols
+	size_t overlap(const Solid& v_a,const Solid& v_b,size_t subvols
 		,double& overlap_res) noexcept;
 
 	}

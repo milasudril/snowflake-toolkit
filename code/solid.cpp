@@ -233,7 +233,7 @@ void Solid::volumeCompute() const noexcept
 	m_flags_dirty&=~VOLUME_DIRTY;
 	}
 
-bool SnowflakeModel::overlap(const Solid& v_a,const Solid& v_b
+size_t SnowflakeModel::overlap(const Solid& v_a,const Solid& v_b
 	,size_t subvols,double& vol_overlap) noexcept
 	{
 	if(!overlap(v_a.boundingBoxGet(),v_b.boundingBoxGet()))
@@ -257,7 +257,11 @@ bool SnowflakeModel::overlap(const Solid& v_a,const Solid& v_b
 			{
 			cross_count+=overlap(*subvol_b,*subvolume);
 			if(cross_count > subvols)
-				{return 1;}
+				{
+			//	We do not need to compute the extra volume here, since 
+			//	the event will be rejected anyways.
+				return cross_count;
+				}
 		//	This is a guesstimate of the actual overlap. It is possible
 		//	to find the true value, but that may require a remeshing
 		//	step.
@@ -266,9 +270,8 @@ bool SnowflakeModel::overlap(const Solid& v_a,const Solid& v_b
 			}
 		++subvolume;
 		}
-
 	vol_overlap=vol_overlap_temp;
-	return 0;
+	return cross_count;
 	}
 
 bool SnowflakeModel::overlap(const Solid& v_a,const Solid& v_b) noexcept

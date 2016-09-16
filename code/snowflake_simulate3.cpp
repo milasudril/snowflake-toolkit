@@ -1232,7 +1232,9 @@ bool Simstate::step()
 				/(U_rot.max()+1),f_a.m_normal);
 			R_x=glm::translate(R_x,SnowflakeModel::Vector(-v));
 			s_a.transform(T*R.first*R_x,R.second);
-			if(overlap(s_b,s_a,r_setup.m_data.m_overlap,vol_overlap))
+			auto overlap_count=overlap(s_b,s_a,r_setup.m_data.m_overlap,vol_overlap);
+		//TODO: Also include a lower bound. How?
+			if( overlap_count > r_setup.m_data.m_overlap )
 				{
 				if(retry_count==0)
 					{
