@@ -255,17 +255,20 @@ size_t SnowflakeModel::overlap(const Solid& v_a,const Solid& v_b
 		auto subvol_b=subvol_b_0;
 		while(subvol_b!=subvols_b_end)
 			{
-			cross_count+=overlap(*subvol_b,*subvolume);
-			if(cross_count > subvols)
+			if( overlap(*subvol_b,*subvolume) )
 				{
-			//	We do not need to compute the extra volume here, since 
-			//	the event will be rejected anyways.
-				return cross_count;
+				++cross_count;
+				if(cross_count > subvols)
+					{
+				//	We do not need to compute the extra volume here, since 
+				//	the event will be rejected anyways.
+					return cross_count;
+					}
+			//	This is a guesstimate of the actual overlap. It is possible
+			//	to find the true value, but that may require a remeshing
+			//	step.
+				vol_overlap_temp+=0.33*std::min(V,subvol_b->volumeGet());
 				}
-		//	This is a guesstimate of the actual overlap. It is possible
-		//	to find the true value, but that may require a remeshing
-		//	step.
-			vol_overlap_temp+=0.33*std::min(V,subvol_b->volumeGet());
 			++subvol_b;
 			}
 		++subvolume;

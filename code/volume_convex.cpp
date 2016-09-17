@@ -166,16 +166,17 @@ void VolumeConvex::midpointCompute() const
 
 void VolumeConvex::volumeCompute() const
 	{
-	double volume=0;
 	m_volume=0;
-	auto face_current=facesBegin();
+	double volume=0;
 	if(m_flags_dirty&FACES_NORMAL_DIRTY)
 		{facesNormalCompute();}
 
+	auto face_current=facesBegin();
 	auto faces_end=facesEnd();
+	auto verts=verticesBegin();
 	while(face_current!=faces_end)
 		{
-		volume+=glm::dot(Vector(face_current->vertexGet(0))
+		volume+=glm::dot(Vector(verts[ face_current->vertexGet(0) ])
 			,face_current->m_normal_raw);
 		++face_current;
 		}

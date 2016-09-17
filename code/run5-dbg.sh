@@ -1,9 +1,9 @@
 #!/bin/bash
 
-dir_out=/home/torbjorr/temp
+dir_out=/home/torbjorr/temp4
 k=22000000
 l=1000
-m=20000
+m=22000
 
 mkdir -p $dir_out
 
@@ -16,4 +16,4 @@ gdb --args __targets_dbg/snowflake_simulate3 \
 	--output-dir=$dir_out/$k-$l-$m --dump-stats=256 --N=4999 \
 	--growthrate=$k --meltrate=$l --droprate=$m \
 	--seed=0 --dump-geometry \
-	--stop-cond=subvols_max=100 --merge-retries=100 --overlap=2
+	--stop-cond=iterations=262144
