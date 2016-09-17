@@ -116,7 +116,7 @@ void Solid::normalsFlip() noexcept
 
 void Solid::boundingBoxCompute() const noexcept
 	{
-	m_bounding_box={{0.0f,0.0f,0.0f,1.0f},{0.0f,0.0f,0.0f,1.0f}};
+	m_bounding_box={{INFINITY,INFINITY,INFINITY,1.0f},{-INFINITY,-INFINITY,-INFINITY,1.0f}};
 	boundingBoxUpdate(*this);
 	m_flags_dirty&=~BOUNDINGBOX_DIRTY;
 	}

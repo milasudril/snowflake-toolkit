@@ -142,11 +142,12 @@ void VolumeConvex::midpointCompute() const
 		{facesNormalCompute();}
 	auto face_current=facesBegin();
 	auto faces_end=facesEnd();
+	auto verts=verticesBegin();
 	while(face_current!=faces_end)
 		{
-		auto a=Vector(face_current->vertexGet(0));
-		auto b=Vector(face_current->vertexGet(1));
-		auto c=Vector(face_current->vertexGet(2));
+		auto a=Vector(verts[ face_current->vertexGet(0) ]);
+		auto b=Vector(verts[ face_current->vertexGet(1) ]);
+		auto c=Vector(verts[ face_current->vertexGet(2) ]);
 		auto n=face_current->m_normal_raw;
 
 		auto s1=a+b;
@@ -186,7 +187,7 @@ void VolumeConvex::volumeCompute() const
 		face_current=facesBegin();
 		while(face_current!=faces_end)
 			{
-			fprintf(stderr,"%.7g\n",glm::dot(Vector(face_current->vertexGet(0))
+			fprintf(stderr,"%.7g\n",glm::dot(Vector(verts[ face_current->vertexGet(0) ])
 				,face_current->m_normal_raw));
 			++face_current;
 			}
