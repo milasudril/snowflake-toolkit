@@ -389,7 +389,7 @@ void Solid::write(const char* id,DataDump& dump) const
 	}
 
 Solid::Solid(const DataDump& dump,const char* name):
-	m_extrema{{0.0f,0.0f,0.0f,1.0f},{0.0f,0.0f,0.0f,1.0f}}
+	m_extrema{{INFINITY,INFINITY,INFINITY,1.0f},{-INFINITY,-INFINITY,-INFINITY,1.0f}}
 	{
 	clear();
 	std::string group_name(name);
@@ -525,7 +525,7 @@ void Solid::boundingBoxUpdate(const Solid& solid) const noexcept
 
 void Solid::dMaxCompute() const noexcept
 	{
-	m_extrema={{0.0f,0.0f,0.0f,1.0f},{0.0f,0.0f,0.0f,1.0f}};
+	m_extrema={{INFINITY,INFINITY,INFINITY,1.0f},{-INFINITY,-INFINITY,-INFINITY,1.0f}};
 	extremaUpdate(*this);
 	m_flags_dirty&=~DMAX_DIRTY;
 	}

@@ -1,9 +1,9 @@
 #!/bin/bash
 
-dir_out=/home/torbjorr/snowflakeout-rates-1
-k=22000000
+dir_out=/home/torbjorr/temp4
+k=33000000
 l=1000
-m=22000
+m=20000
 
 mkdir -p $dir_out
 

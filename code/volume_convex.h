@@ -46,7 +46,7 @@ namespace SnowflakeModel
 
 					mutable Vector m_normal;
 					mutable Vector m_normal_raw;
-					bool m_visible;
+					uint16_t m_visible;
 
 					void directionChange() noexcept
 						{std::swap(m_verts[0],m_verts[1]);}

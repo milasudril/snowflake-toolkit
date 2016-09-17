@@ -34,7 +34,7 @@ namespace SnowflakeModel
 				 m_n_faces_tot(0)
 				,m_r_max(0)
 				,m_volume(0)
-				,m_extrema{{0.0f,0.0f,0.0f,1.0f},{0.0f,0.0f,0.0f,1.0f}}
+				,m_extrema{{INFINITY,INFINITY,INFINITY,1.0f},{-INFINITY,-INFINITY,-INFINITY,1.0f}}
 				,m_flags_dirty(DMAX_DIRTY|BOUNDINGBOX_DIRTY|MIDPOINT_DIRTY|RMAX_DIRTY)
 				,m_mirror_flags(0)
 				{}
@@ -173,8 +173,8 @@ namespace SnowflakeModel
 				m_deformation_templates.clear();
 				m_volume=0;
 				m_r_max=0;
-				m_extrema={{0.0f,0.0f,0.0f,1.0f},{0.0f,0.0f,0.0f,1.0f}};
-				m_bounding_box={{0.0f,0.0f,0.0f,1.0f},{0.0f,0.0f,0.0f,1.0f}};
+				m_extrema={{INFINITY,INFINITY,INFINITY,1.0f},{-INFINITY,-INFINITY,-INFINITY,1.0f}};
+				m_bounding_box={{INFINITY,INFINITY,INFINITY,1.0f},{-INFINITY,-INFINITY,-INFINITY,1.0f}};
 				}
 
 			void write(const char* id,DataDump& dump) const;

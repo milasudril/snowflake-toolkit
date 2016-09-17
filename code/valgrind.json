@@ -27,7 +27,7 @@
                     ],
                     "name":"g++"
                 },
-                "cflags_extra":["march=native","fsanitize=address","fsanitize=undefined"],
+                "cflags_extra":["march=native"],
                 "cflags_format":"-^",
                 "cxxversion_max":-1,
                 "cxxversion_min":201103,
@@ -129,6 +129,6 @@
         }
     ],
     "targetinfo":{
-        "target_directory":"__targets_dbg"
+        "target_directory":"__targets_valgrind"
     }
 }

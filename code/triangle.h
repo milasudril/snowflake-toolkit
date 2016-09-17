@@ -15,7 +15,7 @@ namespace SnowflakeModel
 		Point m_points[3];
 		Vector m_normal;
 		const Point& vertexGet(int k) const noexcept
-			{return m_points[3];}
+			{return m_points[k];}
 
 		Point midpointGet() const noexcept
 			{

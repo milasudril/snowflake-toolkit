@@ -23,7 +23,7 @@ namespace SnowflakeModel
 	template<>
 	const DataDump::FieldDescriptor DataDump::MetaObject<VolumeConvex::Face>::fields[]=
 		{
-		 {"visible",offsetOf(&VolumeConvex::Face::m_visible),DataDump::MetaObject<bool>().typeGet()}
+		 {"visible",offsetOf(&VolumeConvex::Face::m_visible),DataDump::MetaObject<decltype(VolumeConvex::Face::m_visible)>().typeGet()}
 		,{"v0",offsetOf(&VolumeConvex::Face::m_verts),DataDump::MetaObject<VolumeConvex::VertexIndex>().typeGet()}
 		,{"v1",offsetOf(&VolumeConvex::Face::m_verts) + 2,DataDump::MetaObject<VolumeConvex::VertexIndex>().typeGet()}
 		,{"v2",offsetOf(&VolumeConvex::Face::m_verts) + 4,DataDump::MetaObject<VolumeConvex::VertexIndex>().typeGet()}
@@ -335,6 +335,15 @@ void VolumeConvex::boundingBoxCompute() const noexcept
 	BoundingBox bb{{0.0f,0.0f,0.0f,1.0f},{0.0f,0.0f,0.0f,1.0f}};
 	auto verts_begin=verticesBegin();
 	auto verts_end=verticesEnd();
+	if(verts_begin==verts_end)
+		{
+		m_bounding_box=bb;
+		m_flags_dirty&=~BOUNDING_BOX_DIRTY;
+		return;
+		}
+	bb.m_min=*verts_begin;
+	bb.m_max=bb.m_min;
+	++verts_begin;
 	while(verts_begin!=verts_end)
 		{
 		bb.m_min=glm::min(bb.m_min,*verts_begin);
