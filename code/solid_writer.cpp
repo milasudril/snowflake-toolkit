@@ -61,7 +61,7 @@ void SolidWriter::write(const Solid& solid)
 				for(size_t k=0;k<VolumeConvex::VERTEX_COUNT;++k)
 					{
 					r_dest.printf(" %zu//%zu"
-						,f.vertexIndexGet(k) + vertex_id_first+1
+						,f.vertexGet(k) + vertex_id_first+1
 						,face_count);
 					}
 				r_dest.putc('\n');

@@ -1,6 +1,10 @@
 #!/bin/bash
 
+<<<<<<< HEAD
+dir_out=/home/torbjorr/temp4
+=======
 dir_out=/home/torbjorr/temp3
+>>>>>>> master
 k=33000000
 l=1000
 m=20000

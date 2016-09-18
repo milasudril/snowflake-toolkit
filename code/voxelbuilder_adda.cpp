@@ -96,7 +96,7 @@ VoxelbuilderAdda::~VoxelbuilderAdda()
 PointInt VoxelbuilderAdda::quantize(const Point& p) const
 	{
 	auto range=m_bounding_box.m_max-m_bounding_box.m_min;
-	auto pos=Vector(p)-m_bounding_box.m_min;
+	auto pos=p-m_bounding_box.m_min;
 		
 	return PointInt
 		{

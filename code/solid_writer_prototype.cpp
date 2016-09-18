@@ -50,7 +50,7 @@ void SolidWriterPrototype::write(const Solid& solid)
 				r_dest.printf("face(");
 				for(size_t k=0;k<VolumeConvex::VERTEX_COUNT;++k)
 					{
-					r_dest.printf("%zu,",f.vertexIndexGet(k));
+					r_dest.printf("%zu,",f.vertexGet(k));
 					}
 				r_dest.printf("%s)\n",f.m_visible?"outside":"inside");
 				++face_out;

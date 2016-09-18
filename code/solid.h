@@ -174,7 +174,7 @@ namespace SnowflakeModel
 				m_volume=0;
 				m_r_max=0;
 				m_extrema={{0.0f,0.0f,0.0f,1.0f},{0.0f,0.0f,0.0f,1.0f}};
-				m_bounding_box={{0.0f,0.0f,0.0f},{0.0f,0.0f,0.0f}};
+				m_bounding_box={{INFINITY,INFINITY,INFINITY,1.0f},{-INFINITY,-INFINITY,-INFINITY,1.0f}};
 				}
 
 			void write(const char* id,DataDump& dump) const;
@@ -215,8 +215,7 @@ namespace SnowflakeModel
 	Vector strechToBoundingBox(const Vector& v,const Solid& V) noexcept;
 	Vector strechToSurface(const Vector& v,const Solid& V,float tolerance) noexcept;
 	bool overlap(const Solid& v_a,const Solid& v_b) noexcept;
-	bool overlap(const Solid& v_a,const Solid& v_b,double overlap_max) noexcept;
-	bool overlap(const Solid& v_a,const Solid& v_b,size_t subvols
+	size_t overlap(const Solid& v_a,const Solid& v_b,size_t subvols
 		,double& overlap_res) noexcept;
 
 	}

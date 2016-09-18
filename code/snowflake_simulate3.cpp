@@ -51,10 +51,11 @@ static constexpr char PARAM_GROWTHRATE='K';
 static constexpr char PARAM_MELTRATE='L';
 static constexpr char PARAM_PARAMSHOW='N';
 static constexpr char PARAM_GEOMETRY_DUMP_ICE='O';
-static constexpr char PARAM_STATEFILE='S';
-static constexpr char PARAM_STOPCOND='s';
-static constexpr char PARAM_MERGERETRIES='f';
-static constexpr char PARAM_OVERLAP='o';
+static constexpr char PARAM_STATEFILE='P';
+static constexpr char PARAM_STOPCOND='Q';
+static constexpr char PARAM_MERGERETRIES='R';
+static constexpr char PARAM_OVERLAP_MAX='S';
+static constexpr char PARAM_OVERLAP_MIN='T';
 
 
 static const struct option PROGRAM_OPTIONS[]=
@@ -78,7 +79,8 @@ static const struct option PROGRAM_OPTIONS[]=
 		,{"statefile",required_argument,nullptr,PARAM_STATEFILE}
 		,{"stop-cond",required_argument,nullptr,PARAM_STOPCOND}
 		,{"merge-retries",required_argument,nullptr,PARAM_MERGERETRIES}
-		,{"overlap",required_argument,nullptr,PARAM_OVERLAP}
+		,{"overlap-max",required_argument,nullptr,PARAM_OVERLAP_MAX}
+		,{"overlap-min",required_argument,nullptr,PARAM_OVERLAP_MIN}
 		,{0,0,0,0}
 	};
 
@@ -114,7 +116,8 @@ struct Setup
 		float m_droprate;
 		float m_growthrate;
 		float m_meltrate;
-		size_t m_overlap;
+		size_t m_overlap_min;
+		size_t m_overlap_max;
 		size_t m_merge_retries;
 		} m_data;
 
@@ -186,7 +189,8 @@ Setup::Setup(int argc,char** argv):
 	m_data.m_meltrate=MELTRATE;
 	m_data.m_stat_saverate=256;
 	m_data.m_actions=0;
-	m_data.m_overlap=0;
+	m_data.m_overlap_min=0;
+	m_data.m_overlap_max=0;
 	m_data.m_merge_retries=0;
 
 	while( (c=getopt_long(argc,argv,"",PROGRAM_OPTIONS,&option_index))!=-1)
@@ -274,8 +278,12 @@ Setup::Setup(int argc,char** argv):
 				m_data.m_merge_retries=atoll(optarg);
 				break;
 
-			case PARAM_OVERLAP:
-				m_data.m_overlap=atoi(optarg);
+			case PARAM_OVERLAP_MAX:
+				m_data.m_overlap_max=atoi(optarg);
+				break;
+
+			case PARAM_OVERLAP_MIN:
+				m_data.m_overlap_min=atoi(optarg);
 				break;
 
 			case '?':
@@ -392,11 +400,11 @@ void Setup::paramsDump()
 		"droprate:      %.7g\n"
 		"growthrate:    %.7g\n"
 		"meltrate:      %.7g\n"
-		"overlap:       %zu\n"
+		"overlap range: [%zu, %zu]\n"
 		"merge retries: %zu\n"
 		,m_crystal.data()
 		,m_data.m_seed,m_data.m_N,m_data.m_droprate,m_data.m_growthrate,m_data.m_meltrate
-		,m_data.m_overlap,m_data.m_merge_retries);
+		,m_data.m_overlap_min,m_data.m_overlap_max,m_data.m_merge_retries);
 	printf("\nDeformations:\n");
 		{
 		auto ptr=m_deformations.data();
@@ -462,7 +470,9 @@ void helpShow()
 		"--merge-retries=N\n"
 		"    If the first try to merge two aggregates failed to satisfy the overlap "
 		"constraint, try again N times without skipping the current event.\n\n"
-		"--overlap=N\n"
+		"--overlap-min=N\n"
+		"    When merging particles, accept overlap between at least m subvolumes.\n\n"
+		"--overlap-max=N\n"
 		"    When merging particles, accept overlap between at most N subvolumes.\n\n"
 		);
 	}
@@ -518,7 +528,8 @@ namespace SnowflakeModel
 		,{"droprate",offsetOf(&Setup::Data::m_droprate),DataDump::MetaObject<decltype(Setup::Data::m_droprate)>().typeGet()}
 		,{"growthrate",offsetOf(&Setup::Data::m_growthrate),DataDump::MetaObject<decltype(Setup::Data::m_growthrate)>().typeGet()}
 		,{"meltrate",offsetOf(&Setup::Data::m_meltrate),DataDump::MetaObject<decltype(Setup::Data::m_meltrate)>().typeGet()}
-		,{"overlap",offsetOf(&Setup::Data::m_overlap),DataDump::MetaObject<decltype(Setup::Data::m_overlap)>().typeGet()}
+		,{"overlap_min",offsetOf(&Setup::Data::m_overlap_min),DataDump::MetaObject<decltype(Setup::Data::m_overlap_min)>().typeGet()}
+		,{"overlap_max",offsetOf(&Setup::Data::m_overlap_max),DataDump::MetaObject<decltype(Setup::Data::m_overlap_max)>().typeGet()}
 		};
 
 	template<>
@@ -738,7 +749,7 @@ void matrixDump(const SnowflakeModel::MatrixStorage& C_mat)
 	putchar('\n');
 	}
 
-const SnowflakeModel::VolumeConvex::Face&
+SnowflakeModel::Triangle
 faceChoose(const SnowflakeModel::Solid& s_a,SnowflakeModel::RandomGenerator& randgen)
 	{
 	std::vector<float> weights;
@@ -759,11 +770,7 @@ faceChoose(const SnowflakeModel::Solid& s_a,SnowflakeModel::RandomGenerator& ran
 		}
 	std::discrete_distribution<size_t> P_f(weights.begin(),weights.end());
 	auto face_out_index=P_f(randgen);
-	auto& ret=subvol_sel.faceOutGet(face_out_index);
-//	subvol_sel.faceOutRemove(face_out_index);
-	subvol_sel.facesMidpointCompute();
-
-	return ret;
+	return subvol_sel.triangleOutGet(face_out_index);
 	}
 
 template<class T>
@@ -1240,7 +1247,12 @@ bool Simstate::step()
 				/(U_rot.max()+1),f_a.m_normal);
 			R_x=glm::translate(R_x,SnowflakeModel::Vector(-v));
 			s_a.transform(T*R.first*R_x,R.second);
-			if(overlap(s_b,s_a,r_setup.m_data.m_overlap,vol_overlap))
+			auto overlap_count=overlap(s_b,s_a,r_setup.m_data.m_overlap_max,vol_overlap);
+			auto overlap_min=
+				std::min(s_a.subvolumesCount() + s_b.subvolumesCount()-2,r_setup.m_data.m_overlap_min);
+			if(overlap_count>=overlap_min && overlap_count<=r_setup.m_data.m_overlap_max)
+				{break;}
+			else
 				{
 				if(retry_count==0)
 					{
@@ -1251,8 +1263,6 @@ bool Simstate::step()
 					}
 				--retry_count;
 				}
-			else
-				{break;}
 			}
 		while(1);
 

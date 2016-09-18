@@ -27,7 +27,7 @@ namespace SnowflakeModel
 				{
 				Vector m_velocity;
 				float m_density;
-				bool m_dead;
+				uint32_t m_dead;
 				};
 
 			IceParticle(const DataDump& dump,const char* name);

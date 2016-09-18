@@ -78,7 +78,7 @@ std::string SolidLoader::invoke(const ConfigCommand& cmd, const FileIn& source)
 				{throw "Negative vertex reference in input data";}
 			v[k]=(size_t)temp;
 			}
-		r_vc_current->faceAdd(VolumeConvex::Face{v[0],v[1],v[2],*r_vc_current});
+		r_vc_current->faceAdd(VolumeConvex::Face{v[0],v[1],v[2]});
 		if(cmd.m_arguments[3]=="outside")
 			{r_vc_current->faceOutAdd(r_vc_current->facesCount()-1);}
 		}
