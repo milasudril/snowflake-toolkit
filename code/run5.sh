@@ -1,6 +1,7 @@
 #!/bin/bash
 
-dir_out=/home/torbjorr/temp3
+dir_out=/home/torbjorr/temp4
+
 k=33000000
 l=1000
 m=20000

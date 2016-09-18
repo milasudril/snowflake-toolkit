@@ -17,8 +17,12 @@ namespace SnowflakeModel
 	{
 	struct BoundingBox
 		{
-		Vector m_min;
-		Vector m_max;
+		Point m_min;
+		Point m_max;
+
+		Point centerGet() const noexcept
+			{return 0.5f*(m_min + m_max);}
+
 		};
 
 	inline bool overlap(const BoundingBox& a,const BoundingBox& b) noexcept

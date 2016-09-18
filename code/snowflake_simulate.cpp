@@ -405,16 +405,13 @@ ice_particlesChoose(const SnowflakeModel::ListIndexed<SnowflakeModel::IceParticl
 	return {{k,l},tau};
 	}
 
-const SnowflakeModel::VolumeConvex::Face& faceChoose
+SnowflakeModel::Triangle faceChoose
 	(SnowflakeModel::Solid& s_a,std::mt19937& randgen)
 	{
 	auto& subvol_sel=s_a.subvolumeGet(U(0,s_a.subvolumesCount()-1,randgen));
 	auto face_out_index=U(0,subvol_sel.facesOutCount()-1,randgen);
-	auto& ret=subvol_sel.faceOutGet(face_out_index);
 	subvol_sel.faceOutRemove(face_out_index);
-	subvol_sel.facesMidpointCompute();
-	subvol_sel.facesNormalCompute();
-	return ret;
+	return subvol_sel.triangleOutGet(face_out_index);
 	}
 
 int main(int argc,char** argv)
@@ -458,13 +455,13 @@ int main(int argc,char** argv)
 			auto s_b=g_b.solidGet();
 			s_b.centerBoundingBoxAt(SnowflakeModel::Point(0,0,0,1));
 			auto f_b=std::move(faceChoose(s_b,randgen));
-			auto u=SnowflakeModel::Vector(f_b.m_mid);
+			auto u=SnowflakeModel::Vector(f_b.midpointGet());
 
 			auto& g_a=ice_particles[pair_merge.second];
 			auto s_a=g_a.solidGet();
 			s_a.centerBoundingBoxAt(SnowflakeModel::Point(0,0,0,1));
 			auto f_a=std::move(faceChoose(s_a,randgen));
-			auto v=SnowflakeModel::Vector(f_a.m_mid);
+			auto v=SnowflakeModel::Vector(f_a.midpointGet());
 
 
 			auto R=SnowflakeModel::vectorsAlign(f_a.m_normal, -f_b.m_normal);

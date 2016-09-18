@@ -48,7 +48,8 @@ void SolidBuilderBBC::iceParticleProcess(AggregateEdge& edge,AggregateGraph& agg
 
 	auto& sol_temp=edge.r_node_child->iceParticleGet().solidGet();
 	Matrix S_child;
-	S_child=glm::scale(S_child,sol_temp.boundingBoxGet().m_max);
+	auto& bb_temp=sol_temp.boundingBoxGet();
+	S_child=glm::scale(S_child,Vector(bb_temp.m_max-bb_temp.centerGet()));
 
 	m_bond.m_position+=
 		Vector(

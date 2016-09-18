@@ -17,6 +17,8 @@
 #define SNOWFLAKEMODEL_VOLUMECONVEX_H
 
 #include "vector.h"
+#include "triangle.h"
+#include "bounding_box.h"
 #include <vector>
 #include <map>
 
@@ -35,35 +37,25 @@ namespace SnowflakeModel
 				public:
 					Face(){}
 
-					Face(VertexIndex v0,VertexIndex v1,VertexIndex v2
-						,const VolumeConvex& vc):m_visible(0),r_vc(&vc)
+					Face(VertexIndex v0,VertexIndex v1,VertexIndex v2):m_visible(0)
 						{
 						m_verts[0]=v0;
 						m_verts[1]=v1;
 						m_verts[2]=v2;
 						}
 
-				//	TODO: (Perf) Can we avoid storing a reference to the volume here
-					const Vertex& vertexGet(int index) const
-						{return r_vc->vertexGet(m_verts[index]);}
-
-					mutable Point m_mid;
 					mutable Vector m_normal;
 					mutable Vector m_normal_raw;
-					bool m_visible;
+					uint16_t m_visible;
 
-					void directionChange()
+					void directionChange() noexcept
 						{std::swap(m_verts[0],m_verts[1]);}
 
-					VertexIndex vertexIndexGet(int index) const
+					VertexIndex vertexGet(int index) const noexcept
 						{return m_verts[index];}
-
-					void parentSet(const VolumeConvex& vc)
-						{r_vc=&vc;}
 
 				private:
 					VertexIndex m_verts[VERTEX_COUNT];
-					const VolumeConvex* r_vc;
 					friend class DataDump::MetaObject<Face>;
 				};
 
@@ -75,7 +67,7 @@ namespace SnowflakeModel
 
 			VolumeConvex(const DataDump& dump,const char* id);
 
-			VolumeConvex(const VolumeConvex& vc);
+			VolumeConvex(const VolumeConvex& vc)=default;
 
 			size_t vertexAdd(const Matrix& T,const Point& v)
 				{
@@ -134,6 +126,27 @@ namespace SnowflakeModel
 			void vertexGroupSet(const std::string& name,VertexIndex index)
 				{m_vertex_groups[name].push_back(index);}
 
+			Triangle triangleGet(FaceIndex i) const noexcept
+				{
+				if(m_flags_dirty&FACES_NORMAL_DIRTY)
+					{facesNormalCompute();}
+				auto verts=verticesBegin();
+				auto face=facesBegin() + i;
+				return Triangle
+					{ 
+						{
+						 verts[face->vertexGet(0)]
+						,verts[face->vertexGet(1)]
+						,verts[face->vertexGet(2)]
+						}
+					,face->m_normal
+					};
+				}
+
+			Triangle triangleOutGet(FaceIndex face_index_out) const noexcept
+				{
+				return triangleGet(m_faces_out[face_index_out]);
+				}
 
 
 			const Point& midpointGet() const
@@ -163,24 +176,20 @@ namespace SnowflakeModel
 
 			bool inside(const Point& v) const;
 
-			const Face* cross(const Face& face) const;
-
-			size_t cross(const Face& face,size_t count_max) const;
-
 			void geometrySample(VoxelBuilder& builder) const;
 
 			void normalsFlip();
 
 			void facesNormalCompute() const;
-			void facesMidpointCompute() const;
 			void midpointCompute() const;
 			void volumeCompute() const;
 			void areaVisibleCompute() const;
+			void boundingBoxCompute() const noexcept;
 
-			FaceIndex facesOutCount() const
+			FaceIndex facesOutCount() const noexcept
 				{return m_faces_out.size();}
 
-			const FaceIndex* facesOutBegin() const
+			const FaceIndex* facesOutBegin() const noexcept 
 				{return m_faces_out.data();}
 
 			const FaceIndex* facesOutEnd() const
@@ -190,6 +199,7 @@ namespace SnowflakeModel
 				{
 				m_faces_out.push_back(i);
 				m_faces[i].m_visible=1;
+				assert(m_flags_dirty&AREA_VISIBLE_DIRTY);
 				}
 
 			void faceOutRemove(size_t i)
@@ -200,14 +210,24 @@ namespace SnowflakeModel
 				m_flags_dirty|=AREA_VISIBLE_DIRTY;
 				}
 
-			const Face& faceOutGet(size_t i) const
+			const Face& faceOutGet(size_t i) const noexcept
 				{return m_faces[m_faces_out[i]];}
 
-			Face& faceOutGet(size_t i)
+			Face& faceOutGet(size_t i) noexcept
 				{return m_faces[m_faces_out[i]];}
 
-			bool normalsDirty() const
+			bool normalsDirty() const noexcept
 				{return m_flags_dirty&FACES_NORMAL_DIRTY;}
+
+			bool boundingBoxDirty() const noexcept
+				{return m_flags_dirty&BOUNDING_BOX_DIRTY;}
+
+			const BoundingBox& boundingBoxGet() const noexcept
+				{
+				if(boundingBoxDirty())
+					{boundingBoxCompute();}
+				return m_bounding_box;
+				}
 
 			void write(const char* id,DataDump& dump) const;
 
@@ -219,6 +239,7 @@ namespace SnowflakeModel
 			std::map< std::string, std::vector<VertexIndex> > m_vertex_groups;
 
 			mutable Point m_mid;
+			mutable BoundingBox m_bounding_box;
 			mutable float m_volume;
 			mutable float m_area_visible;
 			mutable uint32_t m_flags_dirty;
@@ -228,7 +249,10 @@ namespace SnowflakeModel
 			static constexpr uint32_t FACES_MIDPOINT_DIRTY=4;
 			static constexpr uint32_t VOLUME_DIRTY=8;
 			static constexpr uint32_t AREA_VISIBLE_DIRTY=16;
+			static constexpr uint32_t BOUNDING_BOX_DIRTY=32;
 		};
+
+	bool overlap(const VolumeConvex& a,const VolumeConvex& b);
 	}
 
 #endif

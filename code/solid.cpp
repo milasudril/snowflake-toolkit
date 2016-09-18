@@ -17,7 +17,7 @@ void Solid::merge(const Matrix& T,const Solid& volume,bool mirrored)
 	{
 //	Copy input volume.
 	auto v_temp=volume;
-//	Transform it 
+//	Transform it
 	v_temp.transform(T,mirrored);
 
 //	Accumulate quantities
@@ -116,7 +116,7 @@ void Solid::normalsFlip() noexcept
 
 void Solid::boundingBoxCompute() const noexcept
 	{
-	m_bounding_box={{0,0,0},{0,0,0}};
+	m_bounding_box={{INFINITY,INFINITY,INFINITY,1.0f},{-INFINITY,-INFINITY,-INFINITY,1.0f}};
 	boundingBoxUpdate(*this);
 	m_flags_dirty&=~BOUNDINGBOX_DIRTY;
 	}
@@ -161,36 +161,6 @@ const VolumeConvex* Solid::inside(const Point& v) const noexcept
 	}
 
 
-const VolumeConvex* Solid::cross(const VolumeConvex::Face& f) const noexcept
-	{
-	auto subvolume=subvolumesBegin();
-	auto vol_end=subvolumesEnd();
-	while(subvolume!=vol_end)
-		{
-		if(subvolume->cross(f))
-			{return subvolume;}
-		++subvolume;
-		}
-	return nullptr;
-	}
-
-
-size_t Solid::cross(const VolumeConvex::Face& f,size_t count_max) const noexcept
-	{
-	auto subvolume=subvolumesBegin();
-	auto vol_end=subvolumesEnd();
-	size_t count=0;
-	while(subvolume!=vol_end)
-		{
-		count+=subvolume->cross(f,count_max-count);
-		if(count >= count_max)
-			{return count;}
-		++subvolume;
-		}
-	return count;
-	}
-
-
 void Solid::centerCentroidAt(const Point& pos_new) noexcept
 	{
 	auto subvolume=subvolumesBegin();
@@ -205,13 +175,13 @@ void Solid::centerCentroidAt(const Point& pos_new) noexcept
 	m_extrema.first=T*m_extrema.first;
 	m_extrema.second=T*m_extrema.second;
 	m_mid=pos_new; //By definition
-	m_bounding_box.m_min=Vector(T*Point(m_bounding_box.m_min,1.0f));
-	m_bounding_box.m_max=Vector(T*Point(m_bounding_box.m_max,1.0f));
+	m_bounding_box.m_min=T*m_bounding_box.m_min;
+	m_bounding_box.m_max=T*m_bounding_box.m_max;
 	}
 
 void Solid::centerBoundingBoxAt(const Point& pos_new) noexcept
 	{
-	auto bb_mid=Point(0.5f*(boundingBoxGet().m_max+boundingBoxGet().m_min),1);
+	auto bb_mid=boundingBoxGet().centerGet();
 	Matrix T;
 	T=glm::translate(T,Vector(pos_new-bb_mid));
 	auto subvolume=subvolumesBegin();
@@ -224,8 +194,8 @@ void Solid::centerBoundingBoxAt(const Point& pos_new) noexcept
 	m_extrema.first=T*m_extrema.first;
 	m_extrema.second=T*m_extrema.second;
 	m_mid=T*m_mid;
-	m_bounding_box.m_min=Vector(T*Point(m_bounding_box.m_min,1.0f));
-	m_bounding_box.m_max=Vector(T*Point(m_bounding_box.m_max,1.0f));
+	m_bounding_box.m_min=T*m_bounding_box.m_min;
+	m_bounding_box.m_max=T*m_bounding_box.m_max;
 	}
 
 void Solid::rMaxCompute() const noexcept
@@ -263,86 +233,67 @@ void Solid::volumeCompute() const noexcept
 	m_flags_dirty&=~VOLUME_DIRTY;
 	}
 
-bool SnowflakeModel::overlap(const Solid& v_a,const Solid& v_b,double overlap_max) noexcept
-	{
-	if(!overlap(v_a.boundingBoxGet(),v_b.boundingBoxGet()))
-		{return 0;}
-	size_t cross_count=0;
-	auto subvolume=v_a.subvolumesBegin();
-	auto vol_end=v_a.subvolumesEnd();
-	auto cross_count_tot=std::min(v_a.facesCount(),v_b.facesCount());
-	while(subvolume!=vol_end)
-		{
-		auto face=subvolume->facesBegin();
-		auto face_end=subvolume->facesEnd();
-		while(face!=face_end)
-			{
-			cross_count+=v_b.cross(*face,cross_count_tot-cross_count);
-			if(static_cast<double>(cross_count)/cross_count_tot > overlap_max)
-				{return 1;}
-			++face;
-			}
-		++subvolume;
-		}	
-	return 0;
-	}
-
-bool SnowflakeModel::overlap(const Solid& v_a,const Solid& v_b
+size_t SnowflakeModel::overlap(const Solid& v_a,const Solid& v_b
 	,size_t subvols,double& vol_overlap) noexcept
 	{
-	double vol_overlap_temp=0;
 	if(!overlap(v_a.boundingBoxGet(),v_b.boundingBoxGet()))
-		{return 0;}
+		{
+		vol_overlap=0;
+		return 0;
+		}
+
+	double vol_overlap_temp=0;
 	size_t cross_count=0;
+
 	auto subvolume=v_a.subvolumesBegin();
 	auto vol_end=v_a.subvolumesEnd();
+	auto subvols_b_end=v_b.subvolumesEnd();
+	auto subvol_b_0=v_b.subvolumesBegin();
 	while(subvolume!=vol_end)
 		{
-		auto face=subvolume->facesBegin();
-		auto face_end=subvolume->facesEnd();
 		auto V=subvolume->volumeGet();
-		while(face!=face_end)
+		auto subvol_b=subvol_b_0;
+		while(subvol_b!=subvols_b_end)
 			{
-			auto subvol=v_b.cross(*face);
-			if(subvol!=nullptr)
+			if( overlap(*subvol_b,*subvolume) )
 				{
 				++cross_count;
 				if(cross_count > subvols)
-					{return 1;}
+					{return cross_count;}
 			//	This is a guesstimate of the actual overlap. It is possible
 			//	to find the true value, but that may require a remeshing
 			//	step.
-				vol_overlap_temp+=0.33*std::min(V,subvol->volumeGet());
+				vol_overlap_temp+=0.33*std::min(V,subvol_b->volumeGet());
 				}
-			++face;
+			++subvol_b;
 			}
 		++subvolume;
 		}
 	vol_overlap=vol_overlap_temp;
-	return 0;
+	return cross_count;
 	}
 
 bool SnowflakeModel::overlap(const Solid& v_a,const Solid& v_b) noexcept
 	{
 	if(!overlap(v_a.boundingBoxGet(),v_b.boundingBoxGet()))
 		{return 0;}
-	//	Triangle overlap
+
+	auto subvolume=v_a.subvolumesBegin();
+	auto vol_end=v_a.subvolumesEnd();
+	auto subvols_b_end=v_b.subvolumesEnd();
+	auto subvol_b_0=v_b.subvolumesBegin();
+	while(subvolume!=vol_end)
 		{
-		auto subvolume=v_a.subvolumesBegin();
-		auto vol_end=v_a.subvolumesEnd();
-		while(subvolume!=vol_end)
+		auto subvol_b=subvol_b_0;
+		while(subvol_b!=subvols_b_end)
 			{
-			auto face=subvolume->facesBegin();
-			auto face_end=subvolume->facesEnd();
-			while(face!=face_end)
-				{
-				if(v_b.cross(*face))
-					{return 1;}
-				++face;
-				}
-			++subvolume;
+			if(overlap(*subvol_b,*subvolume))
+				{return 1;}
+			++subvol_b;
 			}
+		++subvolume;
 		}
+
 
 
 #if 0 //With current algorithm, subvolumes will never become completely submerged.
@@ -396,13 +347,13 @@ void Solid::write(const char* id,DataDump& dump) const
 	auto group=dump.groupCreate(id);
 	std::string group_name(id);
 	dump.write((group_name + "/mirror_flags").c_str(),&m_mirror_flags,1);
-	
+
 		{
 		size_t k=0;
 		auto deformations_begin=m_deformation_templates.data();
 		auto deformations_end=deformations_begin + m_deformation_templates.size();
 		auto defgroup=dump.groupCreate((group_name + "/deformation_templates").c_str());
-		auto defgroup_name=group_name + "/deformation_templates/"; 
+		auto defgroup_name=group_name + "/deformation_templates/";
 		while(deformations_begin!=deformations_end)
 			{
 			char id[32];
@@ -419,7 +370,7 @@ void Solid::write(const char* id,DataDump& dump) const
 		auto subvols_begin=subvolumesBegin();
 		auto subvols_end=subvolumesEnd();
 		auto defgroup=dump.groupCreate((group_name + "/subvolumes").c_str());
-		auto defgroup_name=group_name + "/subvolumes/"; 
+		auto defgroup_name=group_name + "/subvolumes/";
 		while(subvols_begin!=subvols_end)
 			{
 			char id[32];
@@ -445,7 +396,7 @@ Solid::Solid(const DataDump& dump,const char* name):
 		auto defgroup_name=group_name + "/deformation_templates";
 		auto defgroup=dump.groupOpen(defgroup_name.c_str());
 		defgroup_name+='/';
-		
+
 		dump.iterate(*defgroup,[&dump,&defgroup_name,this]
 			(const char* group_name)
 			{
@@ -457,7 +408,7 @@ Solid::Solid(const DataDump& dump,const char* name):
 		{
 		auto defgroup_name=group_name + "/subvolumes";
 		auto defgroup=dump.groupOpen(defgroup_name.c_str());
-		defgroup_name+='/';		
+		defgroup_name+='/';
 		dump.iterate(*defgroup,[&dump,&defgroup_name,this]
 			(const char* group_name)
 			{
@@ -550,17 +501,9 @@ void Solid::extremaUpdate(const Solid& solid) const noexcept
 void Solid::boundingBoxUpdate(const VolumeConvex& v) const noexcept
 	{
 //	Compute the new bounding box as if v were added to this solid
-	auto bb=m_bounding_box;
-	auto v_begin=v.verticesBegin();
-	auto v_end=v.verticesEnd();
-	while(v_begin!=v_end)
-		{
-		auto vert=Vector(*v_begin);
-		bb.m_min=glm::min(bb.m_min,vert);
-		bb.m_max=glm::max(bb.m_max,vert);
-		++v_begin;
-		}
-	m_bounding_box=bb;
+	auto& bb=v.boundingBoxGet();
+	m_bounding_box.m_min=glm::min(bb.m_min,m_bounding_box.m_min);
+	m_bounding_box.m_max=glm::max(bb.m_max,m_bounding_box.m_max);
 	}
 
 
