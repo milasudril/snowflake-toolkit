@@ -259,11 +259,15 @@ size_t SnowflakeModel::overlap(const Solid& v_a,const Solid& v_b
 				{
 				++cross_count;
 				if(cross_count > subvols)
+<<<<<<< HEAD
 					{
 				//	We do not need to compute the extra volume here, since 
 				//	the event will be rejected anyways.
 					return cross_count;
 					}
+=======
+					{return 1;}
+>>>>>>> master
 			//	This is a guesstimate of the actual overlap. It is possible
 			//	to find the true value, but that may require a remeshing
 			//	step.
