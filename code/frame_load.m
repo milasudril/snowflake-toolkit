@@ -1,10 +1,11 @@
-function data=frame_load(basedir,prefix,frame)
+function [data,N_rows]=frame_load(basedir,prefix,frame)
 	filename=sprintf('%s/%s-%d.txt'...
 		,basedir,prefix,frame);
 	try
-		data=dlmread(filename,'\t',1,0);
+		[data,N_rows]=csvread2(filename,'\t');
 	catch err
-		disp(sprintf('Error loading %s',filename));
-		data=[];
+		disp(sprintf('Error loading %s: %s',filename,err.message));
+		data=struct();
+		N_rows=0;
 	end
 end
