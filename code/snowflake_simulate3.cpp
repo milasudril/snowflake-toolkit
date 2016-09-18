@@ -432,6 +432,7 @@ void helpShow()
 		"     subvols_max=N                Run until there is an aggreaget with N elements\n"
 		"     d_max_max=d_max              Run until there is an aggreaget with d_max as largest extent\n"
 		"     v_max=V                      Run until there is an aggreaget with volume V\n"
+		"     n_dropped_max=N              Run until the model has dropped N particles\n"
 		"     infinity                     Run forever, or until the simulation is stopped externally\n\n"
 		"--shape=crystal_file\n"
 		"    Generate data using the shape stored in crystal_file."
@@ -861,6 +862,9 @@ class Simstate
 
 		const SnowflakeModel::IceParticle* particlesEnd() const noexcept
 			{return ice_particles.data() + ice_particles.size();}
+
+		size_t nDroppedGet() const noexcept
+			{return m_data.N_particles_dropped;}
 
 	private:
 		const Setup& r_setup;
@@ -1377,6 +1381,26 @@ static std::unique_ptr<SimstateMonitor> d_max_max_check(const char* arg)
 	{return std::unique_ptr<SimstateMonitor>( new MonitorDMaxMaxCheck(atof(arg)) );}
 
 
+class MonitorNDroppedCheck:public SimstateMonitor
+	{
+	public:
+		MonitorNDroppedCheck(size_t max):m_max(max)
+			{}
+
+		double progressGet(const Simstate& state) noexcept
+			{
+			return static_cast<double>(state.nDroppedGet())/m_max;
+			}
+
+	private:
+		size_t m_max;
+	};
+
+static std::unique_ptr<SimstateMonitor> n_dropped_check(const char* arg)
+	{return std::unique_ptr<SimstateMonitor>( new MonitorNDroppedCheck(atoll(arg)) );}
+
+
+
 
 class MonitorVMaxCheck:public SimstateMonitor
 	{
@@ -1497,6 +1521,7 @@ int main(int argc,char** argv)
 		monitor_selector["infinity"]=infinity_check;
 		monitor_selector["d_max_max"]=d_max_max_check;
 		monitor_selector["v_max"]=v_max_check;
+		monitor_selector["n_dropped_max"]=n_dropped_check;
 
 		auto monitor=monitor_selector[setup.m_stopcond_name];
 		monitor=(monitor==nullptr)?bad_condition:monitor;
