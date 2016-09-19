@@ -32,9 +32,9 @@ namespace SnowflakeModel
 		auto distance=glm::abs(a.m_min + a.m_max
 			- b.m_min - b.m_max); //twice the distance between the two bounding box centers
 		
-		return distance.x<=size_tot.x 
-			&& distance.y<=size_tot.y
-			&& distance.z<=size_tot.z;
+		return distance.x<size_tot.x 
+			|| distance.y<size_tot.y
+			|| distance.z<size_tot.z;
 		}
 	}
 
