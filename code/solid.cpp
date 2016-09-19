@@ -263,7 +263,7 @@ size_t SnowflakeModel::overlap(const Solid& v_a,const Solid& v_b
 			//	This is a guesstimate of the actual overlap. It is possible
 			//	to find the true value, but that may require a remeshing
 			//	step.
-				vol_overlap_temp+=0.33*std::min(V,subvol_b->volumeGet());
+				vol_overlap_temp+=0.1*std::min(V,subvol_b->volumeGet());
 				}
 			++subvol_b;
 			}
