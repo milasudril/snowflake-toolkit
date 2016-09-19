@@ -18,6 +18,7 @@ __targets_rel/snowflake_simulate3 \
 	--growthrate=$k --meltrate=$l --droprate=$m \
 	--seed=0 --dump-geometry \
 	--stop-cond=iterations=262144 \
-	--overlap=0 \
+	--overlap-min=0 \
+	--overlap-max=0 \
 	--merge-retries=0 \
 	| tee $dir_out/$k-$l-$m/params.txt
