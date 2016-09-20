@@ -113,7 +113,10 @@ void VolumeConvex::facesNormalCompute() const
 
 bool VolumeConvex::inside(const Point& v) const
 	{
-//	TODO (perf) check bounding box first
+//	Check bounding box first
+	if(!inside(v,boundingBoxGet())
+		{return 0;}
+
 	if(m_flags_dirty&FACES_NORMAL_DIRTY)
 		{facesNormalCompute();}
 	auto face_current=facesBegin();

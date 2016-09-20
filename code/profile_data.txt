@@ -1,1 +1,1 @@
-fieldsumtest.cpp	36	0.0590131282806396
+fieldsumtest.cpp	36	0.0454208850860596

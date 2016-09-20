@@ -36,6 +36,14 @@ namespace SnowflakeModel
 			|| distance.y<size_tot.y
 			|| distance.z<size_tot.z;
 		}
+
+	inline bool inside(const Point& p,const BoundingBox& box)
+		{
+		return p.x>=box.m_min.x && p.x<=box.m_max.x
+			&& p.x>=box.m_min.y && p.x<=box.m_max.y
+			&& p.z>=box.m_min.z && p.z<=box.m_max.z;
+		}
 	}
+
 
 #endif

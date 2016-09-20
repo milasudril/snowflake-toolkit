@@ -39,7 +39,7 @@ int main()
 			while(N_tris!=0)
 				{
 				--N_tris;
-				F+=flowIntegrate({0.0f,0.0f,0.0f,1.0f},subvol->triangleGet(N_tris));
+				F+=flowIntegrate({0.75f,0.0f,0.0f,1.0f},subvol->triangleGet(N_tris));
 				}
 			}
 
