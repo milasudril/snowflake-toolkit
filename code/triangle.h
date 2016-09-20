@@ -26,6 +26,8 @@ namespace SnowflakeModel
 		};
 
 	bool overlap(const Triangle& t_1,const Triangle& t_2) noexcept;
+	bool intersects(const Triangle& T,const Point& origin
+		,const Vector& direction,float& out) noexcept;
 	}
 
 #endif

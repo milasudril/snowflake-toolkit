@@ -12,6 +12,7 @@
 #define SNOWFLAKEMODEL_BOUNDINGBOX_H
 
 #include "vector.h"
+#include <random>
 
 namespace SnowflakeModel
 	{
@@ -36,6 +37,26 @@ namespace SnowflakeModel
 			|| distance.y<size_tot.y
 			|| distance.z<size_tot.z;
 		}
+
+	inline bool inside(const Point& p,const BoundingBox& box)
+		{
+		return p.x>=box.m_min.x && p.x<=box.m_max.x
+			&& p.x>=box.m_min.y && p.x<=box.m_max.y
+			&& p.z>=box.m_min.z && p.z<=box.m_max.z;
+		}
+
+
+	template<class Rng>
+	Point randomPoint(const BoundingBox& box,Rng& rng)
+		{
+		Point ret;
+		ret.x=std::uniform_real_distribution<float>(box.m_min.x,box.m_max.x)(rng);
+		ret.y=std::uniform_real_distribution<float>(box.m_min.y,box.m_max.y)(rng);
+		ret.z=std::uniform_real_distribution<float>(box.m_min.z,box.m_max.z)(rng);
+		ret.w=1.0f;
+		return ret;
+		}
 	}
+
 
 #endif

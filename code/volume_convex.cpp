@@ -65,10 +65,26 @@ void VolumeConvex::transformGroup(const std::string& name,const Matrix& T)
 		|FACES_MIDPOINT_DIRTY|VOLUME_DIRTY|AREA_VISIBLE_DIRTY|BOUNDING_BOX_DIRTY;
 	}
 
+
+static PointInt seedGenerate(const VolumeConvex& v,const VoxelBuilder& builder)
+	{
+//	Try some points inside the bounding box to see if we get a hit.
+	PointInt seed;
+	std::minstd_rand rng;
+	auto& bb=v.boundingBoxGet();
+	do
+		{
+		seed=builder.quantize( randomPoint(bb,rng) );
+		}
+	while(!v.inside( builder.dequantize(seed)) );
+	return seed;
+	}
+
 void VolumeConvex::geometrySample(VoxelBuilder& builder) const
 	{
 	std::stack<PointInt> nodes;
-	nodes.push(builder.quantize(midpointGet()));
+
+	nodes.push(seedGenerate(*this,builder));
 	builder.volumeStart(*this);
 	while(nodes.size()!=0)
 		{
@@ -113,26 +129,33 @@ void VolumeConvex::facesNormalCompute() const
 
 bool VolumeConvex::inside(const Point& v) const
 	{
-//	TODO (perf) check bounding box first
+//	Check bounding box first
+	if(!::inside(v,boundingBoxGet()))
+		{return 0;}
+
 	if(m_flags_dirty&FACES_NORMAL_DIRTY)
 		{facesNormalCompute();}
 	auto face_current=facesBegin();
 	auto faces_end=facesEnd();
 	auto verts=verticesBegin();
+	size_t intersect_count=0;
+	float intersection;
 	while(face_current!=faces_end)
 		{
-		auto mid=(verts[face_current->vertexGet(0)]
-			+verts[face_current->vertexGet(1)]
-			+verts[face_current->vertexGet(2)])/3.0f;
-		mid.w=1.0f;
-
-		auto x=glm::dot(Vector(v - mid)
-			+ 1e-6f*face_current->m_normal,face_current->m_normal);
-		if(x > 0 )
-			{return 0;}
+		auto T=Triangle
+			{ 
+				{
+				 verts[face_current->vertexGet(0)]
+				,verts[face_current->vertexGet(1)]
+				,verts[face_current->vertexGet(2)]
+				}
+			,face_current->m_normal
+			};
+		if(intersects(T,v,Vector(1.0f,0.0f,0.0f),intersection))
+			{++intersect_count;}
 		++face_current;
 		}
-	return 1;
+	return intersect_count%2==1;
 	}
 
 void VolumeConvex::midpointCompute() const

@@ -6,6 +6,9 @@
 using namespace SnowflakeModel;
 
 
+
+////Triangle triangle intersection. From Tomas A Möller
+
 //Equation the distance to a plane
 static inline float Pi(const Vector& plane_normal,const Point& V_0
 	,const Point& P) noexcept
@@ -102,4 +105,52 @@ bool SnowflakeModel::overlap(const Triangle& T_1,const Triangle& T_2) noexcept
 	auto ret=::overlap(t_1,t_2);
 
 	return ret;
+	}
+
+
+////Triangle-ray intersection
+// http://www.cs.virginia.edu/~gfx/Courses/2003/ImageSynthesis/papers/Acceleration/Fast%20MinimumStorage%20RayTriangle%20Intersection.pdf
+
+bool SnowflakeModel::intersects(const Triangle& triangle,const Point& origin
+	,const Vector& direction,float& out) noexcept
+	{
+//	Find vectors for two edges sharing V0
+	auto e1=Vector(triangle.vertexGet(1)-triangle.vertexGet(0));
+	auto e2=Vector(triangle.vertexGet(2)-triangle.vertexGet(0));
+
+//	Begin calculating determinant - also used to calculate u parameter
+	auto P=glm::cross(direction,e2);
+
+//	If determinant is zero, ray lies in the plane of T
+//	or is paralell to that plane
+	auto det=glm::dot(e1,P);
+	if(std::fabs(det)<1e-6f)
+		{return 0;}
+
+	auto inv_det=1.0f/det;
+	
+//	Directed distance from V0 to the origin
+	auto T=Vector(origin-triangle.vertexGet(0));
+
+//	Compute u (coordinate in the triangle coordinate system
+	auto u=glm::dot(T,P)*inv_det;
+
+//	The ray does not interect with the triangle
+	if(u<0.0f || u>1.0f)
+		{return 0;}
+
+//	v coordinate
+	auto Q=glm::cross(T,e1);
+	auto v=glm::dot(direction,Q)*inv_det;
+	if(v<0.0f || u + v>1.0f)
+		{return 0;}
+
+	auto t=glm::dot(e2,Q)*inv_det;
+//	Test if the ray crossed the triangle
+	if(t>1.0e-6f)
+		{
+		out=t;
+		return 1;
+		}
+	return 0;
 	}
