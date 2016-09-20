@@ -44,6 +44,9 @@ int main()
 			}
 
 		printf("Total flow: %.15g\n",F/(4.0*acos(-1.0f)));
+		auto subvol=s.subvolumesBegin();
+		if(subvol->inside({0.75f,0.0f,0.0f,1.0f}))
+			{printf("Raycast works\n");}
 		}
 	catch(const char* message)
 		{
