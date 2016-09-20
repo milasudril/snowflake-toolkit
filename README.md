@@ -59,7 +59,7 @@ This is a shell script that can be used to compile the toolkit
     # Run Wand to compile the project
     ~/bin/maike
 
-Besides the release profile (stored in the default `maikeconfig.json`), there a "profile", and a "debug" profile. See the JSON files for information about the compiler settings.
+Besides the release profile (stored in `release.json`), there a "profile", and a "debug" profile. See the JSON files for information about the compiler settings.
 
 License
 -------
