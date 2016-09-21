@@ -1,3 +1,6 @@
+The Suzanne model is licensed under GPL. For the other prototyes, CC0 is used.
+
+
 Creative Commons Legal Code
 
 CC0 1.0 Universal
