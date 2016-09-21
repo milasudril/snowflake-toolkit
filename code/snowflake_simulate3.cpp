@@ -116,8 +116,8 @@ struct Setup
 		float m_droprate;
 		float m_growthrate;
 		float m_meltrate;
-		size_t m_overlap_min;
-		size_t m_overlap_max;
+		double m_overlap_min;
+		double m_overlap_max;
 		size_t m_merge_retries;
 		} m_data;
 
@@ -279,11 +279,11 @@ Setup::Setup(int argc,char** argv):
 				break;
 
 			case PARAM_OVERLAP_MAX:
-				m_data.m_overlap_max=atoi(optarg);
+				m_data.m_overlap_max=atof(optarg);
 				break;
 
 			case PARAM_OVERLAP_MIN:
-				m_data.m_overlap_min=atoi(optarg);
+				m_data.m_overlap_min=atof(optarg);
 				break;
 
 			case '?':
@@ -296,6 +296,12 @@ Setup::Setup(int argc,char** argv):
 		{
 		throw "No stop condition is given";
 		}
+
+	if(m_data.m_overlap_max<0 || m_data.m_overlap_max > 1)
+		{throw "Overlap ratio must be between 0 and 1";}
+
+	if(m_data.m_overlap_min > m_data.m_overlap_max)
+		{throw "Minimum overlap ratio has to be less than or equal to the maximum overlap ratio";}
 
 	if(sample_geometry!=nullptr)
 		{
@@ -400,7 +406,7 @@ void Setup::paramsDump()
 		"droprate:      %.7g\n"
 		"growthrate:    %.7g\n"
 		"meltrate:      %.7g\n"
-		"overlap range: [%zu, %zu]\n"
+		"overlap range: [%.7g, %.7g]\n"
 		"merge retries: %zu\n"
 		,m_crystal.data()
 		,m_data.m_seed,m_data.m_N,m_data.m_droprate,m_data.m_growthrate,m_data.m_meltrate
@@ -470,10 +476,10 @@ void helpShow()
 		"--merge-retries=N\n"
 		"    If the first try to merge two aggregates failed to satisfy the overlap "
 		"constraint, try again N times without skipping the current event.\n\n"
-		"--overlap-min=N\n"
-		"    When merging particles, accept overlap between at least m subvolumes.\n\n"
-		"--overlap-max=N\n"
-		"    When merging particles, accept overlap between at most N subvolumes.\n\n"
+		"--overlap-min=ratio\n"
+		"    When merging particles, only accept events where the ratio of overlapping subvolumes is greater than ratio.\n\n"
+		"--overlap-max=ratio\n"
+		"    When merging particles, only accept events where the ratio of overlapping subvolumes is less than ratio.\n\n"
 		);
 	}
 
@@ -1249,9 +1255,13 @@ bool Simstate::step()
 			R_x=glm::translate(R_x,SnowflakeModel::Vector(-v));
 			s_a.transform(T*R.first*R_x,R.second);
 			overlap_count=overlap(s_b,s_a,r_setup.m_data.m_overlap_max,vol_overlap);
+
+			auto N_a=s_a.subvolumesCount();
+			auto N_b=s_b.subvolumesCount();
+			auto overlap_max=std::min(N_a,N_b);
 			auto overlap_min=
-				std::min(s_a.subvolumesCount() + s_b.subvolumesCount()-2,r_setup.m_data.m_overlap_min);
-			if(overlap_count>=overlap_min && overlap_count<=r_setup.m_data.m_overlap_max)
+				std::min(N_a + N_b - 2,static_cast<size_t>(r_setup.m_data.m_overlap_min*overlap_max));
+			if(overlap_count>=overlap_min && overlap_count<=overlap_max * r_setup.m_data.m_overlap_max)
 				{break;}
 			else
 				{
