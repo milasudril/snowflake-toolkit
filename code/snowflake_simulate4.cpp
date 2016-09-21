@@ -81,7 +81,7 @@ int main()
 		p.parameterSet("r_y",1.0f);
 		p.parameterSet("r_z",1.0f);
 	
-		size_t N=5000;
+		size_t N=2000;
 		SnowflakeModel::Solid solid_out;
 		solid_out.merge(p.solidGet(),0,0);
 		SnowflakeModel::RandomGenerator randgen;
