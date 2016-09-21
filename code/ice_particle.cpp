@@ -48,8 +48,7 @@ void IceParticle::solidGenerate() const
 				}
 			else
 				{vc.transform(deformation->matrixGet());}
-			else
-				{throw "Reserved group name";}
+
 			++deformation;
 			}
 	//	There should not be any overlap here.
