@@ -832,6 +832,11 @@ class Simstate
 			size_t frame;
 			size_t N_particles;
 			size_t N_particles_dropped;
+			size_t collisions;
+			size_t collisions_rejected;
+			size_t births;
+			size_t melts;
+			size_t dropouts;
 			};
 
 		template<class T>
@@ -898,10 +903,15 @@ namespace SnowflakeModel
 		,{"frame",offsetOf(&Simstate::Data::frame),DataDump::MetaObject<decltype(Simstate::Data::frame)>().typeGet()}
 		,{"N_particles",offsetOf(&Simstate::Data::N_particles),DataDump::MetaObject<decltype(Simstate::Data::N_particles)>().typeGet()}
 		,{"N_particles_dropped",offsetOf(&Simstate::Data::N_particles_dropped),DataDump::MetaObject<decltype(Simstate::Data::N_particles_dropped)>().typeGet()}
+		,{"collisions",offsetOf(&Simstate::Data::collisions),DataDump::MetaObject<decltype(Simstate::Data::collisions)>().typeGet()}
+		,{"collisions_rejected",offsetOf(&Simstate::Data::collisions_rejected),DataDump::MetaObject<decltype(Simstate::Data::collisions_rejected)>().typeGet()}
+		,{"births",offsetOf(&Simstate::Data::births),DataDump::MetaObject<decltype(Simstate::Data::births)>().typeGet()}
+		,{"melts",offsetOf(&Simstate::Data::melts),DataDump::MetaObject<decltype(Simstate::Data::melts)>().typeGet()}
+		,{"dropouts",offsetOf(&Simstate::Data::dropouts),DataDump::MetaObject<decltype(Simstate::Data::dropouts)>().typeGet()}		
 		};
 
 	template<>
-	const size_t DataDump::MetaObject<Simstate::Data>::field_count=4;
+	const size_t DataDump::MetaObject<Simstate::Data>::field_count=9;
 	}
 
 Simstate::Simstate(const Setup& setup,const SnowflakeModel::Solid& s_in
@@ -1002,7 +1012,7 @@ Simstate::Simstate(const Setup& setup,const SnowflakeModel::Solid& s_in
 				(setup.m_output_dir+"/dropped_stats.txt").data()
 			));
 
-		frame_data_file->printf("# Frame\tClock time\tSimulation time\tN_cloud\tN_drop\n");
+		frame_data_file->printf("# Frame\tClock time\tSimulation time\tN_cloud\tN_drop\tCollisions\tCollisions rejected\tBirths\tMelts\tDropouts\n");
 		dropped_stats->printf("# Frame\tClock time\tSimulation time\tR_max\tVolume\tSpeed\tL_x\tr_xy\tr_xz\tNumber of sub-volumes\n");
 		}
 	}
@@ -1076,14 +1086,23 @@ void Simstate::statsDump(bool force) const
 		{return;}
 	auto now=time(nullptr);
 
-	//	Frame\tClock time\tSimulation time\tN_cloud\tN_drop\tC_kl_sum
+	//	Frame\tClock time\tSimulation time\tN_cloud\tN_drop\t
 		frame_data_file->printf(
 			"%zu\t"
 			"%zu\t"
 			"%.15g\t"
 			"%zu\t"
+			"%zu\t"
+			"%zu\t"
+			"%zu\t"
+			"%zu\t"
 			"%zu\n",m_data.frame,now,m_data.tau,m_data.N_particles
-			,m_data.N_particles_dropped);
+			,m_data.N_particles_dropped
+			,m_data.collisions
+			,m_data.collisions_rejected
+			,m_data.births
+			,m_data.melts
+			,m_data.dropouts);
 
 			{
 			char countbuff[32];
@@ -1160,8 +1179,14 @@ bool Simstate::step()
 	SNOWFLAKEMODEL_TIMED_SCOPE();
 	if(m_data.frame%64==0)
 		{
-		fprintf(stderr,"\r# Running simulation. %.3g%% done.  Fill ratio %.3g%%   "
-			,progressGet()*100,100*static_cast<double>(m_data.N_particles)/ice_particles.size());
+		fprintf(stderr,"\r# %.3g%% done. Cs: %zu. Cr: %zu. B: %zu. M: %zu. D: %zu. Matrix Fill ratio %.3g%%   "
+			,progressGet()*100
+			,m_data.collisions
+			,m_data.collisions_rejected
+			,m_data.births
+			,m_data.melts
+			,m_data.dropouts
+			,100*static_cast<double>(m_data.N_particles)/ice_particles.size());
 		}
 
 	auto pair_merge=ice_particlesChoose(randomizer,randgen);
@@ -1182,6 +1207,7 @@ bool Simstate::step()
 			ice_particles[k]=ice_particlePrepare(r_s_in,r_setup,randgen);
 			++m_data.N_particles;
 			++m_data.frame;
+			++m_data.births;
 			matrixRowUpdate(k,ice_particles,C_mat,r_setup.m_data,m_data.N_particles);
 			return 1;
 			}
@@ -1201,6 +1227,7 @@ bool Simstate::step()
 		ice_particles[k].kill();
 		--m_data.N_particles;
 		++m_data.N_particles_dropped;
+		++m_data.dropouts;
 		matrixRowUpdate(k,ice_particles,C_mat,r_setup.m_data,m_data.N_particles);
 		++m_data.frame;
 		return 1;
@@ -1212,6 +1239,7 @@ bool Simstate::step()
 		ice_particles[k].kill();
 		--m_data.N_particles;
 		++m_data.frame;
+		++m_data.melts;
 		matrixRowUpdate(k,ice_particles,C_mat,r_setup.m_data,m_data.N_particles);
 		return 1;
 		}
@@ -1270,13 +1298,14 @@ bool Simstate::step()
 				#ifndef NDEBUG
 					fprintf(stderr,"# Event %zu rejected: Overlap\n",m_data.frame);
 				#endif
+					++m_data.collisions_rejected;
 					return 0;
 					}
 				--retry_count;
 				}
 			}
 		while(1);
-
+		++m_data.collisions;
 		s_b.merge(s_a,vol_overlap,overlap_count);
 		g_b.velocitySet(vTermCompute(s_b,r_setup)*randomDirection(randgen));
 		g_a.kill();
