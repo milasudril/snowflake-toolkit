@@ -92,6 +92,9 @@ namespace SnowflakeModel
 			VolumeConvex& subvolumeGet(size_t index) noexcept
 				{return m_subvolumes[index];}
 
+			size_t overlapCount() const noexcept
+				{return m_overlap_count;}
+
 
 
 			void merge(const Matrix& T,const Solid& volume,bool mirrored);

@@ -1084,7 +1084,7 @@ void Simstate::statsDump(bool force) const
 			sprintf(countbuff,"/frame-%zu.txt",m_data.frame);
 			SnowflakeModel::FileOut file_out((r_setup.m_output_dir+countbuff).data());
 			auto i=ice_particles.begin();
-			file_out.printf("# R_max\tD_max\tVolume\tSpeed\tL_x\tr_xy\tr_xz\tNumber of sub-volumes\n");
+			file_out.printf("# R_max\tD_max\tVolume\tSpeed\tL_x\tr_xy\tr_xz\tNumber of sub-volumes\tOverlap count\n");
 			while(i!=ice_particles.end())
 				{
 				if(!i->dead())
@@ -1093,12 +1093,12 @@ void Simstate::statsDump(bool force) const
 					auto& bb=solid.boundingBoxGet();
 					auto extrema=solid.extremaGet();
 					auto L=bb.m_max-bb.m_min;
-					file_out.printf("%.7g\t%.7g\t%.7g\t%.7g\t%.7g\t%.7g\t%.7g\t%zu\n"
+					file_out.printf("%.7g\t%.7g\t%.7g\t%.7g\t%.7g\t%.7g\t%.7g\t%zu\t%zu\n"
 						,solid.rMaxGet()
 						,glm::distance(extrema.first,extrema.second)
 						,solid.volumeGet()
 						,glm::length(i->velocityGet())
-						,L.x,L.x/L.y,L.x/L.z,solid.subvolumesCount());
+						,L.x,L.x/L.y,L.x/L.z,solid.subvolumesCount(),solid.overlapCount());
 					}
 				++i;
 				}
@@ -1130,11 +1130,11 @@ static void particleDumpStats(const SnowflakeModel::IceParticle& i,SnowflakeMode
 	{
 	auto& bb=i.solidGet().boundingBoxGet();
 	auto L=bb.m_max-bb.m_min;
-	file_out.printf("%.7g\t%.7g\t%.7g\t%.7g\t%.7g\t%.7g\t%zu\n"
+	file_out.printf("%.7g\t%.7g\t%.7g\t%.7g\t%.7g\t%.7g\t%zu\t%zu\n"
 		,i.solidGet().rMaxGet()
 		,i.solidGet().volumeGet()
 		,glm::length(i.velocityGet())
-		,L.x,L.x/L.y,L.x/L.z,i.solidGet().subvolumesCount());
+		,L.x,L.x/L.y,L.x/L.z,i.solidGet().subvolumesCount(),i.solidGet().overlapCount());
 	}
 
 static size_t ice_particleDeadFind(std::vector<SnowflakeModel::IceParticle>& ice_particles)
