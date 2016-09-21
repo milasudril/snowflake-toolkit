@@ -47,7 +47,6 @@ void IceParticle::solidGenerate() const
 				vc.transformGroup(deformation->nameGet(),deformation->matrixGet());
 				}
 			else
-			if(deformation->nameGet()=="$global")
 				{vc.transform(deformation->matrixGet());}
 			else
 				{throw "Reserved group name";}

@@ -2,12 +2,17 @@
 
 #Scaling matrices
 
-matrix($global,
+matrix($size,
     r_x,   0,  0,0,
        0,r_y,  0,0,
        0,  0,r_z,0,
        0,  0,  0,1)
 
+matrix($scale_tot,
+	s,0,0,0,
+	0,s,0,0,
+	0,0,s,0,
+	0,0,0,1)
 
 #Mesh subvolumes. Each of these needs to be convex
 

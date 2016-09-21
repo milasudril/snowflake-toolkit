@@ -16,12 +16,16 @@ matrix(inner,
     
 mirror_heading()
 
-#global scaling matrix
-
-matrix($global,
+matrix($scale_a,
 	1,0,0,0,
 	0,a,0,0,
 	0,0,a,0,
+	0,0,0,1)
+
+matrix($scale_tot,
+	s,0,0,0,
+	0,s,0,0,
+	0,0,s,0,
 	0,0,0,1)
 
 
