@@ -1219,6 +1219,7 @@ bool Simstate::step()
 		auto s_a=g_a.solidGet();
 		s_a.centerBoundingBoxAt(SnowflakeModel::Point(0,0,0,1));
 		double vol_overlap=0;
+		size_t overlap_count=0;
 		auto retry_count=r_setup.m_data.m_merge_retries;
 		do
 			{
@@ -1247,7 +1248,7 @@ bool Simstate::step()
 				/(U_rot.max()+1),f_a.m_normal);
 			R_x=glm::translate(R_x,SnowflakeModel::Vector(-v));
 			s_a.transform(T*R.first*R_x,R.second);
-			auto overlap_count=overlap(s_b,s_a,r_setup.m_data.m_overlap_max,vol_overlap);
+			overlap_count=overlap(s_b,s_a,r_setup.m_data.m_overlap_max,vol_overlap);
 			auto overlap_min=
 				std::min(s_a.subvolumesCount() + s_b.subvolumesCount()-2,r_setup.m_data.m_overlap_min);
 			if(overlap_count>=overlap_min && overlap_count<=r_setup.m_data.m_overlap_max)
@@ -1266,7 +1267,7 @@ bool Simstate::step()
 			}
 		while(1);
 
-		s_b.merge(s_a,vol_overlap);
+		s_b.merge(s_a,vol_overlap,overlap_count);
 		g_b.velocitySet(vTermCompute(s_b,r_setup)*randomDirection(randgen));
 		g_a.kill();
 		--m_data.N_particles;

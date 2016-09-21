@@ -36,12 +36,14 @@ namespace SnowflakeModel
 				,m_volume(0)
 				,m_extrema{{0.0f,0.0f,0.0f,1.0f},{0.0f,0.0f,0.0f,1.0f}}
 				,m_flags_dirty(DMAX_DIRTY|BOUNDINGBOX_DIRTY|MIDPOINT_DIRTY|RMAX_DIRTY)
+				,m_overlap_count(0)
 				,m_mirror_flags(0)
 				{}
 
 			Solid(const DataDump& dump,const char* name);
 
-			VolumeConvex& subvolumeAdd(const VolumeConvex& volume,double overlap_est)
+			VolumeConvex& subvolumeAdd(const VolumeConvex& volume
+				,double overlap_est,size_t overlap_count)
 				{
 			//	If this fails, the object is in a bad state hmm
 				extremaUpdate(volume);
@@ -50,10 +52,12 @@ namespace SnowflakeModel
 				m_flags_dirty|=MIDPOINT_DIRTY|RMAX_DIRTY;
 				m_n_faces_tot+=volume.facesCount();
 				m_volume+=volume.volumeGet()-overlap_est;
+				m_overlap_count+=overlap_count;
 				return m_subvolumes.back();
 				}
 
-			VolumeConvex& subvolumeAdd(VolumeConvex&& volume,double overlap_est)
+			VolumeConvex& subvolumeAdd(VolumeConvex&& volume,double overlap_est
+				,size_t overlap_count)
 				{
 				m_n_faces_tot+=volume.facesCount();
 				m_volume+=volume.volumeGet() - overlap_est;
@@ -63,6 +67,7 @@ namespace SnowflakeModel
 			//	If this fails, the object is in a bad state hmm
 				m_subvolumes.push_back(std::move(volume));
 				m_flags_dirty|=MIDPOINT_DIRTY|RMAX_DIRTY;
+				m_overlap_count+=overlap_count;
 				return m_subvolumes.back();
 				}
 
@@ -91,7 +96,7 @@ namespace SnowflakeModel
 
 			void merge(const Matrix& T,const Solid& volume,bool mirrored);
 
-			void merge(const Solid& volume,double overlap_est);
+			void merge(const Solid& volume,double overlap_est,size_t overlap_count);
 
 
 			const BoundingBox& boundingBoxGet() const noexcept
@@ -198,6 +203,8 @@ namespace SnowflakeModel
 			mutable Twins<glm::vec4> m_extrema;
 			mutable uint32_t m_flags_dirty;
 
+
+			size_t m_overlap_count;
 			uint32_t m_mirror_flags;
 
 			void midpointCompute() const noexcept;

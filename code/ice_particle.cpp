@@ -54,7 +54,7 @@ void IceParticle::solidGenerate() const
 			++deformation;
 			}
 	//	There should not be any overlap here.
-		m_solid_generated.subvolumeAdd(std::move(vc),0);
+		m_solid_generated.subvolumeAdd(std::move(vc),0,0);
 		++subvolume;
 		}
 
