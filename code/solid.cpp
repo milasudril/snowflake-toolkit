@@ -531,3 +531,23 @@ void Solid::dMaxCompute() const noexcept
 	extremaUpdate(*this);
 	m_flags_dirty&=~DMAX_DIRTY;
 	}
+
+std::pair<Triangle,float> Solid::shoot(const Point& source,const Vector& direction) const noexcept
+	{
+	auto subvols_begin=subvolumesBegin();
+	auto subvols_end=subvolumesEnd();
+
+	assert(subvols_begin!=subvols_end);
+
+	auto ret=subvols_begin->shoot(source,direction);
+	++subvols_begin;
+
+	while(subvols_begin!=subvols_end)
+		{
+		auto res=subvols_begin->shoot(source,direction);
+		if(res.second < ret.second)
+			{ret=res;}
+		++subvols_begin;
+		}
+	return ret;
+	}

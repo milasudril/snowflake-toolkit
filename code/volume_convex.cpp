@@ -377,3 +377,43 @@ void VolumeConvex::boundingBoxCompute() const noexcept
 	m_bounding_box=bb;
 	m_flags_dirty&=~BOUNDING_BOX_DIRTY;
 	}
+
+std::pair<Triangle,float> VolumeConvex::shoot(const Point& source,const Vector& direction) const noexcept
+	{
+	std::pair<Triangle,float> ret{Triangle{},INFINITY};
+	auto faces_begin=facesBegin();
+	auto faces_end=facesEnd();
+	auto verts=verticesBegin();
+
+	if(normalsDirty())
+		{facesNormalCompute();}
+	
+	while(faces_begin!=faces_end)
+		{
+		std::pair<Triangle,float> temp
+			{
+			Triangle
+				{ 
+					{
+					 verts[faces_begin->vertexGet(0)]
+					,verts[faces_begin->vertexGet(1)]
+					,verts[faces_begin->vertexGet(2)]
+					}
+				,faces_begin->m_normal
+				}
+			,0.0f
+			};
+		float out;
+		if(intersects(temp.first,source,direction,out))
+			{
+			auto mid=(temp.first.vertexGet(0) + temp.first.vertexGet(1) + temp.first.vertexGet(2))/3.0f;
+			temp.second=glm::distance(mid,source);
+			if(temp.second < ret.second)
+				{ret=temp;}
+			}
+		
+		++faces_begin;
+		}
+
+	return ret;
+	}

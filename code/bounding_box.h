@@ -24,6 +24,9 @@ namespace SnowflakeModel
 		Point centerGet() const noexcept
 			{return 0.5f*(m_min + m_max);}
 
+		Vector sizeGet() const noexcept
+			{return Vector(m_max-m_min);}
+
 		};
 
 	inline bool overlap(const BoundingBox& a,const BoundingBox& b) noexcept
