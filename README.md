@@ -8,14 +8,13 @@ The documentation can be found within the thesis "A software toolkit for generat
 
 Dependencies
 ------------
-The toolkit has been design with so it should not have to many external
-dependencies. But it relies on
+The toolkit has been design with so it should not have to many external dependencies. But it relies on
 
  * glm - The "OpenGL Mathematics Library"
  * libhdf5-cpp + its dependencies
 
 Compiling
---------------
+---------
 This is a shell script that can be used to compile the toolkit
 
     #!/bin/bash
@@ -56,10 +55,9 @@ This is a shell script that can be used to compile the toolkit
     # Cd into the snowflake toolkit directory
     cd "snowflake-toolkit/code"
 
-    # Run Wand to compile the project
-    ~/bin/maike
+    # Compile the code
+    ./make-all.sh
 
-Besides the release profile (stored in `release.json`), there a "profile", and a "debug" profile. See the JSON files for information about the compiler settings.
 
 License
 -------
