@@ -2,9 +2,14 @@
     "directoryoptions":{
         "paths_reject":[
             "..",
-            "."
+            ".",
+			".git",
+			"__targets_rel",
+			"__targets_dbg",
+			"__targets_profile",
+			"__targets_valgrind"
         ],
-        "recursive":0
+        "recursive":1
     },
     "source_files":[
         "."

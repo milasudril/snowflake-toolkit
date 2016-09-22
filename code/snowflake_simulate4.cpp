@@ -20,8 +20,6 @@
 
 static float sizeGet(SnowflakeModel::RandomGenerator& randgen,float mean,float std)
 	{
-//	It is not. Setup gamma distribution
-//
 //	Parameter setup from Wikipedia article.
 //	Use the standard deviation from user input:
 //		sigma^2=k*theta^2

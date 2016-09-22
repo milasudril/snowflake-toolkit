@@ -1,5 +1,5 @@
 #!/bin/bash
 
 for config in *.json; do
-	maike "--configfiles=$config"
+	maike --configfiles=alice/maikeconfig.json,"$config"
 done
