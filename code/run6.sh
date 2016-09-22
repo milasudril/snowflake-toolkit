@@ -1,20 +1,3 @@
 #!/bin/bash
 
-dir_out=/home/torbjorr/temp2
-k=22000000
-l=1000
-m=20000
-
-mkdir -p $dir_out
-
-rm -rf $dir_out/$k-$l-$m
-mkdir $dir_out/$k-$l-$m
-
-__targets_rel/snowflake_simulate3 \
-	--shape=../crystal-prototypes/bullet.ice --deformation=L,1,0 \
-	--deformation=a,0.33 --deformation=t,0 \
-	--output-dir=$dir_out/$k-$l-$m --dump-stats=256 --N=4999 \
-	--growthrate=$k --meltrate=$l --droprate=$m \
-	--seed=0 --dump-geometry \
-	--stop-cond=infinity \
-	| tee $dir_out/$k-$l-$m/params.txt
+__targets_dbg/snowflake_simulate4 --prototype=../crystal-prototypes/spheroid-lowpoly.ice --deformations=r_x:1:0,r_y:1:0,r_z:1:0,s:1:0.25

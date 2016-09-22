@@ -17,25 +17,219 @@
 #include "solid.h"
 #include "ice_particle.h"
 #include "randomgenerator.h"
+#include "alice/commandline.hpp"
 
-static float sizeGet(SnowflakeModel::RandomGenerator& randgen,float mean,float std)
+struct Deformation
 	{
-//	Parameter setup from Wikipedia article.
-//	Use the standard deviation from user input:
-//		sigma^2=k*theta^2
-//	we have
-	float E=mean;
-	float sigma=std;
-	float k=E*E/(sigma*sigma);
-	float theta=sigma*sigma/E;
-//	Convert to C++ notation
-	auto beta=theta;
-	float alpha=k;
+	std::string name;
+	float mean;
+	float standard_deviation;
+	};
 
-	std::gamma_distribution<float> G(alpha,beta);
-	return G(randgen);
+void print(const Deformation& deformation,FILE* dest)
+	{
+	fprintf(dest,"{\"name\":\"%s\",%.7g,%.7g}",deformation.name.c_str()
+		,deformation.mean
+		,deformation.standard_deviation);
 	}
 
+namespace Alice
+	{
+	template<>
+	struct MakeType<Stringkey("Deformation rule")>
+		{
+		typedef Deformation Type;
+		};
+
+	template<>
+	Deformation make_value<Deformation>(const std::string& str)
+		{
+		Deformation ret{};
+		auto ptr=str.data();
+		size_t fieldcount=0;
+		std::string buffer;
+		while(1)
+			{
+			auto x=*ptr;
+			switch(fieldcount)
+				{
+				case 0:
+					switch(x)
+						{
+						case ':':
+							++fieldcount;
+							break;
+						case '\0':
+							{throw "Deformation rule has no arguments";}
+						default:
+							ret.name+=*ptr;
+						}
+					break;
+
+				case 1:
+					switch(x)
+						{
+						case ':':
+							ret.mean=atof(buffer.c_str());
+							buffer.clear();
+							++fieldcount;
+							break;
+						case '\0':
+							ret.mean=atof(buffer.c_str());
+							return ret;
+						default:
+							buffer+=x;
+						}
+					break;
+
+				case 2:
+					switch(x)
+						{
+						case ':':
+							throw "Too many arguments for deformation rule";
+						case '\0':
+							ret.standard_deviation=atof(buffer.c_str());
+							return ret;
+						default:
+							buffer+=x;
+						}
+					break;
+				default:
+					throw "Too many arguments for deformation rule";
+				}
+			++ptr;
+			}
+
+		return Deformation{};
+		}
+	};
+
+ALICE_OPTION_DESCRIPTOR(OptionDescriptor
+	,{"Help","help","Print option summary to stdout, or, if a filename is given, to that file","String",Alice::Option::Multiplicity::ZERO_OR_ONE}
+	,{"Help","params-show","Print a summary of availible deformation parameters to stdout, or, if a filename is given, to that file","String",Alice::Option::Multiplicity::ZERO_OR_ONE}
+	,{"Simulation parameters","prototype","Generate data using the given prototype","String",Alice::Option::Multiplicity::ONE}
+	,{"Simulation parameters","deformations","Defines all deformations to apply to the prototype. A deformation rule is written in the form parameter:mean:standard deviation","Deformation rule",Alice::Option::Multiplicity::ONE_OR_MORE}
+	,{"Simulation parameters","D_max","Generate a graupel of diameter D_max. D_max is defined as the largest distance between two vertices.","Double",Alice::Option::Multiplicity::ONE}
+	);
+
+static bool printHelp(const Alice::CommandLine<OptionDescriptor>& cmd_line)
+	{
+	const auto& x=cmd_line.get<Alice::Stringkey("help")>();
+	if(x)
+		{
+		const auto& val=x.valueGet();
+		if(val.size()>0)
+			{cmd_line.help(1,SnowflakeModel::FileOut(val[0].c_str()).handleGet());}
+		else
+			{cmd_line.help(1);}
+		return 1;
+		}
+	return 0;
+	}
+
+static SnowflakeModel::Solid prototypeLoad(const Alice::CommandLine<OptionDescriptor>& cmd_line)
+	{
+	const auto& src_name=cmd_line.get<Alice::Stringkey("prototype")>();
+	if(!src_name)
+		{throw "No crystal prototype is given";}
+
+	SnowflakeModel::FileIn src(src_name.valueGet().c_str());
+	
+	SnowflakeModel::ConfigParser parser(src);
+	SnowflakeModel::Solid prototype;
+	SnowflakeModel::SolidLoader loader(prototype);
+	parser.commandsRead(loader);
+
+	return prototype;
+	}
+
+static void paramsShow(const SnowflakeModel::Solid& s,SnowflakeModel::FileOut&& file)
+	{
+	auto& deformations=s.deformationTemplatesGet();
+	auto ptr=deformations.data();
+	auto ptr_end=ptr + deformations.size();
+	file.printf("Availible parameters\n"
+		"====================\n\n");
+	while(ptr!=ptr_end)
+		{
+		auto& name=ptr->nameGet();
+		file.printf("%s\n",name.c_str());
+		auto N=name.size();
+		while(N)
+			{
+			--N;
+			file.putc('-');
+			}
+		file.putc('\n');
+		auto paramname=ptr->paramnamesBegin();
+		auto paramnames_end=ptr->paramnamesEnd();
+		while(paramname!=paramnames_end)
+			{
+			printf(" * %s\n",paramname->data());
+			++paramname;
+			}
+		file.putc('\n');
+		++ptr;
+		}
+	}
+
+static bool paramsShow(const Alice::CommandLine<OptionDescriptor>& cmd_line,const SnowflakeModel::Solid& s)
+	{
+	const auto& x=cmd_line.get<Alice::Stringkey("params-show")>();
+	if(x)
+		{
+		const auto& val=x.valueGet();
+		if(val.size()>0)
+			{paramsShow(s,SnowflakeModel::FileOut(val[0].c_str()));}
+		else
+			{paramsShow(s,SnowflakeModel::FileOut(stdout));}
+		return 1;
+		}
+	return 0;
+	}
+
+
+
+SnowflakeModel::IceParticle particleGenerate(const SnowflakeModel::Solid& s_in
+	,const std::vector<Deformation>& deformations,SnowflakeModel::RandomGenerator& randgen)
+	{
+	SnowflakeModel::IceParticle ice_particle;
+	ice_particle.solidSet(s_in);
+
+//	Setup parameters
+		{
+		auto deformation=deformations.data();
+		auto deformation_end=deformation+deformations.size();
+		while(deformation!=deformation_end)
+			{
+		//	Test if parameter is deterministic
+			if(fabs(deformation->standard_deviation)<1e-7)
+				{ice_particle.parameterSet(deformation->name.data(),deformation->mean);}
+			else
+				{
+			//	It is not. Setup gamma distribution
+			//
+			//	Parameter setup from Wikipedia article.
+			//	Use the standard deviation from user input:
+			//		sigma^2=k*theta^2
+			//	we have
+				float E=deformation->mean;
+				float sigma=deformation->standard_deviation;
+				float k=E*E/(sigma*sigma);
+				float theta=sigma*sigma/E;
+			//	Convert to C++ notation
+				auto beta=theta;
+				float alpha=k;
+
+				std::gamma_distribution<float> G(alpha,beta);
+				auto scale=G(randgen);
+				ice_particle.parameterSet(deformation->name,scale);
+				}
+			++deformation;
+			}
+		}
+	return std::move(ice_particle);
+	}
 
 static SnowflakeModel::Triangle
 faceChoose(const SnowflakeModel::Solid& s_a,SnowflakeModel::RandomGenerator& randgen)
@@ -58,38 +252,43 @@ faceChoose(const SnowflakeModel::Solid& s_a,SnowflakeModel::RandomGenerator& ran
 		}
 	std::discrete_distribution<size_t> P_f(weights.begin(),weights.end());
 	auto face_out_index=P_f(randgen);
+
 	return subvol_sel.triangleOutGet(face_out_index);
 	}
 
-
-int main()
+int main(int argc,char** argv)
 	{
 	try
 		{
-		SnowflakeModel::FileIn src("../crystal-prototypes/spheroid-lowpoly.ice");
-		SnowflakeModel::ConfigParser parser(src);
-		SnowflakeModel::Solid prototype;
-		SnowflakeModel::SolidLoader loader(prototype);
-		parser.commandsRead(loader);
+		Alice::CommandLine<OptionDescriptor> cmd_line(argc,argv);
+		if(printHelp(cmd_line))
+			{return 0;}
 
+		auto prototype=prototypeLoad(cmd_line);
 
-		SnowflakeModel::IceParticle p;
-		p.solidSet(prototype);
-		p.parameterSet("r_x",1.0f);
-		p.parameterSet("r_y",1.0f);
-		p.parameterSet("r_z",1.0f);
-	
-		size_t N=2000;
-		SnowflakeModel::Solid solid_out;
-		solid_out.merge(p.solidGet(),0,0);
+		if(paramsShow(cmd_line,prototype))
+			{return 0;}
+
+		const auto& deformations=cmd_line.get<Alice::Stringkey("deformations")>();
+		if(!deformations)
+			{throw "No deformation is given. Use --params-show to list the name of availible parameters";}
+
+		cmd_line.print();
+
+		auto D_max=cmd_line.get<Alice::Stringkey("D_max")>().valueGet();
 		SnowflakeModel::RandomGenerator randgen;
+		SnowflakeModel::Solid solid_out;
+		auto p=particleGenerate(prototype,deformations.valueGet(),randgen);	
+		solid_out.merge(p.solidGet(),0,0);
+		auto ex=solid_out.extremaGet();
+		auto d_max=length(ex.first - ex.second);
 		fprintf(stderr,"# Running\n");
 		fflush(stderr);
-		while(N!=0)
+		do
 			{
-			fprintf(stderr,"\r%zu       ",N);
+			fprintf(stderr,"\r%.7g       ",d_max);
 			fflush(stderr);
-			p.parameterSet("s",sizeGet(randgen,1.0f,0.25f));
+			p=particleGenerate(prototype,deformations.valueGet(),randgen);
 			auto T_a=faceChoose(solid_out,randgen);
 			auto T_b=faceChoose(p.solidGet(),randgen);
 
@@ -101,14 +300,14 @@ int main()
 
 			SnowflakeModel::Matrix T;
 			T=glm::translate(T,pos);
-			auto obj=p.solidGet();
+			auto& obj=p.solidGet();
 			obj.transform(T*R,0);
 			if(!overlap(obj,solid_out))
-				{
-				solid_out.merge(obj,0,0);
-				--N;
-				}
+				{solid_out.merge(std::move(obj),0,0);}
+			auto ex=solid_out.extremaGet();
+			d_max=length(ex.first - ex.second);
 			}
+		while(d_max < D_max);
 
 		
 
@@ -118,32 +317,12 @@ int main()
 
 		SnowflakeModel::FileOut dest("test.obj");
 		SnowflakeModel::SolidWriter writer(dest);
-		writer.write(solid_out);
-
-		
-
-
-	/*	auto& solid_deformed=p.solidGet();
-		solid_deformed.centerCentroidAt(SnowflakeModel::Point(0,0,0,1.0f));
-		auto& vc_a=solid_deformed.subvolumeGet(0);
-		auto f_a=vc_a.triangleGet(0);
-		auto u=f_a.vertexGet(0) + 0.25f*(f_a.vertexGet(1) - f_a.vertexGet(0))
-			 + 0.25f*(f_a.vertexGet(2) - f_a.vertexGet(0));
-
-		auto p2=solid_deformed;
-		auto& vc_b=p2.subvolumeGet(0);
-		auto f_b=vc_b.triangleGet(2);
-		auto v=f_b.vertexGet(0) + 0.25f*(f_b.vertexGet(1) - f_b.vertexGet(0))
-			 + 0.25f*(f_b.vertexGet(2) - f_b.vertexGet(0));
-
-		auto R=SnowflakeModel::vectorsAlign2(f_b.m_normal, -f_a.m_normal);
-		auto pos=SnowflakeModel::Vector(u - R*v);
-		SnowflakeModel::Matrix T;
-		T=glm::translate(T,pos);
-		solid_deformed.transform(T*R,0);
-		p2.merge(solid_deformed,0,0);*/
-
-		
+		writer.write(solid_out);		
+		}
+	catch(const Alice::ErrorMessage& message)
+		{
+		fprintf(stderr,"%s\n",message.data);
+		return -1;
 		}
 	catch(const char* msg)
 		{

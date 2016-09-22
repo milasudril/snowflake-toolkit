@@ -38,23 +38,25 @@ namespace SnowflakeModel
 				m_own=0;
 				}
 			
-			~FileOut()
+			~FileOut() noexcept
 				{
 				if(m_own)
 					{::fclose(file_out);}
 				}
 			
-			void putc(char ch_out)
+			void putc(char ch_out) noexcept
 				{::putc(ch_out,file_out);}
 				
-			void printf(const char* format,...)
+			void printf(const char* format,...) noexcept
 				{
 				va_list args;
 				va_start(args, format);
 				vfprintf(file_out, format, args);
 				va_end(args);
 				}
-				
+
+			FILE* handleGet() noexcept
+				{return file_out;}
 			
 		private:
 			FILE* file_out;
