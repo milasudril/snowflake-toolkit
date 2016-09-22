@@ -1,0 +1,3 @@
+[submodule "code/alice"]
+	path = code/alice
+	url = https://github.com/milasudril/alice
