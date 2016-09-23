@@ -27,6 +27,20 @@ namespace SnowflakeModel
 		Vector sizeGet() const noexcept
 			{return Vector(m_max-m_min);}
 
+
+		/** this inside box?
+		*/
+		bool inside(const BoundingBox& box) const noexcept
+			{
+			return m_min.x>=box.m_min.x
+				&& m_min.y>=box.m_min.y
+				&& m_min.z>=box.m_min.z
+				&& m_max.x<box.m_max.x
+				&& m_max.y<box.m_max.y
+				&& m_max.z<box.m_max.z;
+
+			}
+
 		};
 
 	inline bool overlap(const BoundingBox& a,const BoundingBox& b) noexcept
