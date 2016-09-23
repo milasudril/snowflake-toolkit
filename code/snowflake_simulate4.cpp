@@ -18,6 +18,9 @@
 #include "ice_particle.h"
 #include "randomgenerator.h"
 #include "solid_writer_prototype.h"
+#include "ctrlchandler.h"
+#include "filenameesc.h"
+#include "getdate.h"
 #include "alice/commandline.hpp"
 
 struct Deformation
@@ -115,6 +118,7 @@ ALICE_OPTION_DESCRIPTOR(OptionDescriptor
 	,{"Output options","dump-geometry","Specify output Wavefront file","String",Alice::Option::Multiplicity::ONE}
 	,{"Output options","dump-geometry-ice","Same as --dump-geometry but write data as Ice crystal prototype files, so they can be used by other tools provided by the toolkit.","String",Alice::Option::Multiplicity::ONE}
 	,{"Output options","dump-stats","Write statistics to the given file","String",Alice::Option::Multiplicity::ONE}
+	,{"Other","statefile","Reload state from file","String",Alice::Option::Multiplicity::ONE}
 	);
 
 static bool printHelp(const Alice::CommandLine<OptionDescriptor>& cmd_line)
@@ -278,8 +282,15 @@ static void statsDump(SnowflakeModel::FileOut* file_out,const SnowflakeModel::So
 		auto& bb=solid.boundingBoxGet();
 		auto extrema=solid.extremaGet();
 		auto L=bb.m_max-bb.m_min;
-		
-		file_out->printf("%.7g\t%.7g\t%.7g\t%.7g\t%.7g\t%.7g\t%.7g\t%zu\t%zu\n"
+		fflush(stdout);
+		file_out->printf("%.7g\t"
+			"%.7g\t"
+			"%.7g\t"
+			"%.7g\t"
+			"%.7g\t"
+			"%.7g\t"
+			"%zu\t"
+			"%zu\n"
 			,solid.rMaxGet()
 			,glm::distance(extrema.first,extrema.second)
 			,solid.volumeGet()
@@ -299,6 +310,23 @@ static std::unique_ptr<SnowflakeModel::FileOut> statFileOpen(const Alice::Comman
 		return std::move(ret);
 		}
 	return std::unique_ptr<SnowflakeModel::FileOut>();
+	}
+
+static std::string statefileName(const std::string& name_init,const std::string& name_new)
+	{
+	if(name_init.size()==0)
+		{
+		return SnowflakeModel::filenameEscape(name_new.c_str()) + "-0000000000000000.h5";
+		}
+//TODO (perf) This can be done much easier by looping through name_init backwards
+	auto pos_counter=name_init.find_last_of('-');
+	auto ret=name_init.substr(0,pos_counter);
+	auto pos_extension=name_init.find_last_of('.');
+	auto val=name_init.substr(pos_counter + 1,pos_extension - pos_counter-1);
+	size_t counter=strtol(val.c_str(),nullptr,16) + 1;
+	sprintf(const_cast<char*>( val.data() ),"%016zx",counter);
+	auto extension=name_init.substr(pos_extension);	
+	return ret+"-"+val+extension;
 	}
 
 
@@ -336,9 +364,10 @@ int main(int argc,char** argv)
 		fprintf(stderr,"# Running\n");
 		fflush(stderr);
 		size_t rejected=0;
+		SnowflakeModel::CtrlCHandler int_handler;
+		auto now=SnowflakeModel::getdate();
 		do
 			{
-
 			p=particleGenerate(prototype,deformations.valueGet(),randgen);
 			auto T_a=faceChoose(solid_out,randgen);
 			if(T_a.second==INFINITY)
@@ -371,9 +400,37 @@ int main(int argc,char** argv)
 			else
 				{++rejected;}
 			}
-		while(d_max < D_max);
+		while(d_max < D_max && !int_handler.captured());
 
 			{
+			auto statefile=cmd_line.get<Alice::Stringkey("statefile")>().valueGet();
+			auto filename_dump=statefileName(statefile,now);
+			fprintf(stderr,"# Dumping simulation state to %s\n",filename_dump.c_str());
+			SnowflakeModel::DataDump dump(filename_dump.c_str()
+				,SnowflakeModel::DataDump::IOMode::WRITE);
+		//	setup.write(dump);
+			prototype.write("prototype",dump);
+			solid_out.write("solid_out",dump);
+			auto& rng_state=SnowflakeModel::get(randgen);
+			dump.write("randgen_state",rng_state.state,1);
+			dump.write("randgen_position",&rng_state.position,1);
+			dump.write("D_max",&D_max,1);
+				{
+				auto& x=cmd_line.get<Alice::Stringkey("dump-stats")>();
+				if(x)
+					{
+					auto y=x.valueGet().c_str();
+					dump.write("statfile",&y,1);
+					}
+				}
+				{
+				auto x=cmd_line.get<Alice::Stringkey("prototype")>().valueGet().c_str();
+				dump.write("prototype_source",&x,1);
+				}
+			}
+
+			{
+			fprintf(stderr,"# Dumping wavefront files\n");
 			auto& objfile=cmd_line.get<Alice::Stringkey("dump-geometry")>();
 			if(objfile)
 				{
@@ -384,6 +441,7 @@ int main(int argc,char** argv)
 			}
 
 			{
+			fprintf(stderr,"# Dumping crystal prototype files\n");
 			auto& icefile=cmd_line.get<Alice::Stringkey("dump-geometry-ice")>();
 			if(icefile)
 				{

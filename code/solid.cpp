@@ -294,52 +294,6 @@ bool SnowflakeModel::overlap(const Solid& v_a,const Solid& v_b) noexcept
 			}
 		++subvolume;
 		}
-
-
-
-#if 0 //With current algorithm, subvolumes will never become completely submerged.
-	//	Vertices from v_a inside v_b?
-		{
-		auto subvolume=v_a.subvolumesBegin();
-		auto vol_end=v_a.subvolumesEnd();
-		while(subvolume!=vol_end)
-			{
-			auto vertex=subvolume->verticesBegin();
-			auto v_end=subvolume->verticesEnd();
-			while(vertex!=v_end)
-				{
-				if(v_b.inside(*vertex)!=nullptr)
-					{
-					abort();
-					return 1;
-					}
-				++vertex;
-				}
-			++subvolume;
-			}
-		}
-
-	//	Vertices from v_b inside v_a?
-		{
-		auto subvolume=v_b.subvolumesBegin();
-		auto vol_end=v_b.subvolumesEnd();
-		while(subvolume!=vol_end)
-			{
-			auto vertex=subvolume->verticesBegin();
-			auto v_end=subvolume->verticesEnd();
-			while(vertex!=v_end)
-				{
-				if(v_a.inside(*vertex)!=nullptr)
-					{
-					abort();
-					return 1;
-					}
-				++vertex;
-				}
-			++subvolume;
-			}
-		}
-#endif
 	return 0;
 	}
 
