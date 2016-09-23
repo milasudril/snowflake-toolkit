@@ -24,6 +24,9 @@ namespace SnowflakeModel
 		Point centerGet() const noexcept
 			{return 0.5f*(m_min + m_max);}
 
+		Vector sizeGet() const noexcept
+			{return Vector(m_max-m_min);}
+
 		};
 
 	inline bool overlap(const BoundingBox& a,const BoundingBox& b) noexcept
@@ -55,6 +58,11 @@ namespace SnowflakeModel
 		ret.z=std::uniform_real_distribution<float>(box.m_min.z,box.m_max.z)(rng);
 		ret.w=1.0f;
 		return ret;
+		}
+
+	inline float distance(const Point& p,const BoundingBox& box)
+		{
+		return glm::length( glm::max(box.m_min - p,p - box.m_max) );
 		}
 	}
 

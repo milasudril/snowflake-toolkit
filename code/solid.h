@@ -187,6 +187,8 @@ namespace SnowflakeModel
 
 			void write(const char* id,DataDump& dump) const;
 
+			std::pair<Triangle,float> shoot(const Point& source,const Vector& direction) const noexcept;
+
 
 		private:
 			static constexpr uint32_t BOUNDINGBOX_DIRTY=1;
