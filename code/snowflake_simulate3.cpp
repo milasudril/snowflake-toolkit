@@ -465,8 +465,6 @@ void helpShow()
 		"    Sets the random number genererator seed\n\n"
 		"--N=integer\n"
 		"    The maximum number of crystals\n\n"
-		"--sigma=value\n"
-		"    Standard deviation in particle size\n\n"
 		"--droprate=value\n"
 		"    Model parameter\n\n"
 		"--growthrate=value\n"
