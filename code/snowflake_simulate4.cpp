@@ -114,6 +114,7 @@ ALICE_OPTION_DESCRIPTOR(OptionDescriptor
 	,{"Simulation parameters","seed","Random seed mod 2^32","Integer",Alice::Option::Multiplicity::ONE}
 	,{"Output options","dump-geometry","Specify output Wavefront file","String",Alice::Option::Multiplicity::ONE}
 	,{"Output options","dump-geometry-ice","Same as --dump-geometry but write data as Ice crystal prototype files, so they can be used by other tools provided by the toolkit.","String",Alice::Option::Multiplicity::ONE}
+	,{"Output options","dump-stats","Write statistics to the given file","String",Alice::Option::Multiplicity::ONE}
 	);
 
 static bool printHelp(const Alice::CommandLine<OptionDescriptor>& cmd_line)
@@ -270,6 +271,36 @@ faceChoose(const SnowflakeModel::Solid& s_a,SnowflakeModel::RandomGenerator& ran
 	return s_a.shoot(source,direction);
 	}
 
+static void statsDump(SnowflakeModel::FileOut* file_out,const SnowflakeModel::Solid& solid)
+	{
+	if(file_out!=nullptr)
+		{
+		auto& bb=solid.boundingBoxGet();
+		auto extrema=solid.extremaGet();
+		auto L=bb.m_max-bb.m_min;
+		
+		file_out->printf("%.7g\t%.7g\t%.7g\t%.7g\t%.7g\t%.7g\t%.7g\t%zu\t%zu\n"
+			,solid.rMaxGet()
+			,glm::distance(extrema.first,extrema.second)
+			,solid.volumeGet()
+			,L.x,L.x/L.y,L.x/L.z,solid.subvolumesCount(),solid.overlapCount());
+		}
+	}
+
+static std::unique_ptr<SnowflakeModel::FileOut> statFileOpen(const Alice::CommandLine<OptionDescriptor>& cmd_line)
+	{
+	const auto& x=cmd_line.get<Alice::Stringkey("dump-stats")>();
+	if(x)
+		{
+		auto ret=std::make_unique<SnowflakeModel::FileOut>(x.valueGet().c_str());
+
+		ret->printf("# R_max\tD_max\tVolume\tL_x\tr_xy\tr_xz\tNumber of sub-volumes\tOverlap count\n");
+
+		return std::move(ret);
+		}
+	return std::unique_ptr<SnowflakeModel::FileOut>();
+	}
+
 
 int main(int argc,char** argv)
 	{
@@ -291,9 +322,12 @@ int main(int argc,char** argv)
 		cmd_line.print();
 
 		auto D_max=cmd_line.get<Alice::Stringkey("D_max")>().valueGet();
+		auto file_out=statFileOpen(cmd_line);
+
 		SnowflakeModel::RandomGenerator randgen;
 		randgen.seed(cmd_line.get<Alice::Stringkey("seed")>().valueGet());
 		randgen.discard(65536);
+
 		SnowflakeModel::Solid solid_out;
 		auto p=particleGenerate(prototype,deformations.valueGet(),randgen);	
 		solid_out.merge(p.solidGet(),0,0);
@@ -331,6 +365,7 @@ int main(int argc,char** argv)
 				d_max=length(ex.first - ex.second);
 				fprintf(stderr,"\r%.7g (Cs: %zu,  Cr: %zu)      "
 					,d_max,solid_out.subvolumesCount(),rejected);
+				statsDump(file_out.get(),solid_out);
 				fflush(stderr);
 				}
 			else
