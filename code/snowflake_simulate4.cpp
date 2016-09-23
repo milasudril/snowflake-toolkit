@@ -17,6 +17,7 @@
 #include "solid.h"
 #include "ice_particle.h"
 #include "randomgenerator.h"
+#include "solid_writer_prototype.h"
 #include "alice/commandline.hpp"
 
 struct Deformation
@@ -110,6 +111,9 @@ ALICE_OPTION_DESCRIPTOR(OptionDescriptor
 	,{"Simulation parameters","prototype","Generate data using the given prototype","String",Alice::Option::Multiplicity::ONE}
 	,{"Simulation parameters","deformations","Defines all deformations to apply to the prototype. A deformation rule is written in the form parameter:mean:standard deviation","Deformation rule",Alice::Option::Multiplicity::ONE_OR_MORE}
 	,{"Simulation parameters","D_max","Generate a graupel of diameter D_max. D_max is defined as the largest distance between two vertices.","Double",Alice::Option::Multiplicity::ONE}
+	,{"Simulation parameters","seed","Random seed mod 2^32","Integer",Alice::Option::Multiplicity::ONE}
+	,{"Output options","dump-geometry","Specify output Wavefront file","String",Alice::Option::Multiplicity::ONE}
+	,{"Output options","dump-geometry-ice","Same as --dump-geometry but write data as Ice crystal prototype files, so they can be used by other tools provided by the toolkit.","String",Alice::Option::Multiplicity::ONE}
 	);
 
 static bool printHelp(const Alice::CommandLine<OptionDescriptor>& cmd_line)
@@ -262,37 +266,10 @@ faceChoose(const SnowflakeModel::Solid& s_a,SnowflakeModel::RandomGenerator& ran
 
 //	Set the source on the sphere
 	auto source=bb_mid - SnowflakeModel::Point(r*direction,1.0);
-//	printf("%.7g\n",source.x);
 
 	return s_a.shoot(source,direction);
 	}
 
-#if 0
-static SnowflakeModel::Triangle
-faceChoose(const SnowflakeModel::Solid& s_a,SnowflakeModel::RandomGenerator& randgen)
-	{
-	std::vector<float> weights;
-	auto v_current=s_a.subvolumesBegin();
-	while(v_current!=s_a.subvolumesEnd())
-		{
-		weights.push_back(v_current->areaVisibleGet());
-		++v_current;
-		}
-	std::discrete_distribution<size_t> P_v(weights.begin(),weights.end());
-	auto& subvol_sel=s_a.subvolumeGet(P_v(randgen));
-	weights.clear();
-	auto f_i=subvol_sel.facesOutBegin();
-	while(f_i!=subvol_sel.facesOutEnd())
-		{
-		weights.push_back(glm::length(subvol_sel.faceGet(*f_i).m_normal_raw));
-		++f_i;
-		}
-	std::discrete_distribution<size_t> P_f(weights.begin(),weights.end());
-	auto face_out_index=P_f(randgen);
-
-	return subvol_sel.triangleOutGet(face_out_index);
-	}
-#endif
 
 int main(int argc,char** argv)
 	{
@@ -315,6 +292,7 @@ int main(int argc,char** argv)
 
 		auto D_max=cmd_line.get<Alice::Stringkey("D_max")>().valueGet();
 		SnowflakeModel::RandomGenerator randgen;
+		randgen.seed(cmd_line.get<Alice::Stringkey("seed")>().valueGet());
 		randgen.discard(65536);
 		SnowflakeModel::Solid solid_out;
 		auto p=particleGenerate(prototype,deformations.valueGet(),randgen);	
@@ -351,7 +329,8 @@ int main(int argc,char** argv)
 				solid_out.merge(std::move(obj),0,0);
 				auto ex=solid_out.extremaGet();
 				d_max=length(ex.first - ex.second);
-				fprintf(stderr,"\r%.7g (%zu rejected)      ",d_max,rejected);
+				fprintf(stderr,"\r%.7g (Cs: %zu,  Cr: %zu)      "
+					,d_max,solid_out.subvolumesCount(),rejected);
 				fflush(stderr);
 				}
 			else
@@ -359,15 +338,25 @@ int main(int argc,char** argv)
 			}
 		while(d_max < D_max);
 
-		
+			{
+			auto& objfile=cmd_line.get<Alice::Stringkey("dump-geometry")>();
+			if(objfile)
+				{
+				SnowflakeModel::FileOut dest(objfile.valueGet().c_str());
+				SnowflakeModel::SolidWriter writer(dest);
+				writer.write(solid_out);
+				}
+			}
 
-
-
-
-
-		SnowflakeModel::FileOut dest("test.obj");
-		SnowflakeModel::SolidWriter writer(dest);
-		writer.write(solid_out);		
+			{
+			auto& icefile=cmd_line.get<Alice::Stringkey("dump-geometry-ice")>();
+			if(icefile)
+				{
+				SnowflakeModel::FileOut file_out(icefile.valueGet().c_str());
+				SnowflakeModel::SolidWriterPrototype writer(file_out);
+				writer.write(solid_out);
+				}
+			}
 		}
 	catch(const Alice::ErrorMessage& message)
 		{

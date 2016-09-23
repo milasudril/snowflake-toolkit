@@ -538,16 +538,20 @@ std::pair<Triangle,float> Solid::shoot(const Point& source,const Vector& directi
 	auto subvols_end=subvolumesEnd();
 
 	assert(subvols_begin!=subvols_end);
-
-	auto ret=subvols_begin->shoot(source,direction);
-	++subvols_begin;
+	--subvols_end;
+	auto ret=subvols_end->shoot(source,direction);
+	
 
 	while(subvols_begin!=subvols_end)
 		{
-		auto res=subvols_begin->shoot(source,direction);
-		if(res.second < ret.second)
-			{ret=res;}
-		++subvols_begin;
+		--subvols_end;
+		auto d_box=distance(source,subvols_end->boundingBoxGet());
+		if(d_box < ret.second)
+			{
+			auto res=subvols_end->shoot(source,direction);
+			if(res.second < ret.second)
+				{ret=res;}
+			}
 		}
 	return ret;
 	}

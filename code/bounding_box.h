@@ -59,6 +59,11 @@ namespace SnowflakeModel
 		ret.w=1.0f;
 		return ret;
 		}
+
+	inline float distance(const Point& p,const BoundingBox& box)
+		{
+		return glm::length( glm::max(box.m_min - p,p - box.m_max) );
+		}
 	}
 
 
