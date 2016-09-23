@@ -16,7 +16,7 @@ namespace SnowflakeModel
 
 			Node& boxFind(const BoundingBox& bb);
 			void remove(Node* node);
-			void insert(const BoundingBox& bb,const Value& v)
+			void insert(const BoundingBox& bb,const Value& v);
 
 		private:
 			struct Node
