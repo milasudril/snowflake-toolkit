@@ -359,6 +359,9 @@ static std::string statefileName(const std::string& name_init,const std::string&
 
 struct Simstate
 	{
+	Simstate(const Alice::CommandLine<OptionDescriptor>& cmd_line):r_cmd_line(cmd_line)
+		{}
+
 	explicit Simstate(const Alice::CommandLine<OptionDescriptor>& cmd_line
 		,SnowflakeModel::Solid&& r_prototype);
 	
@@ -377,7 +380,7 @@ struct Simstate
 	void icefileWrite() const;
 	
 	const Alice::CommandLine<OptionDescriptor>& r_cmd_line;
-	SnowflakeModel::Solid prototype;
+	SnowflakeModel::Solid m_prototype;
 	std::vector<Deformation> deformations;
 	SnowflakeModel::Solid solid_out;
 	SnowflakeModel::RandomGenerator randgen;
@@ -392,7 +395,7 @@ struct Simstate
 	};
 
 Simstate::Simstate(const Alice::CommandLine<OptionDescriptor>& cmd_line
-	,SnowflakeModel::Solid&& prototype):r_cmd_line(cmd_line),prototype(std::move(prototype))
+	,SnowflakeModel::Solid&& prototype):r_cmd_line(cmd_line),m_prototype(std::move(prototype))
 	,rejected(0)
 	{
 		{
@@ -412,7 +415,7 @@ Simstate::Simstate(const Alice::CommandLine<OptionDescriptor>& cmd_line
 		}
 
 		{
-		auto p=particleGenerate(prototype,deformations,randgen);
+		auto p=particleGenerate(m_prototype,deformations,randgen);
 		solid_out.merge(p.solidGet(),0,0);
 		}
 		{
@@ -434,7 +437,7 @@ Simstate::Simstate(const Alice::CommandLine<OptionDescriptor>& cmd_line
 	,const std::string& statefile):r_cmd_line(cmd_line)
 	{
 	SnowflakeModel::DataDump dump(statefile.c_str(),SnowflakeModel::DataDump::IOMode::READ);
-	prototype=SnowflakeModel::Solid(dump,"prototype");
+	m_prototype=SnowflakeModel::Solid(dump,"prototype");
 	solid_out=SnowflakeModel::Solid(dump,"solid_out");
 	dump.arrayRead<uint32_t>("randgen_state")
 		.dataRead(SnowflakeModel::get(randgen).state,SnowflakeModel::get(randgen).size());
@@ -476,13 +479,13 @@ void Simstate::save(const std::string& now) const
 	fprintf(stderr,"# Dumping simulation state to %s\n",filename_dump.c_str());
 	SnowflakeModel::DataDump dump(filename_dump.c_str()
 		,SnowflakeModel::DataDump::IOMode::WRITE);
-	prototype.write("prototype",dump);
+	m_prototype.write("prototype",dump);
 	solid_out.write("solid_out",dump);
 	auto& rng_state=SnowflakeModel::get(randgen);
 	dump.write("randgen_state",rng_state.state,rng_state.size());
 	dump.write("randgen_position",&rng_state.position,1);
 	dump.write("D_max",&D_max,1);
-	dump.write("rejeceted",&rejected,1);
+	dump.write("rejected",&rejected,1);
 
 		{
 		auto x=statfile.c_str();
@@ -522,7 +525,7 @@ void Simstate::save(const std::string& now) const
 
 void Simstate::step()
 	{
-	auto p=particleGenerate(prototype,deformations,randgen);
+	auto p=particleGenerate(m_prototype,deformations,randgen);
 	auto T_a=faceChoose(solid_out,randgen);
 	if(T_a.second==INFINITY)
 		{return;}
@@ -577,15 +580,18 @@ void Simstate::icefileWrite() const
 		}
 	}
 
-static Simstate simstateCreate(const Alice::CommandLine<OptionDescriptor>& cmd_line
-	,SnowflakeModel::Solid&& prototype)
+static std::pair<Simstate,bool> simstateCreate(const Alice::CommandLine<OptionDescriptor>& cmd_line)
 	{
 	auto& statefile=cmd_line.get<Alice::Stringkey("statefile")>();
 	if(statefile)
 		{
-		return std::move( Simstate(cmd_line,statefile.valueGet() ) );
+		return std::pair<Simstate,bool>{std::move( Simstate(cmd_line,statefile.valueGet() ) ),1};
 		}
-	return std::move( Simstate(cmd_line,std::move( prototype ) ) );
+	auto prototype=prototypeLoad(cmd_line);
+	if(paramsShow(cmd_line,prototype))
+		{return std::pair<Simstate,bool>{Simstate(cmd_line),0};}
+
+	return std::pair<Simstate,bool>{Simstate(cmd_line,std::move( prototype ) ),1};
 	}
 
 
@@ -597,22 +603,21 @@ int main(int argc,char** argv)
 		if(printHelp(cmd_line))
 			{return 0;}
 
-		auto prototype=prototypeLoad(cmd_line);
-		if(paramsShow(cmd_line,prototype))
+		auto state=simstateCreate(cmd_line);
+		if(state.second==0)
 			{return 0;}
-		auto state=simstateCreate(cmd_line,std::move(prototype));
 
-		SnowflakeModel::CtrlCHandler int_handler;
 		auto now=SnowflakeModel::getdate();
 		fprintf(stderr,"# Simulation started %s\n",now.c_str());
-		while(state.progressGet()<1.0 && !int_handler.captured())
+		SnowflakeModel::CtrlCHandler int_handler;
+		while(state.first.progressGet()<1.0 && !int_handler.captured())
 			{
-			state.step();
+			state.first.step();
 			}
 		
-		state.save(now);
-		state.objfileWrite();
-		state.icefileWrite();
+		state.first.save(now);
+		state.first.objfileWrite();
+		state.first.icefileWrite();
 		}
 	catch(const Alice::ErrorMessage& message)
 		{
