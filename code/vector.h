@@ -17,8 +17,10 @@
 #define SNOWFLAKEMODEL_VECTOR_H
 
 #define GLM_FORCE_RADIANS
+
 #include "datadump.h"
-#include <glm/glm.hpp>
+#include <glm/gtx/simd_vec4.hpp> 
+#include <glm/gtx/simd_mat4.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <utility>
 

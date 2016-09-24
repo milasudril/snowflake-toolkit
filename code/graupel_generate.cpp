@@ -3,7 +3,7 @@
 //@	    "targets":[
 //@	        {
 //@	            "dependencies":[],
-//@	            "name":"snowflake_simulate4",
+//@	            "name":"graupel_generate",
 //@	            "type":"application"
 //@			,"cxxoptions":{"cflags_extra":["L/usr/lib/x86_64-linux-gnu/hdf5/serial"]}
 //@	        }
@@ -120,6 +120,46 @@ ALICE_OPTION_DESCRIPTOR(OptionDescriptor
 	,{"Output options","dump-stats","Write statistics to the given file","String",Alice::Option::Multiplicity::ONE}
 	,{"Other","statefile","Reload state from file","String",Alice::Option::Multiplicity::ONE}
 	);
+
+
+struct DeformationDataOut
+	{
+	const char* name;
+	float mean;
+	float standard_deviation;
+	};
+
+struct DeformationDataIn
+	{
+	SnowflakeModel::DataDump::StringHolder name;
+	float mean;
+	float standard_deviation;
+	};
+
+namespace SnowflakeModel
+	{
+	template<>
+	const DataDump::FieldDescriptor DataDump::MetaObject<DeformationDataOut>::fields[]=
+		{
+		 {"name",offsetOf(&DeformationDataOut::name),DataDump::MetaObject<decltype(DeformationDataOut::name)>().typeGet()}
+		,{"mean",offsetOf(&DeformationDataOut::mean),DataDump::MetaObject<decltype(DeformationDataOut::mean)>().typeGet()}
+		,{"standard_deviation",offsetOf(&DeformationDataOut::standard_deviation),DataDump::MetaObject<decltype(DeformationDataOut::standard_deviation)>().typeGet()}
+		};
+
+	template<>
+	const size_t DataDump::MetaObject<DeformationDataOut>::field_count=3;
+
+	template<>
+	const DataDump::FieldDescriptor DataDump::MetaObject<DeformationDataIn>::fields[]=
+		{
+		 {"name",offsetOf(&DeformationDataIn::name),DataDump::MetaObject<decltype(DeformationDataIn::name)>().typeGet()}
+		,{"mean",offsetOf(&DeformationDataIn::mean),DataDump::MetaObject<decltype(DeformationDataIn::mean)>().typeGet()}
+		,{"standard_deviation",offsetOf(&DeformationDataIn::standard_deviation),DataDump::MetaObject<decltype(DeformationDataIn::standard_deviation)>().typeGet()}
+		};
+
+	template<>
+	const size_t DataDump::MetaObject<DeformationDataIn>::field_count=3;
+	}
 
 static bool printHelp(const Alice::CommandLine<OptionDescriptor>& cmd_line)
 	{
@@ -298,25 +338,13 @@ static void statsDump(SnowflakeModel::FileOut* file_out,const SnowflakeModel::So
 		}
 	}
 
-static std::unique_ptr<SnowflakeModel::FileOut> statFileOpen(const Alice::CommandLine<OptionDescriptor>& cmd_line)
-	{
-	const auto& x=cmd_line.get<Alice::Stringkey("dump-stats")>();
-	if(x)
-		{
-		auto ret=std::make_unique<SnowflakeModel::FileOut>(x.valueGet().c_str());
-
-		ret->printf("# R_max\tD_max\tVolume\tL_x\tr_xy\tr_xz\tNumber of sub-volumes\tOverlap count\n");
-
-		return std::move(ret);
-		}
-	return std::unique_ptr<SnowflakeModel::FileOut>();
-	}
-
 static std::string statefileName(const std::string& name_init,const std::string& name_new)
 	{
 	if(name_init.size()==0)
 		{
-		return SnowflakeModel::filenameEscape(name_new.c_str()) + "-0000000000000000.h5";
+		return std::string("graupel-") 
+			+ SnowflakeModel::filenameEscape(name_new.c_str())
+			+ "-0000000000000000.h5";
 		}
 //TODO (perf) This can be done much easier by looping through name_init backwards
 	auto pos_counter=name_init.find_last_of('-');
@@ -329,6 +357,237 @@ static std::string statefileName(const std::string& name_init,const std::string&
 	return ret+"-"+val+extension;
 	}
 
+struct Simstate
+	{
+	explicit Simstate(const Alice::CommandLine<OptionDescriptor>& cmd_line
+		,SnowflakeModel::Solid&& r_prototype);
+	
+	explicit Simstate(const Alice::CommandLine<OptionDescriptor>& cmd_line
+		,const std::string& statefile);
+
+	double progressGet() const noexcept
+		{return d_max/D_max;}
+
+	void step();
+
+	void save(const std::string& now) const;
+
+	void objfileWrite() const;
+
+	void icefileWrite() const;
+	
+	const Alice::CommandLine<OptionDescriptor>& r_cmd_line;
+	SnowflakeModel::Solid prototype;
+	std::vector<Deformation> deformations;
+	SnowflakeModel::Solid solid_out;
+	SnowflakeModel::RandomGenerator randgen;
+	double D_max;
+	double d_max;
+	size_t rejected;
+	std::unique_ptr<SnowflakeModel::FileOut> file_out;
+
+	std::string statfile;
+	std::string objfile;
+	std::string icefile;
+	};
+
+Simstate::Simstate(const Alice::CommandLine<OptionDescriptor>& cmd_line
+	,SnowflakeModel::Solid&& prototype):r_cmd_line(cmd_line),prototype(std::move(prototype))
+	,rejected(0)
+	{
+		{
+		const auto& x=cmd_line.get<Alice::Stringkey("deformations")>();
+		if(!x)
+			{throw "No deformation is given. Use --params-show to list the name of availible parameters";}
+		deformations=x.valueGet();
+		}
+
+	r_cmd_line.print();
+
+	D_max=cmd_line.get<Alice::Stringkey("D_max")>().valueGet();
+	
+		{
+		randgen.seed(cmd_line.get<Alice::Stringkey("seed")>().valueGet());
+		randgen.discard(65536);
+		}
+
+		{
+		auto p=particleGenerate(prototype,deformations,randgen);
+		solid_out.merge(p.solidGet(),0,0);
+		}
+		{
+		auto ex=solid_out.extremaGet();
+		d_max=length(ex.first - ex.second);
+		}
+
+	statfile=r_cmd_line.get<Alice::Stringkey("dump-stats")>().valueGet();
+	if(statfile.size())
+		{
+		file_out=std::make_unique<SnowflakeModel::FileOut>(statfile.c_str());
+		file_out->printf("# R_max\tD_max\tVolume\tL_x\tr_xy\tr_xz\tNumber of sub-volumes\tOverlap count\n");
+		}
+	objfile=r_cmd_line.get<Alice::Stringkey("dump-geometry")>().valueGet();
+	icefile=r_cmd_line.get<Alice::Stringkey("dump-geometry-ice")>().valueGet();
+	}
+
+Simstate::Simstate(const Alice::CommandLine<OptionDescriptor>& cmd_line
+	,const std::string& statefile):r_cmd_line(cmd_line)
+	{
+	SnowflakeModel::DataDump dump(statefile.c_str(),SnowflakeModel::DataDump::IOMode::READ);
+	prototype=SnowflakeModel::Solid(dump,"prototype");
+	solid_out=SnowflakeModel::Solid(dump,"solid_out");
+	dump.arrayRead<uint32_t>("randgen_state")
+		.dataRead(SnowflakeModel::get(randgen).state,SnowflakeModel::get(randgen).size());
+	dump.arrayRead<size_t>("randgen_position")
+		.dataRead(&SnowflakeModel::get(randgen).position,1);
+	dump.arrayRead<double>("D_max").dataRead(&D_max,1);
+	dump.arrayRead<size_t>("rejected").dataRead(&rejected,1);
+
+	statfile=dump.arrayGet<SnowflakeModel::DataDump::StringHolder>("statfile")[0];
+	objfile=dump.arrayGet<SnowflakeModel::DataDump::StringHolder>("objfile")[0];
+	icefile=dump.arrayGet<SnowflakeModel::DataDump::StringHolder>("icefile")[0];
+
+	if(statfile.size())
+		{
+		file_out=std::make_unique<SnowflakeModel::FileOut>(statfile.c_str()
+			,SnowflakeModel::FileOut::OpenMode::APPEND);
+		}
+
+		{
+		auto defs_in=dump.arrayGet<DeformationDataIn>("deformations");
+		deformations.resize(defs_in.size());
+		auto ptr_in=defs_in.data();
+		auto ptr_end=ptr_in + defs_in.size();
+		auto defs_out=deformations.data();
+		while(ptr_in!=ptr_end)
+			{
+			*defs_out={std::string(ptr_in->name),ptr_in->mean,ptr_in->standard_deviation};
+			++defs_out;
+			++ptr_in;
+			}
+		}
+	}
+
+
+void Simstate::save(const std::string& now) const
+	{
+	auto statefile=r_cmd_line.get<Alice::Stringkey("statefile")>().valueGet();
+	auto filename_dump=statefileName(statefile,now);
+	fprintf(stderr,"# Dumping simulation state to %s\n",filename_dump.c_str());
+	SnowflakeModel::DataDump dump(filename_dump.c_str()
+		,SnowflakeModel::DataDump::IOMode::WRITE);
+	prototype.write("prototype",dump);
+	solid_out.write("solid_out",dump);
+	auto& rng_state=SnowflakeModel::get(randgen);
+	dump.write("randgen_state",rng_state.state,rng_state.size());
+	dump.write("randgen_position",&rng_state.position,1);
+	dump.write("D_max",&D_max,1);
+	dump.write("rejeceted",&rejected,1);
+
+		{
+		auto x=statfile.c_str();
+		dump.write("statfile",&x,1);
+		}
+
+		{
+		auto x=objfile.c_str();
+		dump.write("objfile",&x,1);
+		}
+
+		{
+		auto x=icefile.c_str();
+		dump.write("icefile",&x,1);
+		}
+
+		{
+		auto x=r_cmd_line.get<Alice::Stringkey("prototype")>().valueGet().c_str();
+		dump.write("prototype_source",&x,1);
+		}
+
+		{
+		auto N=deformations.size();
+		std::vector<DeformationDataOut> defs_out(N);
+		auto ptr_out=defs_out.data();
+		auto ptr=deformations.data();
+		auto ptr_end=ptr+N;
+		while(ptr!=ptr_end)
+			{
+			*ptr_out={ptr->name.c_str(),ptr->mean,ptr->standard_deviation};
+			++ptr_out;
+			++ptr;
+			}
+		dump.write("deformations",defs_out.data(),N);
+		}
+	}
+
+void Simstate::step()
+	{
+	auto p=particleGenerate(prototype,deformations,randgen);
+	auto T_a=faceChoose(solid_out,randgen);
+	if(T_a.second==INFINITY)
+		{return;}
+	auto T_b=faceChoose(p.solidGet(),randgen);
+	if(T_b.second==INFINITY)
+		{return;}
+
+
+	auto u=(T_a.first.vertexGet(0) + T_a.first.vertexGet(1) + T_a.first.vertexGet(2))/3.0f;
+	auto v=(T_b.first.vertexGet(0) + T_b.first.vertexGet(1) + T_b.first.vertexGet(2))/3.0f;
+	
+	auto R=SnowflakeModel::vectorsAlign2(T_b.first.m_normal,-T_a.first.m_normal);
+	auto pos=SnowflakeModel::Vector(u - R*v);
+
+	SnowflakeModel::Matrix T;
+	T=glm::translate(T,pos);
+	auto& obj=p.solidGet();
+	obj.transform(T*R,0);
+	if(!overlap(obj,solid_out))
+		{
+		solid_out.merge(std::move(obj),0,0);
+		auto ex=solid_out.extremaGet();
+		d_max=length(ex.first - ex.second);
+		fprintf(stderr,"\r%.7g (Cs: %zu,  Cr: %zu)      "
+			,d_max,solid_out.subvolumesCount(),rejected);
+		statsDump(file_out.get(),solid_out);
+		fflush(stderr);
+		}
+	else
+		{++rejected;}
+	}
+
+void Simstate::objfileWrite() const
+	{
+	if(objfile.size())
+		{
+		fprintf(stderr,"# Dumping wavefront file\n");
+		SnowflakeModel::FileOut dest(objfile.c_str());
+		SnowflakeModel::SolidWriter writer(dest);
+		writer.write(solid_out);
+		}
+	}
+
+void Simstate::icefileWrite() const
+	{
+	if(icefile.size())
+		{
+		fprintf(stderr,"# Dumping crystal prototype file\n");
+		SnowflakeModel::FileOut file_out(icefile.c_str());
+		SnowflakeModel::SolidWriterPrototype writer(file_out);
+		writer.write(solid_out);
+		}
+	}
+
+static Simstate simstateCreate(const Alice::CommandLine<OptionDescriptor>& cmd_line
+	,SnowflakeModel::Solid&& prototype)
+	{
+	auto& statefile=cmd_line.get<Alice::Stringkey("statefile")>();
+	if(statefile)
+		{
+		return std::move( Simstate(cmd_line,statefile.valueGet() ) );
+		}
+	return std::move( Simstate(cmd_line,std::move( prototype ) ) );
+	}
+
 
 int main(int argc,char** argv)
 	{
@@ -339,117 +598,21 @@ int main(int argc,char** argv)
 			{return 0;}
 
 		auto prototype=prototypeLoad(cmd_line);
-
 		if(paramsShow(cmd_line,prototype))
 			{return 0;}
+		auto state=simstateCreate(cmd_line,std::move(prototype));
 
-		const auto& deformations=cmd_line.get<Alice::Stringkey("deformations")>();
-		if(!deformations)
-			{throw "No deformation is given. Use --params-show to list the name of availible parameters";}
-
-		cmd_line.print();
-
-		auto D_max=cmd_line.get<Alice::Stringkey("D_max")>().valueGet();
-		auto file_out=statFileOpen(cmd_line);
-
-		SnowflakeModel::RandomGenerator randgen;
-		randgen.seed(cmd_line.get<Alice::Stringkey("seed")>().valueGet());
-		randgen.discard(65536);
-
-		SnowflakeModel::Solid solid_out;
-		auto p=particleGenerate(prototype,deformations.valueGet(),randgen);	
-		solid_out.merge(p.solidGet(),0,0);
-		auto ex=solid_out.extremaGet();
-		auto d_max=length(ex.first - ex.second);
-		fprintf(stderr,"# Running\n");
-		fflush(stderr);
-		size_t rejected=0;
 		SnowflakeModel::CtrlCHandler int_handler;
 		auto now=SnowflakeModel::getdate();
-		do
+		fprintf(stderr,"# Simulation started %s\n",now.c_str());
+		while(state.progressGet()<1.0 && !int_handler.captured())
 			{
-			p=particleGenerate(prototype,deformations.valueGet(),randgen);
-			auto T_a=faceChoose(solid_out,randgen);
-			if(T_a.second==INFINITY)
-				{continue;}
-			auto T_b=faceChoose(p.solidGet(),randgen);
-			if(T_b.second==INFINITY)
-				{continue;}
-
-
-			auto u=(T_a.first.vertexGet(0) + T_a.first.vertexGet(1) + T_a.first.vertexGet(2))/3.0f;
-			auto v=(T_b.first.vertexGet(0) + T_b.first.vertexGet(1) + T_b.first.vertexGet(2))/3.0f;
-			
-			auto R=SnowflakeModel::vectorsAlign2(T_b.first.m_normal,-T_a.first.m_normal);
-			auto pos=SnowflakeModel::Vector(u - R*v);
-
-			SnowflakeModel::Matrix T;
-			T=glm::translate(T,pos);
-			auto& obj=p.solidGet();
-			obj.transform(T*R,0);
-			if(!overlap(obj,solid_out))
-				{
-				solid_out.merge(std::move(obj),0,0);
-				auto ex=solid_out.extremaGet();
-				d_max=length(ex.first - ex.second);
-				fprintf(stderr,"\r%.7g (Cs: %zu,  Cr: %zu)      "
-					,d_max,solid_out.subvolumesCount(),rejected);
-				statsDump(file_out.get(),solid_out);
-				fflush(stderr);
-				}
-			else
-				{++rejected;}
+			state.step();
 			}
-		while(d_max < D_max && !int_handler.captured());
-
-			{
-			auto statefile=cmd_line.get<Alice::Stringkey("statefile")>().valueGet();
-			auto filename_dump=statefileName(statefile,now);
-			fprintf(stderr,"# Dumping simulation state to %s\n",filename_dump.c_str());
-			SnowflakeModel::DataDump dump(filename_dump.c_str()
-				,SnowflakeModel::DataDump::IOMode::WRITE);
-		//	setup.write(dump);
-			prototype.write("prototype",dump);
-			solid_out.write("solid_out",dump);
-			auto& rng_state=SnowflakeModel::get(randgen);
-			dump.write("randgen_state",rng_state.state,1);
-			dump.write("randgen_position",&rng_state.position,1);
-			dump.write("D_max",&D_max,1);
-				{
-				auto& x=cmd_line.get<Alice::Stringkey("dump-stats")>();
-				if(x)
-					{
-					auto y=x.valueGet().c_str();
-					dump.write("statfile",&y,1);
-					}
-				}
-				{
-				auto x=cmd_line.get<Alice::Stringkey("prototype")>().valueGet().c_str();
-				dump.write("prototype_source",&x,1);
-				}
-			}
-
-			{
-			fprintf(stderr,"# Dumping wavefront files\n");
-			auto& objfile=cmd_line.get<Alice::Stringkey("dump-geometry")>();
-			if(objfile)
-				{
-				SnowflakeModel::FileOut dest(objfile.valueGet().c_str());
-				SnowflakeModel::SolidWriter writer(dest);
-				writer.write(solid_out);
-				}
-			}
-
-			{
-			fprintf(stderr,"# Dumping crystal prototype files\n");
-			auto& icefile=cmd_line.get<Alice::Stringkey("dump-geometry-ice")>();
-			if(icefile)
-				{
-				SnowflakeModel::FileOut file_out(icefile.valueGet().c_str());
-				SnowflakeModel::SolidWriterPrototype writer(file_out);
-				writer.write(solid_out);
-				}
-			}
+		
+		state.save(now);
+		state.objfileWrite();
+		state.icefileWrite();
 		}
 	catch(const Alice::ErrorMessage& message)
 		{
