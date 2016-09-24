@@ -1,10 +1,10 @@
 #!/bin/bash
 
-dir_out=/home/torbjorr/snowflake-lowdrop
+dir_out=/home/torbjorr/snowflake-ref
 
 k=22000000
-l=1
-m=1
+l=1000
+m=20000
 
 mkdir -p $dir_out
 
@@ -17,7 +17,7 @@ __targets_rel/snowflake_simulate3 \
 	--output-dir=$dir_out/$k-$l-$m --dump-stats=256 --N=4999 \
 	--growthrate=$k --meltrate=$l --droprate=$m \
 	--seed=0 --dump-geometry \
-	--stop-cond=subvols_max=345 \
+	--stop-cond=iterations=262144 \
 	--overlap-min=0 \
 	--overlap-max=0 \
 	--merge-retries=0 \

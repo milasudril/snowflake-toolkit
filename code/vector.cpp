@@ -2,7 +2,7 @@
 //@	    "dependencies_extra":[],
 //@	    "targets":[
 //@	        {
-//@	            "dependencies":[],
+//@	            "dependencies":[{"ref":"new.o","rel":"implementation"}],
 //@	            "name":"vector.o",
 //@	            "type":"object"
 //@	        }
