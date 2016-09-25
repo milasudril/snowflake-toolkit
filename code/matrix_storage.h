@@ -176,7 +176,7 @@ namespace SnowflakeModel
 		//	SumTask is trivially destructible
 			sum+=pos_threads->taskGet().resultGet();
 			}
-
+		m_flags_dirty&=~SUM_DIRTY;
 		m_sum=sum;
 		}
 	}
