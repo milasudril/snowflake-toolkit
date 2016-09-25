@@ -15,60 +15,8 @@
 #include "profile.h"
 
 using namespace SnowflakeModel;
-#if 0
-class ElementRandomizer::TaskRandomDraw:public Task
-	{
-	public:
-		TaskRandomDraw(
-			 const double* begin
-			,const double* end
-			,const double& sum
-			,const double& r
-			,int& stop):
-			r_begin(begin),r_end(end),r_sum(sum),r_r(r),r_stop(stop)
-			{
-			if( ((intptr_t)begin%64) != 0)
-				{throw "Bad memory alignment";}
-			}
 
-		void run() noexcept
-			{
-			auto ptr=r_begin;
-			auto end=r_end;
-			auto sum=r_sum;
-			auto r=r_r;
-			while(ptr!=end && !r_stop)
-				{
-				if(r>=sum && r<*ptr + sum)
-					{
-					r_stop=1;
-					r_result=ptr;
-					return;
-					}
-				sum+=*ptr;
-				++ptr;
-				}
-			r_result=end;
-			}
-
-		operator const double*() const
-			{return r_result;}
-
-		const double* endGet() const
-			{return r_end;}
-
-	private:
-		const double* r_begin;
-		const double* r_end;
-		const double* r_result;
-		const double& r_sum;
-		const double& r_r;
-		int& r_stop;
-	};
-
-#endif
-
-ElementRandomizer::ElementRandomizer(const MatrixStorage& M):r_M(M)
+ElementRandomizer::ElementRandomizer(const MatrixStorage<double>& M):r_M(M)
 	{
 	}
 
