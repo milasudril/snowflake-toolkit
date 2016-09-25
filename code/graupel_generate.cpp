@@ -282,19 +282,18 @@ SnowflakeModel::IceParticle particleGenerate(const SnowflakeModel::Solid& s_in
 
 static SnowflakeModel::Vector drawSphere(SnowflakeModel::RandomGenerator& randgen)
 	{
-	std::uniform_real_distribution<float> U(-1.0f,1.0f);
-	float x_1;
-	float x_2;
-	float sq_sum;
-	do
+	std::uniform_real_distribution<float> xi_dist(0,2.0f*std::acos(-1.0f));
+	std::uniform_real_distribution<float> eta_dist(-1.0f,1.0f);
+	
+	auto xi=xi_dist(randgen);
+	auto eta=eta_dist(randgen);
+	auto r=std::sqrt(1.0f - eta*eta);
+	return SnowflakeModel::Vector
 		{
-		x_1=U(randgen);
-		x_2=U(randgen);
-		sq_sum=x_1*x_1 + x_2*x_2;
-		}
-	while(sq_sum >= 1.0f);
-	auto r=sqrt(1 - sq_sum);
-	return SnowflakeModel::Vector{2.0f*x_1*r,2.0f*x_2*r,1.0f - 2.0f*sq_sum};
+		 std::cos(xi)*r
+		,std::sin(xi)*r
+		,-eta
+		};
 	}
 
 static std::pair<SnowflakeModel::Triangle,float>
