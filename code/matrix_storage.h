@@ -111,9 +111,7 @@ namespace SnowflakeModel
 			public:
 				SumTask(const ElementType* ptr_begin,const ElementType* ptr_end):
 					pos_begin(ptr_begin),pos_end(ptr_end)
-					{
-					printf("%p %p\n",pos_begin,pos_end);
-					}
+					{}
 
 				const ElementType& resultGet() const noexcept
 					{return m_result;}
