@@ -49,6 +49,9 @@ namespace SnowflakeModel
 			int getc()
 				{return ::getc(file_in);}
 
+			FILE* handleGet() noexcept
+				{return file_in;}
+
 		private:
 			FILE* file_in;
 			std::string m_filename;
