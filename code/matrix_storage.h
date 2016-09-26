@@ -15,7 +15,6 @@
 #include <cstdint>
 #include <cassert>
 #include <cstddef>
-#include <vector>
 #include <memory>
 #include <cstdlib>
 
@@ -27,15 +26,15 @@ namespace SnowflakeModel
 	class MatrixStorage
 		{
 		public:
-			MatrixStorage(size_t N_rows,size_t N_cols);
+			MatrixStorage(uint32_t N_rows,uint32_t N_cols);
 
 			const ElementType& operator()(size_t row,size_t col) const
-				{return m_data[m_N_cols*row + col];}
+				{return ( m_data.get() )[m_N_cols*row + col];}
 
 			ElementType& operator()(size_t row,size_t col)
 				{
 				m_flags_dirty|=SUM_DIRTY;
-				return m_data[m_N_cols*row + col];
+				return ( m_data.get() ) [m_N_cols*row + col];
 				}
 
 			void symmetricAssign(size_t row,size_t col,const ElementType& value)
@@ -47,28 +46,28 @@ namespace SnowflakeModel
 				}
 
 			const ElementType* rowGet(size_t row) const
-				{return &m_data[m_N_cols*row];}
+				{return &(m_data.get())[m_N_cols*row];}
 
 			ElementType* rowGet(size_t row)
 				{
 				m_flags_dirty|=SUM_DIRTY;
-				return &m_data[m_N_cols*row];
+				return &(m_data.get())[m_N_cols*row];
 				}
 
 			size_t sizeGet() const
-				{return m_data.size();}
+				{return m_N_rows*m_N_cols;}
 
 			size_t nColsGet() const
 				{return m_N_cols;}
 
 			size_t nRowsGet() const
-				{return sizeGet()/nColsGet();}
+				{return m_N_rows;}
 
 			const ElementType* rowsEnd() const
-				{return m_data.data()+sizeGet();}
+				{return m_data.get() + sizeGet();}
 
 			ElementType* rowsEnd()
-				{return m_data.data()+sizeGet();}
+				{return m_data.get() + sizeGet();}
 
 			Twins<size_t> locationGet(size_t index) const
 				{
@@ -84,23 +83,52 @@ namespace SnowflakeModel
 				return m_sum;
 				}
 
+			const ElementType* blocksumsBegin() const noexcept
+				{return m_blocksums.get();}
+
+			const ElementType* blocksumsEnd() const noexcept
+				{return blocksumsBegin() + m_N_blocks + 1;}
+
+			const ElementType* cumsumBegin(size_t offset) const noexcept
+				{return m_cumsum.get() + offset;}
+
+			const ElementType* cumsumEnd() const noexcept
+				{return m_cumsum.get() + sizeGet();}
+
+			void sumComputeMt() const;
+
 		private:
+			struct free_delete
+				{
+				void operator()(void* x) { free(x); }
+				};
+
+
 		//	We want this later...
 		//	typedef ElementType vec4_t __attribute__ ( (vector_size(4*sizeof(ElementType))) );
+			uint32_t m_N_rows;
+			uint32_t m_N_cols;
+			std::unique_ptr<ElementType,free_delete> m_data;
+			std::unique_ptr<ElementType,free_delete> m_cumsum;
+			uint32_t m_N_blocks;
+			std::unique_ptr<ElementType,free_delete> m_blocksums;
 
-			size_t m_N_cols;
-			std::vector<ElementType> m_data;
 			mutable ElementType m_sum;
 
 			mutable uint32_t m_flags_dirty;
 			static constexpr uint32_t SUM_DIRTY=1;
-			void sumComputeMt() const;
 		};
 
 	template<class ElementType>
-	MatrixStorage<ElementType>::MatrixStorage(size_t N_rows,size_t N_cols):m_N_cols(N_cols)
-		,m_data(N_rows*N_cols),m_sum(0),m_flags_dirty(0)
+	MatrixStorage<ElementType>::MatrixStorage(uint32_t N_rows,uint32_t N_cols):
+		m_N_rows(N_rows),m_N_cols(N_cols),m_sum(0),m_flags_dirty(0)
 		{
+		auto N_bytes=N_rows*N_cols*sizeof(ElementType);
+		
+		m_data.reset(reinterpret_cast<ElementType*>(malloc(N_bytes)));
+		m_cumsum.reset(reinterpret_cast<ElementType*>(malloc(N_bytes)));
+		m_N_blocks=threadsCountGet();
+		m_blocksums.reset(reinterpret_cast<ElementType*>(malloc((1+m_N_blocks)*sizeof(ElementType))));
 		}
 
 	namespace
@@ -109,8 +137,9 @@ namespace SnowflakeModel
 		class SumTask
 			{
 			public:
-				SumTask(const ElementType* ptr_begin,const ElementType* ptr_end):
-					pos_begin(ptr_begin),pos_end(ptr_end)
+				SumTask(const ElementType* ptr_begin,const ElementType* ptr_end
+					,ElementType* cumsum):
+					pos_begin(ptr_begin),pos_end(ptr_end),r_cumsum(cumsum)
 					{}
 
 				const ElementType& resultGet() const noexcept
@@ -124,6 +153,8 @@ namespace SnowflakeModel
 					while(ptr!=ptr_end)
 						{
 						sum+=*ptr;
+						*r_cumsum=sum;
+						++r_cumsum;
 						++ptr;
 						}
 					m_result=sum;
@@ -134,48 +165,54 @@ namespace SnowflakeModel
 				const ElementType* pos_begin;
 				const ElementType* pos_end;
 				ElementType m_result;
+				ElementType* r_cumsum;
 			};
 		}
 
-	namespace
-		{
-		struct free_delete
-			{
-			void operator()(void* x) { free(x); }
-			};
-		}
 
 	template<class ElementType>
 	void MatrixStorage<ElementType>::sumComputeMt() const
 		{
-		auto n_threads=threadsCountGet();
-		auto L=m_data.size()/n_threads;
-		int mod=m_data.size()%n_threads;
+		auto n_threads=m_N_blocks;
+		auto L=sizeGet()/n_threads;
+		int mod=sizeGet()%n_threads;
 
 		typedef Thread<SumTask<ElementType>> SumThread;
 		
 		std::unique_ptr<SumThread,free_delete> threads
 			{reinterpret_cast<SumThread*>(malloc( sizeof(SumThread)*n_threads ) ),free_delete() };
 
-		auto pos_begin=m_data.data();
+		auto pos_begin=m_data.get();
 		auto pos_threads=threads.get();
+		auto cumsum=m_cumsum.get();
 		for(decltype(n_threads) k=0;k<n_threads;++k)
 			{
 			auto next=L + std::min(mod,1);
-			new(pos_threads)SumThread( SumTask<ElementType>{pos_begin,pos_begin + next},k ); 
+			new(pos_threads)SumThread( SumTask<ElementType>{pos_begin,pos_begin + next,cumsum},k ); 
 			pos_begin+=next;
+			cumsum+=next;
 			++pos_threads;
 			mod=std::max(mod - 1, 0);
 			}
 		
 		auto sum=static_cast<ElementType>( 0 );
-		for(decltype(n_threads) k=0;k<n_threads;++k)
+		auto blocksums=m_blocksums.get();
+		pos_threads=threads.get();
+		auto pos_end=pos_threads + n_threads;
+		*blocksums=0;
+		++blocksums;
+		while(pos_threads!=pos_end)
 			{
-			--pos_threads;
 		//	This call implies complete destruction. This is due to the fact that
-		//	SumTask is trivially destructible
-			sum+=pos_threads->taskGet().resultGet();
+		//	SumTask is trivially destructible, so the only thing that needs to
+		//	be done is synchronization.
+			auto sum_temp=pos_threads->taskGet().resultGet();
+			*blocksums=*(blocksums-1) + sum_temp;
+			sum+=sum_temp;
+			++blocksums;
+			++pos_threads;
 			}
+
 		m_flags_dirty&=~SUM_DIRTY;
 		m_sum=sum;
 		}
