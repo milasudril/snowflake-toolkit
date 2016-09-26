@@ -108,7 +108,9 @@ namespace SnowflakeModel
 		};
 
 	inline uint32_t threadsCountGet() noexcept
-		{return ThreadBase::threadsMax();}
+		{
+		return ThreadBase::threadsMax();
+		}
 	}
 
 #endif

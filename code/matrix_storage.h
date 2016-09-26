@@ -12,6 +12,7 @@
 
 #include "twins.h"
 #include "thread.h"
+#include <cstring>
 #include <cstdint>
 #include <cassert>
 #include <cstddef>
@@ -89,11 +90,11 @@ namespace SnowflakeModel
 			const ElementType* blocksumsEnd() const noexcept
 				{return blocksumsBegin() + m_N_blocks + 1;}
 
-			const ElementType* cumsumBegin(size_t offset) const noexcept
-				{return m_cumsum.get() + offset;}
+			const ElementType* cumsumBegin(uint32_t block) const noexcept
+				{return (m_blocks.get())[block];}
 
-			const ElementType* cumsumEnd() const noexcept
-				{return m_cumsum.get() + sizeGet();}
+			const ElementType* cumsumEnd(uint32_t block) const noexcept
+				{return (m_blocks.get())[block + 1];}
 
 			void sumComputeMt() const;
 
@@ -111,6 +112,7 @@ namespace SnowflakeModel
 			std::unique_ptr<ElementType,free_delete> m_data;
 			std::unique_ptr<ElementType,free_delete> m_cumsum;
 			uint32_t m_N_blocks;
+			std::unique_ptr<ElementType*,free_delete> m_blocks;
 			std::unique_ptr<ElementType,free_delete> m_blocksums;
 
 			mutable ElementType m_sum;
@@ -126,9 +128,25 @@ namespace SnowflakeModel
 		auto N_bytes=N_rows*N_cols*sizeof(ElementType);
 		
 		m_data.reset(reinterpret_cast<ElementType*>(malloc(N_bytes)));
+		memset(m_data.get(),0,N_bytes);
+
 		m_cumsum.reset(reinterpret_cast<ElementType*>(malloc(N_bytes)));
 		m_N_blocks=threadsCountGet();
 		m_blocksums.reset(reinterpret_cast<ElementType*>(malloc((1+m_N_blocks)*sizeof(ElementType))));
+		m_blocks.reset(reinterpret_cast<ElementType**>(malloc((1+m_N_blocks)*sizeof(ElementType*))));
+		auto L=sizeGet()/m_N_blocks;
+		int mod=sizeGet()%m_N_blocks;
+		auto p_blocks=m_blocks.get();
+		auto cumsum=m_cumsum.get();
+		for(decltype(m_N_blocks) k=0;k<m_N_blocks;++k)
+			{
+			auto next=L + std::min(mod,1);
+			*p_blocks=cumsum;
+			cumsum+=next;
+			mod=std::max(mod - 1, 0);
+			++p_blocks;
+			}
+		*p_blocks=m_cumsum.get() + sizeGet();
 		}
 
 	namespace

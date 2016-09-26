@@ -13,44 +13,39 @@
 #include "twins.h"
 #include "randomgenerator.h"
 #include "matrix_storage.h"
+#include <algorithm>
 
 namespace SnowflakeModel
 	{
-	namespace
-		{
-		template<class ElementType>
-		const ElementType* element_choose(const ElementType* begin,const ElementType* end
-			,double r)
-			{
-			auto sum=static_cast<ElementType>(0);
-			while(begin!=end)
-				{
-				if(r>=sum && r<*begin + sum)
-					{return begin;}
-				sum+=*begin;
-				++begin;
-				}
-			return end;
-			}
-		}
-
-
 	template<class ElementType>
 	Twins<size_t> elementChoose(RandomGenerator& randgen,const MatrixStorage<ElementType>& M) noexcept
 		{
 		std::uniform_real_distribution<double> U(0, M.sumGetMt());
-		auto ptr_begin=M.rowGet(0);
-		auto ptr_end=ptr_begin + M.sizeGet();
-
-		auto res=element_choose(ptr_begin,ptr_end,U(randgen));
-
-		if(res==ptr_end)
+		auto r=U(randgen);
+		auto blocksums=M.blocksumsBegin();
+		auto block=std::upper_bound(blocksums,M.blocksumsEnd(),r) - 1;
+		if(block + 1==M.blocksumsEnd())
 			{
 			fprintf(stderr,"# ERROR: No match. This should not happen. The probability matrix may have a too large range\n");
 			abort();
 			}
+		
+		auto diff=*block;
+		auto offset=block-blocksums;
+		auto res=std::upper_bound(M.cumsumBegin(offset)
+			,M.cumsumEnd(block-blocksums),r,[diff](decltype(r) value,ElementType e)
+				{
+				return value<e + diff;
+				});
 
-		return M.locationGet(res-ptr_begin);
+		if(res==M.cumsumEnd(offset))
+			{
+			fprintf(stderr,"# ERROR: No match. This should not happen. The probability matrix may have a too large range\n");
+			abort();
+			}
+		
+		auto pos=(res-M.cumsumBegin(0));
+		return M.locationGet(pos);
 		}
 	}
 
