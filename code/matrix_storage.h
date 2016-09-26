@@ -27,6 +27,8 @@ namespace SnowflakeModel
 	class MatrixStorage
 		{
 		public:
+			MatrixStorage()=default;
+
 			MatrixStorage(uint32_t N_rows,uint32_t N_cols);
 
 			const ElementType& operator()(size_t row,size_t col) const

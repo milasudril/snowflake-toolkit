@@ -21,6 +21,8 @@
 #include "ctrlchandler.h"
 #include "filenameesc.h"
 #include "getdate.h"
+#include "pmap_loader.h"
+#include "element_randomizer.h"
 #include "alice/commandline.hpp"
 
 struct Deformation
@@ -115,6 +117,8 @@ ALICE_OPTION_DESCRIPTOR(OptionDescriptor
 	,{"Simulation parameters","deformations","Defines all deformations to apply to the prototype. A deformation rule is written in the form parameter:mean:standard deviation","Deformation rule",Alice::Option::Multiplicity::ONE_OR_MORE}
 	,{"Simulation parameters","D_max","Generate a graupel of diameter D_max. D_max is defined as the largest distance between two vertices.","Double",Alice::Option::Multiplicity::ONE}
 	,{"Simulation parameters","seed","Random seed mod 2^32","Integer",Alice::Option::Multiplicity::ONE}
+	,{"Simulation parameters","pmap","Gives a linear grayscale PNG file to use for direction probabilities. The mapping assumes cylindrical projection"
+		,"String",Alice::Option::Multiplicity::ONE}
 	,{"Output options","dump-geometry","Specify output Wavefront file","String",Alice::Option::Multiplicity::ONE}
 	,{"Output options","dump-geometry-ice","Same as --dump-geometry but write data as Ice crystal prototype files, so they can be used by other tools provided by the toolkit.","String",Alice::Option::Multiplicity::ONE}
 	,{"Output options","dump-stats","Write statistics to the given file","String",Alice::Option::Multiplicity::ONE}
@@ -280,13 +284,8 @@ SnowflakeModel::IceParticle particleGenerate(const SnowflakeModel::Solid& s_in
 	return std::move(ice_particle);
 	}
 
-static SnowflakeModel::Vector drawSphere(SnowflakeModel::RandomGenerator& randgen)
+ static SnowflakeModel::Vector mapCylindricalProjection(float xi,float eta)
 	{
-	std::uniform_real_distribution<float> xi_dist(0,2.0f*std::acos(-1.0f));
-	std::uniform_real_distribution<float> eta_dist(-1.0f,1.0f);
-	
-	auto xi=xi_dist(randgen);
-	auto eta=eta_dist(randgen);
 	auto r=std::sqrt(1.0f - eta*eta);
 	return SnowflakeModel::Vector
 		{
@@ -296,8 +295,31 @@ static SnowflakeModel::Vector drawSphere(SnowflakeModel::RandomGenerator& randge
 		};
 	}
 
+static SnowflakeModel::Vector drawSphere(SnowflakeModel::RandomGenerator& randgen)
+	{
+	std::uniform_real_distribution<float> xi_dist(0,2.0f*std::acos(-1.0f));
+	std::uniform_real_distribution<float> eta_dist(-1.0f,1.0f);
+	
+	return mapCylindricalProjection(xi_dist(randgen),eta_dist(randgen));
+	}
+
+static SnowflakeModel::Vector drawSphere(SnowflakeModel::RandomGenerator& randgen
+	,const SnowflakeModel::MatrixStorage<float>& pmap)
+	{
+	auto elem=SnowflakeModel::elementChoose(randgen,pmap);
+	auto n_rows=pmap.nRowsGet();
+	auto n_cols=pmap.nColsGet();
+	if(n_rows==1 || n_cols==1)
+		{return drawSphere(randgen);}
+
+	auto xi=elem.second*2.0f*std::acos(-1.0f)/(n_cols - 1);
+	auto eta=1.0f - elem.first*2.0f/(n_rows - 1) ;
+	return mapCylindricalProjection(xi,eta);
+	}
+
 static std::pair<SnowflakeModel::Triangle,float>
-faceChoose(const SnowflakeModel::Solid& s_a,SnowflakeModel::RandomGenerator& randgen)
+faceChoose(const SnowflakeModel::Solid& s_a,SnowflakeModel::RandomGenerator& randgen
+	,const SnowflakeModel::MatrixStorage<float>& pmap)
 	{
 //	Construct a sphere from the bounding box
 	auto& bb=s_a.boundingBoxGet();
@@ -305,7 +327,7 @@ faceChoose(const SnowflakeModel::Solid& s_a,SnowflakeModel::RandomGenerator& ran
 	auto bb_mid=bb.centerGet();
 	auto r=0.5f*glm::length( bb_size );
 
-	auto direction=drawSphere(randgen);
+	auto direction=drawSphere(randgen,pmap);
 
 
 //	Set the source on the sphere
@@ -383,6 +405,7 @@ struct Simstate
 	std::vector<Deformation> deformations;
 	SnowflakeModel::Solid solid_out;
 	SnowflakeModel::RandomGenerator randgen;
+	SnowflakeModel::MatrixStorage<float> pmap;
 	double D_max;
 	double d_max;
 	size_t rejected;
@@ -402,6 +425,20 @@ Simstate::Simstate(const Alice::CommandLine<OptionDescriptor>& cmd_line
 		if(!x)
 			{throw "No deformation is given. Use --params-show to list the name of availible parameters";}
 		deformations=x.valueGet();
+		}
+
+		{
+		const auto& x=cmd_line.get<Alice::Stringkey("pmap")>();
+		if(x)
+			{
+			pmap=SnowflakeModel::pmapLoad(x.valueGet().c_str());
+			}
+		else
+			{
+			pmap=SnowflakeModel::MatrixStorage<float>(1,1);
+			pmap(0,0)=1.0f;
+			}
+		pmap.sumComputeMt();
 		}
 
 	r_cmd_line.print();
@@ -525,10 +562,10 @@ void Simstate::save(const std::string& now) const
 void Simstate::step()
 	{
 	auto p=particleGenerate(m_prototype,deformations,randgen);
-	auto T_a=faceChoose(solid_out,randgen);
+	auto T_a=faceChoose(solid_out,randgen,pmap);
 	if(T_a.second==INFINITY)
 		{return;}
-	auto T_b=faceChoose(p.solidGet(),randgen);
+	auto T_b=faceChoose(p.solidGet(),randgen,pmap);
 	if(T_b.second==INFINITY)
 		{return;}
 
