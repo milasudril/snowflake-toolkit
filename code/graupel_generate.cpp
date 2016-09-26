@@ -115,6 +115,9 @@ ALICE_OPTION_DESCRIPTOR(OptionDescriptor
 	,{"Simulation parameters","deformations","Defines all deformations to apply to the prototype. A deformation rule is written in the form parameter:mean:standard deviation","Deformation rule",Alice::Option::Multiplicity::ONE_OR_MORE}
 	,{"Simulation parameters","D_max","Generate a graupel of diameter D_max. D_max is defined as the largest distance between two vertices.","Double",Alice::Option::Multiplicity::ONE}
 	,{"Simulation parameters","seed","Random seed mod 2^32","Integer",Alice::Option::Multiplicity::ONE}
+	,{"Simulation parameters","fill-ratio","Set minimum fill ratio of the bounding sphere. This option is used when D_max has been reached, to increase the total mass. "
+		 "If the fill ratio is non-zero, and D_max is fullfilled, only events that do not increase D_max are accepted.","Double"
+		,Alice::Option::Multiplicity::ONE}
 	,{"Output options","dump-geometry","Specify output Wavefront file","String",Alice::Option::Multiplicity::ONE}
 	,{"Output options","dump-geometry-ice","Same as --dump-geometry but write data as Ice crystal prototype files, so they can be used by other tools provided by the toolkit.","String",Alice::Option::Multiplicity::ONE}
 	,{"Output options","dump-stats","Write statistics to the given file","String",Alice::Option::Multiplicity::ONE}
@@ -368,7 +371,12 @@ struct Simstate
 		,const std::string& statefile);
 
 	double progressGet() const noexcept
-		{return d_max/D_max;}
+		{
+		auto x=d_max/D_max;
+		if(x<1.0 || fill_ratio<1e-2f)
+			{return x;}
+		return fill/fill_ratio;
+		}
 
 	void step();
 
@@ -385,6 +393,8 @@ struct Simstate
 	SnowflakeModel::RandomGenerator randgen;
 	double D_max;
 	double d_max;
+	double fill_ratio;
+	double fill;
 	size_t rejected;
 	std::unique_ptr<SnowflakeModel::FileOut> file_out;
 
@@ -407,6 +417,10 @@ Simstate::Simstate(const Alice::CommandLine<OptionDescriptor>& cmd_line
 	r_cmd_line.print();
 
 	D_max=cmd_line.get<Alice::Stringkey("D_max")>().valueGet();
+
+	fill_ratio=cmd_line.get<Alice::Stringkey("fill-ratio")>().valueGet();
+
+	fill=0;
 	
 		{
 		randgen.seed(cmd_line.get<Alice::Stringkey("seed")>().valueGet());
@@ -443,6 +457,7 @@ Simstate::Simstate(const Alice::CommandLine<OptionDescriptor>& cmd_line
 	dump.arrayRead<size_t>("randgen_position")
 		.dataRead(&SnowflakeModel::get(randgen).position,1);
 	dump.arrayRead<double>("D_max").dataRead(&D_max,1);
+	dump.arrayRead<double>("fill_ratio").dataRead(&fill_ratio,1);
 	dump.arrayRead<size_t>("rejected").dataRead(&rejected,1);
 
 	statfile=dump.arrayGet<SnowflakeModel::DataDump::StringHolder>("statfile")[0];
@@ -484,6 +499,7 @@ void Simstate::save(const std::string& now) const
 	dump.write("randgen_state",rng_state.state,rng_state.size());
 	dump.write("randgen_position",&rng_state.position,1);
 	dump.write("D_max",&D_max,1);
+	dump.write("fill_ratio",&fill_ratio,1);
 	dump.write("rejected",&rejected,1);
 
 		{
@@ -545,13 +561,31 @@ void Simstate::step()
 	obj.transform(T*R,0);
 	if(!overlap(obj,solid_out))
 		{
-		solid_out.merge(std::move(obj),0,0);
-		auto ex=solid_out.extremaGet();
-		d_max=length(ex.first - ex.second);
-		fprintf(stderr,"\r%.7g (Cs: %zu,  Cr: %zu)      "
-			,d_max,solid_out.subvolumesCount(),rejected);
-		statsDump(file_out.get(),solid_out);
-		fflush(stderr);
+		if(d_max<D_max)
+			{
+			solid_out.merge(std::move(obj),0,0);
+			auto ex=solid_out.extremaGet();
+			d_max=length(ex.first - ex.second);
+			fill=solid_out.volumeGet()/( 4*std::acos(-1.0)*pow(0.5*d_max,3)/3.0 );
+			fprintf(stderr,"\r%.7g %.7g  (Cs: %zu,  Cr: %zu)      "
+				,d_max,fill,solid_out.subvolumesCount(),rejected);
+			fflush(stderr);
+			statsDump(file_out.get(),solid_out);
+			}
+		else
+			{
+			auto s_a_temp=solid_out;
+			s_a_temp.merge(std::move(obj),0,0);
+			auto ex=s_a_temp.extremaGet();
+			if(length(ex.first - ex.second)>d_max)
+				{return;}
+			solid_out=std::move(s_a_temp);
+			fill=solid_out.volumeGet()/( 4*std::acos(-1.0)*pow(0.5*d_max,3)/3.0 );
+			fprintf(stderr,"\r%.7g %.7g  (Cs: %zu,  Cr: %zu)      "
+				,d_max,fill,solid_out.subvolumesCount(),rejected);
+			fflush(stderr);
+			statsDump(file_out.get(),solid_out);
+			}
 		}
 	else
 		{++rejected;}
