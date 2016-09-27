@@ -320,6 +320,48 @@ faceChoose(const SnowflakeModel::Solid& s_a,SnowflakeModel::RandomGenerator& ran
 	return s_a.shoot(source,direction,E_0,decay_distance,backface_culling);
 	}
 
+
+static SnowflakeModel::Point drawBall(SnowflakeModel::RandomGenerator& randgen
+	,const SnowflakeModel::Point& mid,float r)
+	{
+	std::uniform_real_distribution<float> X(mid.x - r,mid.x + r);
+	std::uniform_real_distribution<float> Y(mid.x - r,mid.y + r);
+	std::uniform_real_distribution<float> Z(mid.z - r,mid.z + r);
+
+	SnowflakeModel::Point ret;
+	do
+		{
+		ret={X(randgen),Y(randgen),Z(randgen),1.0f};
+		}
+	while(glm::distance(ret,mid)>=r);
+	return ret;
+	}
+
+static std::pair<SnowflakeModel::Triangle,float>
+faceChoose2(const SnowflakeModel::Solid& s_a,SnowflakeModel::RandomGenerator& randgen
+	,float E_0,float decay_distance,bool backface_culling)
+	{
+//	Construct a sphere from the bounding box
+	auto& bb=s_a.boundingBoxGet();
+	auto bb_size=bb.sizeGet();
+	auto bb_mid=bb.centerGet();
+	auto r=0.5f*glm::length( bb_size );
+
+	auto direction=drawSphere(randgen);
+
+
+//	Set the source on the sphere
+	auto source=bb_mid - SnowflakeModel::Point(r*direction,1.0);
+
+//	Set the target somewhere inside the ball
+	auto target=drawBall(randgen,bb_mid,r);
+
+//	Compute a new direction
+	direction=SnowflakeModel::Vector(target-source);
+
+	return s_a.shoot(source,direction/glm::length(direction),E_0,decay_distance,backface_culling);
+	}
+
 static void statsDump(SnowflakeModel::FileOut* file_out,const SnowflakeModel::Solid& solid)
 	{
 	if(file_out!=nullptr)
@@ -561,7 +603,7 @@ void Simstate::step()
 	auto p=particleGenerate(m_prototype,deformations,randgen);
 	std::uniform_real_distribution<float> U(0,E_0);
 	auto E=U(randgen);
-	auto T_a=faceChoose(solid_out,randgen,E,decay_distance,1);
+	auto T_a=faceChoose2(solid_out,randgen,E,decay_distance,1);
 	if(T_a.second==INFINITY)
 		{
 		++pass;
