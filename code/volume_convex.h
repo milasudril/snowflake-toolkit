@@ -234,7 +234,7 @@ namespace SnowflakeModel
 			std::pair<Triangle,float> shoot(const Point& source
 				,const Vector& direction
 				,float E_0,float decay_distance
-				,bool culling) const noexcept;
+				,bool backface_culling) const noexcept;
 
 
 		private:
