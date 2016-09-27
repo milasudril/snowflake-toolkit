@@ -113,6 +113,8 @@ ALICE_OPTION_DESCRIPTOR(OptionDescriptor
 	,{"Help","params-show","Print a summary of availible deformation parameters to stdout, or, if a filename is given, to that file","String",Alice::Option::Multiplicity::ZERO_OR_ONE}
 	,{"Simulation parameters","prototype","Generate data using the given prototype","String",Alice::Option::Multiplicity::ONE}
 	,{"Simulation parameters","deformations","Defines all deformations to apply to the prototype. A deformation rule is written in the form parameter:mean:standard deviation","Deformation rule",Alice::Option::Multiplicity::ONE_OR_MORE}
+	,{"Simulation parameters","E_0","The maximal initial particle energe. The energy is chosen as U(0, E_0)","Double",Alice::Option::Multiplicity::ONE}
+	,{"Simulation parameters","decay_distance","The number of units before the energy has decayed to 1/e","Double",Alice::Option::Multiplicity::ONE}
 	,{"Simulation parameters","D_max","Generate a graupel of diameter D_max. D_max is defined as the largest distance between two vertices.","Double",Alice::Option::Multiplicity::ONE}
 	,{"Simulation parameters","seed","Random seed mod 2^32","Integer",Alice::Option::Multiplicity::ONE}
 	,{"Simulation parameters","fill-ratio","Set minimum fill ratio of the bounding sphere. This option is used when D_max has been reached, to increase the total mass. "
@@ -301,7 +303,7 @@ static SnowflakeModel::Vector drawSphere(SnowflakeModel::RandomGenerator& randge
 
 static std::pair<SnowflakeModel::Triangle,float>
 faceChoose(const SnowflakeModel::Solid& s_a,SnowflakeModel::RandomGenerator& randgen
-	,float E_0,float decay_distance)
+	,float E_0,float decay_distance,bool backface_culling)
 	{
 //	Construct a sphere from the bounding box
 	auto& bb=s_a.boundingBoxGet();
@@ -315,7 +317,7 @@ faceChoose(const SnowflakeModel::Solid& s_a,SnowflakeModel::RandomGenerator& ran
 //	Set the source on the sphere
 	auto source=bb_mid - SnowflakeModel::Point(r*direction,1.0);
 
-	return s_a.shoot(source,direction,E_0,decay_distance);
+	return s_a.shoot(source,direction,E_0,decay_distance,backface_culling);
 	}
 
 static void statsDump(SnowflakeModel::FileOut* file_out,const SnowflakeModel::Solid& solid)
@@ -395,8 +397,11 @@ struct Simstate
 	double D_max;
 	double d_max;
 	double fill_ratio;
+	float E_0;
+	float decay_distance;
 	double fill;
 	size_t rejected;
+	size_t pass;
 	std::unique_ptr<SnowflakeModel::FileOut> file_out;
 
 	std::string statfile;
@@ -406,7 +411,7 @@ struct Simstate
 
 Simstate::Simstate(const Alice::CommandLine<OptionDescriptor>& cmd_line
 	,SnowflakeModel::Solid&& prototype):r_cmd_line(cmd_line),m_prototype(std::move(prototype))
-	,rejected(0)
+	,rejected(0),pass(0)
 	{
 		{
 		const auto& x=cmd_line.get<Alice::Stringkey("deformations")>();
@@ -420,6 +425,12 @@ Simstate::Simstate(const Alice::CommandLine<OptionDescriptor>& cmd_line
 	D_max=cmd_line.get<Alice::Stringkey("D_max")>().valueGet();
 
 	fill_ratio=cmd_line.get<Alice::Stringkey("fill-ratio")>().valueGet();
+	E_0=cmd_line.get<Alice::Stringkey("E_0")>().valueGet();
+	decay_distance=
+		std::max(cmd_line.get<Alice::Stringkey("decay_distance")>().valueGet()
+			,1.0e-7);
+	
+		
 
 	fill=0;
 	
@@ -460,6 +471,9 @@ Simstate::Simstate(const Alice::CommandLine<OptionDescriptor>& cmd_line
 	dump.arrayRead<double>("D_max").dataRead(&D_max,1);
 	dump.arrayRead<double>("fill_ratio").dataRead(&fill_ratio,1);
 	dump.arrayRead<size_t>("rejected").dataRead(&rejected,1);
+	dump.arrayRead<size_t>("pass").dataRead(&pass,1);
+	dump.arrayRead<float>("E_0").dataRead(&E_0,1);
+	dump.arrayRead<float>("decay_distance").dataRead(&decay_distance,1);
 
 	statfile=dump.arrayGet<SnowflakeModel::DataDump::StringHolder>("statfile")[0];
 	objfile=dump.arrayGet<SnowflakeModel::DataDump::StringHolder>("objfile")[0];
@@ -502,6 +516,9 @@ void Simstate::save(const std::string& now) const
 	dump.write("D_max",&D_max,1);
 	dump.write("fill_ratio",&fill_ratio,1);
 	dump.write("rejected",&rejected,1);
+	dump.write("pass",&pass,1);
+	dump.write("E_0",&E_0,1);
+	dump.write("decay_distance",&decay_distance,1);
 
 		{
 		auto x=statfile.c_str();
@@ -542,10 +559,15 @@ void Simstate::save(const std::string& now) const
 void Simstate::step()
 	{
 	auto p=particleGenerate(m_prototype,deformations,randgen);
-	auto T_a=faceChoose(solid_out,randgen,2.0f,2.0f);
+	std::uniform_real_distribution<float> U(0,E_0);
+	auto E=U(randgen);
+	auto T_a=faceChoose(solid_out,randgen,E,decay_distance,1);
 	if(T_a.second==INFINITY)
-		{return;}
-	auto T_b=faceChoose(p.solidGet(),randgen,0.0f,1.0f);
+		{
+		++pass;
+		return;
+		}
+	auto T_b=faceChoose(p.solidGet(),randgen,0.0f,1.0f,0);
 	if(T_b.second==INFINITY)
 		{return;}
 
@@ -568,8 +590,8 @@ void Simstate::step()
 			auto ex=solid_out.extremaGet();
 			d_max=length(ex.first - ex.second);
 			fill=solid_out.volumeGet()/( 4*std::acos(-1.0)*pow(0.5*d_max,3)/3.0 );
-			fprintf(stderr,"\r%.7g %.7g  (Cs: %zu,  Cr: %zu)      "
-				,d_max,fill,solid_out.subvolumesCount(),rejected);
+			fprintf(stderr,"\r%.7g %.7g  (Cs: %zu,  Cr: %zu, Pass: %zu)      "
+				,d_max,fill,solid_out.subvolumesCount(),rejected,pass);
 			fflush(stderr);
 			statsDump(file_out.get(),solid_out);
 			}

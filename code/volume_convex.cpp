@@ -380,7 +380,8 @@ void VolumeConvex::boundingBoxCompute() const noexcept
 
 std::pair<Triangle,float> VolumeConvex::shoot(const Point& source,const Vector& direction
 	,float E_0
-	,float decay_distance) const noexcept
+	,float decay_distance
+	,bool backface_culling) const noexcept
 	{
 	std::pair<Triangle,float> ret{Triangle{},INFINITY};
 	auto faces_begin=facesBegin();
@@ -408,12 +409,16 @@ std::pair<Triangle,float> VolumeConvex::shoot(const Point& source,const Vector& 
 		float out;
 		if(intersects(temp.first,source,direction,out))
 			{
-			auto mid=(temp.first.vertexGet(0) + temp.first.vertexGet(1) + temp.first.vertexGet(2))/3.0f;
-			temp.second=glm::distance(mid,source);
-			auto E_out=E_0*(1.0f - std::abs( glm::dot(temp.first.m_normal,direction) ))
-				*std::exp(-temp.second/decay_distance);
-			if(temp.second < ret.second && E_out<1.0f)
-				{ret=temp;}
+			auto proj=glm::dot(temp.first.m_normal,direction);
+			if(proj>=0 || !backface_culling) //Culling
+				{
+				auto mid=(temp.first.vertexGet(0) + temp.first.vertexGet(1) + temp.first.vertexGet(2))/3.0f;
+				temp.second=glm::distance(mid,source);
+				auto E_out=E_0*(1.0f - proj)
+					*std::exp(-temp.second/decay_distance);
+				if(temp.second < ret.second && E_out<1.0f)
+					{ret=temp;}
+				}
 			}
 		
 		++faces_begin;
