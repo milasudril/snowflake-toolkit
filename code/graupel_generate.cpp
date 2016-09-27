@@ -301,7 +301,7 @@ static SnowflakeModel::Vector drawSphere(SnowflakeModel::RandomGenerator& randge
 
 static std::pair<SnowflakeModel::Triangle,float>
 faceChoose(const SnowflakeModel::Solid& s_a,SnowflakeModel::RandomGenerator& randgen
-	,float cos_pass_angle)
+	,float E_0,float decay_distance)
 	{
 //	Construct a sphere from the bounding box
 	auto& bb=s_a.boundingBoxGet();
@@ -315,7 +315,7 @@ faceChoose(const SnowflakeModel::Solid& s_a,SnowflakeModel::RandomGenerator& ran
 //	Set the source on the sphere
 	auto source=bb_mid - SnowflakeModel::Point(r*direction,1.0);
 
-	return s_a.shoot(source,direction,cos_pass_angle);
+	return s_a.shoot(source,direction,E_0,decay_distance);
 	}
 
 static void statsDump(SnowflakeModel::FileOut* file_out,const SnowflakeModel::Solid& solid)
@@ -542,10 +542,10 @@ void Simstate::save(const std::string& now) const
 void Simstate::step()
 	{
 	auto p=particleGenerate(m_prototype,deformations,randgen);
-	auto T_a=faceChoose(solid_out,randgen,0.5f);
+	auto T_a=faceChoose(solid_out,randgen,2.0f,2.0f);
 	if(T_a.second==INFINITY)
 		{return;}
-	auto T_b=faceChoose(p.solidGet(),randgen,0.0f);
+	auto T_b=faceChoose(p.solidGet(),randgen,0.0f,1.0f);
 	if(T_b.second==INFINITY)
 		{return;}
 
