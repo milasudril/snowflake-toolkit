@@ -187,7 +187,8 @@ namespace SnowflakeModel
 
 			void write(const char* id,DataDump& dump) const;
 
-			std::pair<Triangle,float> shoot(const Point& source,const Vector& direction) const noexcept;
+			std::pair<Triangle,float> shoot(const Point& source,const Vector& direction
+				,float cos_pass_angle) const noexcept;
 
 
 		private:
