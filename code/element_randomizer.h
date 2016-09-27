@@ -22,21 +22,9 @@
 
 namespace SnowflakeModel
 	{
-	class MatrixStorage;
-	class Thread;
+	class MatrixStorageFastsum;
 
-	class ElementRandomizer
-		{
-		public:
-			ElementRandomizer(MatrixStorage&&)=delete;
-			ElementRandomizer(const MatrixStorage& M);
-			~ElementRandomizer();
-
-			Twins<size_t> elementChoose(RandomGenerator& randgen) const noexcept;
-
-		private:
-			const MatrixStorage& r_M;
-		};
+	Twins<size_t> elementChoose(RandomGenerator& randgen,const MatrixStorageFastsum& M) noexcept;
 	}
 
 #endif

@@ -18,7 +18,7 @@
 #include "file_out.h"
 #include "ice_particle.h"
 #include "twins.h"
-#include "matrix_storage.h"
+#include "matrix_storage_fastsum.h"
 #include "element_randomizer.h"
 #include "profile.h"
 #include "ctrlchandler.h"
@@ -710,7 +710,7 @@ float C_melt(size_t k,const std::vector<SnowflakeModel::IceParticle>& ice_partic
 
 void matrixRowUpdate(size_t k
 	,const std::vector<SnowflakeModel::IceParticle>& ice_particles
-	,SnowflakeModel::MatrixStorage& C_mat
+	,SnowflakeModel::MatrixStorageFastsum& C_mat
 	,const Setup::Data& setup
 	,size_t N_particles)
 	{
@@ -734,7 +734,7 @@ void matrixRowUpdate(size_t k
 	C_mat(l,l)=0;
 	}
 
-void matrixDump(const SnowflakeModel::MatrixStorage& C_mat)
+void matrixDump(const SnowflakeModel::MatrixStorageFastsum& C_mat)
 	{
 	auto elem_current=C_mat.rowGet(0);
 	auto n=C_mat.nColsGet();
@@ -798,12 +798,12 @@ size_t randomDraw(const T* ptr_begin,const T* ptr_end
 	while(1);
 	}
 
-SnowflakeModel::Twins<size_t>
-ice_particlesChoose(const SnowflakeModel::ElementRandomizer& randomizer
+static SnowflakeModel::Twins<size_t>
+ice_particlesChoose(const SnowflakeModel::MatrixStorageFastsum& M
 	,SnowflakeModel::RandomGenerator& randgen)
 	{
 	SNOWFLAKEMODEL_TIMED_SCOPE();
-	return randomizer.elementChoose(randgen);
+	return elementChoose(randgen,M);
 	}
 
 glm::vec2 drawFromTriangle(SnowflakeModel::RandomGenerator& randgen)
@@ -880,12 +880,11 @@ class Simstate
 		std::unique_ptr<SimstateMonitor> m_monitor;
 		const SnowflakeModel::Solid& r_s_in;
 		Data m_data;
-		SnowflakeModel::MatrixStorage C_mat;
+		SnowflakeModel::MatrixStorageFastsum C_mat;
 		SnowflakeModel::RandomGenerator randgen;
 		std::vector<SnowflakeModel::IceParticle> ice_particles;
 	//	SnowflakeModel::IdGenerator<unsigned int> m_id_gen;
 		std::uniform_int_distribution<int> U_rot; //Stateless
-		SnowflakeModel::ElementRandomizer randomizer; //Stateless
 		std::unique_ptr<SnowflakeModel::FileOut> frame_data_file; //Stateless.
 		std::unique_ptr<SnowflakeModel::FileOut> dropped_stats;
 
@@ -916,7 +915,7 @@ Simstate::Simstate(const Setup& setup,const SnowflakeModel::Solid& s_in
 	,const SnowflakeModel::DataDump& dump
 	,std::unique_ptr<SimstateMonitor>&& monitor):
 	r_setup(setup),m_monitor(std::move(monitor)),r_s_in(s_in),C_mat(setup.m_data.m_N+1,setup.m_data.m_N+1)
-	,U_rot(0,5),randomizer(C_mat)
+	,U_rot(0,5)
 	{
 	dump.arrayRead<Data>("simstate/data")
 		.dataRead(&m_data,1);
@@ -990,7 +989,7 @@ Simstate::Simstate(const Setup& setup,const SnowflakeModel::Solid& s_in
 	,std::unique_ptr<SimstateMonitor>&& monitor):
 	 r_setup(setup),m_monitor(std::move(monitor)),r_s_in(s_in),m_data{0}
 	,C_mat(setup.m_data.m_N+1,setup.m_data.m_N+1)
-	,randgen(setup.m_data.m_seed),U_rot(0,5),randomizer(C_mat)
+	,randgen(setup.m_data.m_seed),U_rot(0,5)
 	{
 //	http://www0.cs.ucl.ac.uk/staff/d.jones/GoodPracticeRNG.pdf
 	randgen.discard(65536);
@@ -1170,7 +1169,7 @@ static size_t ice_particleDeadFind(std::vector<SnowflakeModel::IceParticle>& ice
 		++i;
 		}
 	return i-ice_particles.begin();
-}
+	}
 
 bool Simstate::step()
 	{
@@ -1187,7 +1186,7 @@ bool Simstate::step()
 			,100*static_cast<double>(m_data.N_particles)/ice_particles.size());
 		}
 
-	auto pair_merge=ice_particlesChoose(randomizer,randgen);
+	auto pair_merge=ice_particlesChoose(C_mat,randgen);
 	m_data.tau+=-log(U(0.0,1.0,randgen))/double(C_mat.sumGetMt());
 
 	if(pair_merge.first==pair_merge.second)

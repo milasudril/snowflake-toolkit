@@ -486,14 +486,17 @@ void Solid::dMaxCompute() const noexcept
 	m_flags_dirty&=~DMAX_DIRTY;
 	}
 
-std::pair<Triangle,float> Solid::shoot(const Point& source,const Vector& direction) const noexcept
+std::pair<Triangle,float> Solid::shoot(const Point& source,const Vector& direction
+	,float E_0,float decay_distance
+	,bool backface_culling) const noexcept
 	{
 	auto subvols_begin=subvolumesBegin();
 	auto subvols_end=subvolumesEnd();
 
 	assert(subvols_begin!=subvols_end);
 	--subvols_end;
-	auto ret=subvols_end->shoot(source,direction);
+	auto ret=subvols_end->shoot(source,direction,E_0,decay_distance
+		,backface_culling);
 	
 
 	while(subvols_begin!=subvols_end)
@@ -502,7 +505,8 @@ std::pair<Triangle,float> Solid::shoot(const Point& source,const Vector& directi
 		auto d_box=distance(source,subvols_end->boundingBoxGet());
 		if(d_box < ret.second)
 			{
-			auto res=subvols_end->shoot(source,direction);
+			auto res=subvols_end->shoot(source,direction,E_0,decay_distance
+				,backface_culling);
 			if(res.second < ret.second)
 				{ret=res;}
 			}
