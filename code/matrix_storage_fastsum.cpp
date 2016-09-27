@@ -8,12 +8,12 @@
 //@	                    "rel":"implementation"
 //@	                }
 //@	            ],
-//@	            "name":"matrix_storage.o",
+//@	            "name":"matrix_storage_fastsum.o",
 //@	            "type":"object"
 //@	        }
 //@	    ]
 //@	}
-#include "matrix_storage.h"
+#include "matrix_storage_fastsum.h"
 #include "thread.h"
 #include "task.h"
 #include "profile.h"
@@ -21,7 +21,7 @@
 
 using namespace SnowflakeModel;
 
-size_t MatrixStorage::N_validate(size_t N_rows,size_t N_cols)
+size_t MatrixStorageFastsum::N_validate(size_t N_rows,size_t N_cols)
 	{
 	if(N_cols%4!=0)
 		{throw "Number of columns has to be divisible by 4";}
@@ -34,7 +34,7 @@ size_t MatrixStorage::N_validate(size_t N_rows,size_t N_cols)
 	return N_rows*N_cols;
 	}
 
-class MatrixStorage::SumTask:public Task
+class MatrixStorageFastsum::SumTask:public Task
 	{
 	public:
 		SumTask(const ElementType* begin,const ElementType* end
@@ -82,7 +82,7 @@ class MatrixStorage::SumTask:public Task
 		ElementType m_sum;
 	};
 
-MatrixStorage::MatrixStorage(size_t N_rows,size_t N_cols):
+MatrixStorageFastsum::MatrixStorageFastsum(size_t N_rows,size_t N_cols):
 	m_N_cols(N_cols)
 	,m_data(N_validate(N_rows,N_cols))
 	,m_sums_row(N_rows),m_flags_dirty(SUM_DIRTY)
@@ -98,10 +98,10 @@ MatrixStorage::MatrixStorage(size_t N_rows,size_t N_cols):
 		}
 	}
 
-MatrixStorage::~MatrixStorage()
+MatrixStorageFastsum::~MatrixStorageFastsum()
 	{}
 
-void MatrixStorage::sumCompute() const
+void MatrixStorageFastsum::sumCompute() const
 	{
 	auto ptr=(const vec4_t*)rowGet(0);
 	auto end=(const vec4_t*)rowsEnd();
@@ -115,7 +115,7 @@ void MatrixStorage::sumCompute() const
 	m_flags_dirty&=~SUM_DIRTY;
 	}
 
-void MatrixStorage::sumComputeMt() const
+void MatrixStorageFastsum::sumComputeMt() const
 	{
 	SNOWFLAKEMODEL_TIMED_SCOPE();
 		{

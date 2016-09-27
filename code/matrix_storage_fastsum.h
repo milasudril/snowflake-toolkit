@@ -1,20 +1,20 @@
 //@	{
 //@	    "dependencies_extra":[
 //@	        {
-//@	            "ref":"matrix_storage.o",
+//@	            "ref":"matrix_storage_fastsum.o",
 //@	            "rel":"implementation"
 //@	        }
 //@	    ],
 //@	    "targets":[
 //@	        {
 //@	            "dependencies":[],
-//@	            "name":"matrix_storage.h",
+//@	            "name":"matrix_storage_fastsum.h",
 //@	            "type":"include"
 //@	        }
 //@	    ]
 //@	}
-#ifndef SNOWFLAKEMODEL_MATRIXSTORAGE_H
-#define SNOWFLAKEMODEL_MATRIXSTORAGE_H
+#ifndef SNOWFLAKEMODEL_MATRIXSTORAGE_FASTSUM_H
+#define SNOWFLAKEMODEL_MATRIXSTORAGE_FASTSUM_H
 
 #include "twins.h"
 #include <cstdint>
@@ -26,15 +26,15 @@ namespace SnowflakeModel
 	{
 	class Thread;
 
-	class MatrixStorage
+	class MatrixStorageFastsum
 		{
 		public:
 			typedef double ElementType;
 
 			static size_t N_validate(size_t N,size_t M);
 
-			MatrixStorage(size_t N_rows,size_t N_cols);
-			~MatrixStorage();
+			MatrixStorageFastsum(size_t N_rows,size_t N_cols);
+			~MatrixStorageFastsum();
 
 			const ElementType& operator()(size_t row,size_t col) const
 				{return m_data[m_N_cols*row + col];}
