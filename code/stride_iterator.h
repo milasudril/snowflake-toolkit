@@ -74,21 +74,21 @@ namespace SnowflakeModel
 	inline StrideIterator<T,offset> operator+(const StrideIterator<T,offset>& a,size_t N) noexcept
 		{
 		auto x=a;
-		return a+=N;
+		return x+=N;
 		}
 
 	template<class T,size_t offset>
 	inline StrideIterator<T,offset> operator+(size_t N,const StrideIterator<T,offset>& a) noexcept
 		{
 		auto x=a;
-		return a+=N;
+		return x+=N;
 		}
 
 	template<class T,size_t offset>
 	inline StrideIterator<T,offset> operator-(const StrideIterator<T,offset>& a,size_t N) noexcept
 		{
 		auto x=a;
-		return a-=N;
+		return x-=N;
 		}
 	}
 
