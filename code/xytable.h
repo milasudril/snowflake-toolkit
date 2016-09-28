@@ -12,7 +12,7 @@
 namespace SnowflakeModel
 	{
 	class FileIn;
-	std::vector< Twins<float> > xytable(FileIn& source);
+	std::vector< Twins<float> > xytable(FileIn&& source);
 	}
 
 #endif

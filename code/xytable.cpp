@@ -7,7 +7,7 @@
 using namespace SnowflakeModel;
 
 
-std::vector<Twins<float>> SnowflakeModel::xytable(FileIn& source)
+std::vector<Twins<float>> SnowflakeModel::xytable(FileIn&& source)
 	{
 	int ch_in;
 	std::vector<Twins<float>> ret;
@@ -47,6 +47,7 @@ std::vector<Twins<float>> SnowflakeModel::xytable(FileIn& source)
 						temp.second=atof(buffer.c_str());
 						ret.push_back(temp);
 						buffer.clear();
+						fieldcount=0;
 						break;
 					default:
 						buffer+=ch_in;
