@@ -535,59 +535,9 @@ Setup::Setup(int argc,char** argv):
 		{
 		auto ptr=deformations.data();
 		auto ptr_end=ptr+deformations.size();
-		DeformationData deformation;
-		deformation.mean=1;
-		deformation.standard_deviation=0;
 		while(ptr!=ptr_end)
 			{
-			auto strptr=ptr->data();
-			auto str_end=strptr+ptr->size();
-			std::string str_temp;
-			size_t fieldcount=0;
-			while(strptr!=str_end)
-				{
-				switch(*strptr)
-					{
-					case ',':
-						switch(fieldcount)
-							{
-							case 0:
-								deformation.name=str_temp;
-								break;
-							case 1:
-								deformation.mean=atof(str_temp.data());
-								break;
-							case 2:
-								deformation.standard_deviation=atof(str_temp.data());
-								break;
-							default:
-								throw "Too many arguments for deformation";
-							}
-						++fieldcount;
-						str_temp.clear();
-						break;
-
-					default:
-						str_temp+=*strptr;
-					}
-				++strptr;
-				}
-			switch(fieldcount)
-				{
-				case 0:
-					deformation.name=str_temp;
-					break;
-				case 1:
-					deformation.mean=atof(str_temp.data());
-					break;
-				case 2:
-					deformation.standard_deviation=atof(str_temp.data());
-					break;
-				}
-			m_deformations.push_back(deformation);
-			deformation.mean=1;
-			deformation.standard_deviation=0;
-			deformation.name.clear();
+			m_deformations.push_back(Alice::make_value(*ptr));
 			++ptr;
 			}
 		}
