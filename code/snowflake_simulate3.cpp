@@ -25,8 +25,12 @@
 #include "getdate.h"
 #include "filenameesc.h"
 #include "randomgenerator.h"
+#include "xytable.h"
+#include "stride_iterator.h"
+#include "alice/commandline.hpp" //Alice will replace getopt
 
 #include <getopt.h>
+
 #include <glm/gtc/constants.hpp>
 #include <glm/gtx/norm.hpp>
 
@@ -84,12 +88,204 @@ static const struct option PROGRAM_OPTIONS[]=
 		,{0,0,0,0}
 	};
 
+
+//[Move this into a separate file
+
+
+struct DeformationData;
+
+typedef float (*DrawMethod)(const DeformationData& obj,SnowflakeModel::RandomGenerator& randgen);
+
 struct DeformationData
 	{
 	std::string name;
-	double mean;
-	double standard_deviation;
+	float mean;
+	float standard_deviation;
+	mutable std::piecewise_linear_distribution<float> distribution;
+	DrawMethod drawMethod;
 	};
+
+
+static float custom_distribution(const DeformationData& obj,SnowflakeModel::RandomGenerator& randgen)
+	{return obj.distribution(randgen);}
+
+static float deterministic_distribution(const DeformationData& obj,SnowflakeModel::RandomGenerator& randgen)
+	{return obj.mean;}
+
+static float exp_distribution(const DeformationData& obj,SnowflakeModel::RandomGenerator& randgen)
+	{
+	std::exponential_distribution<float> e(1.0f/obj.mean);
+	return e(randgen);
+	}
+
+static float gamma_distribution(const DeformationData& obj,SnowflakeModel::RandomGenerator& randgen)
+	{
+//	Parameter setup from Wikipedia article.
+//	Use the standard deviation from user input:
+//		sigma^2=k*theta^2
+//	we have
+	float E=obj.mean;
+	float sigma=obj.standard_deviation;
+	float k=E*E/(sigma*sigma);
+	float theta=sigma*sigma/E;
+//	Convert to C++ notation
+	auto beta=theta;
+	float alpha=k;
+
+	std::gamma_distribution<float> G(alpha,beta);
+	return G(randgen);
+	}
+
+static DrawMethod drawMethodFromName(const std::string& name)
+	{
+	switch(Alice::Stringkey(name.c_str()))
+		{
+		case Alice::Stringkey("custom"):
+			return custom_distribution;
+		case Alice::Stringkey("dirac"):
+			return deterministic_distribution;
+		case Alice::Stringkey("deterministic"):
+			return deterministic_distribution;
+		case Alice::Stringkey("exp"):
+			return exp_distribution;
+		case Alice::Stringkey("gamma"):
+			return gamma_distribution;
+		}
+	throw "Unknown distribution";
+	}
+
+static bool hasStd(DrawMethod m)
+	{
+	return m==gamma_distribution;
+	}
+
+static std::piecewise_linear_distribution<float> distributionLoad(const std::string& str)
+	{
+	auto table=xytable(SnowflakeModel::FileIn(str.c_str()));
+	SnowflakeModel::StrideIterator<decltype(table)::value_type,0> x(table.data());
+	SnowflakeModel::StrideIterator<decltype(table)::value_type,1> y(table.data());
+	
+	return std::piecewise_linear_distribution<float>(x,x+table.size(),y);
+	}
+
+
+
+namespace Alice
+	{
+	DeformationData make_value(const std::string& str)
+		{
+		DeformationData ret
+			{
+			 std::string("")
+			,1.0f
+			,0.0f
+			,std::piecewise_linear_distribution<float>{}
+			,deterministic_distribution
+			};
+
+		auto ptr=str.c_str();
+		enum class State:int{INIT,DISTRIBUTION,DISTRIBUTION_CUSTOM,VALUE_1,VALUE_2};
+		auto state_current=State::INIT;
+		std::string word_current;
+		while(1)
+			{
+			auto ch_in=*ptr;
+			switch(state_current)
+				{
+				case State::INIT:
+					switch(ch_in)
+						{
+						case ',':
+							ret.name=word_current;
+							state_current=State::DISTRIBUTION;
+							word_current.clear();
+							break;
+
+						case '\0':
+							throw "Too few arguments for deformation";
+
+						default:
+							word_current+=ch_in;
+						}
+					break;
+
+				case State::DISTRIBUTION:
+					switch(ch_in)
+						{
+						case ',':
+							ret.drawMethod=drawMethodFromName(word_current);
+							word_current.clear();
+							state_current=ret.drawMethod==custom_distribution?
+								State::DISTRIBUTION_CUSTOM:State::VALUE_1;
+							break;
+
+						case '\0':
+							throw "Too few arguments for deformation";
+
+						default:
+							word_current+=ch_in;
+						}
+					break;
+
+				case State::DISTRIBUTION_CUSTOM:
+					switch(ch_in)
+						{
+						case ',':
+							throw "Custom distributions only take one argument";
+						case '\0':
+							ret.distribution=distributionLoad(word_current);
+							return std::move(ret);
+						default:
+							word_current+=ch_in;
+						}
+					break;
+
+				case State::VALUE_1:
+					switch(ch_in)
+						{
+						case ',':
+							if(!hasStd(ret.drawMethod))
+								{throw "The current distribution does not accept a standard distribution";}
+							ret.mean=atof(word_current.c_str());
+							word_current.clear();
+							state_current=State::VALUE_2;
+							break;
+
+						case '\0':
+							if(hasStd(ret.drawMethod))
+								{throw "The current distribution requires a standard deviation";}
+							ret.mean=atof(word_current.c_str());
+							return std::move(ret);
+
+						default:
+							word_current+=ch_in;
+						}
+					break;
+
+
+				case State::VALUE_2:
+					switch(ch_in)
+						{
+						case ',':
+							throw "Too many arguments for distribution";
+
+						case '\0':
+							ret.standard_deviation=atof(word_current.c_str());
+							return std::move(ret);
+
+						default:
+							word_current+=ch_in;
+						}
+					break;
+				};
+			}
+		return std::move(ret);
+		}
+	}
+
+//]
+
+
 
 class Simstate;
 
@@ -484,15 +680,15 @@ void helpShow()
 struct DeformationDataOut
 	{
 	const char* name;
-	double mean;
-	double standard_deviation;
+	float mean;
+	float standard_deviation;
 	};
 
 struct DeformationDataIn
 	{
 	SnowflakeModel::DataDump::StringHolder name;
-	double mean;
-	double standard_deviation;
+	float mean;
+	float standard_deviation;
 	};
 
 namespace SnowflakeModel
