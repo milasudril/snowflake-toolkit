@@ -278,6 +278,7 @@ namespace Alice
 						}
 					break;
 				};
+			++ptr;
 			}
 		return std::move(ret);
 		}
@@ -775,29 +776,8 @@ SnowflakeModel::IceParticle ice_particlePrepare(const SnowflakeModel::Solid& s_i
 		auto deformation_end=deformation+setup.m_deformations.size();
 		while(deformation!=deformation_end)
 			{
-		//	Test if parameter is deterministic
-			if(fabs(deformation->standard_deviation)<1e-7)
-				{ice_particle.parameterSet(deformation->name.data(),deformation->mean);}
-			else
-				{
-			//	It is not. Setup gamma distribution
-			//
-			//	Parameter setup from Wikipedia article.
-			//	Use the standard deviation from user input:
-			//		sigma^2=k*theta^2
-			//	we have
-				float E=deformation->mean;
-				float sigma=deformation->standard_deviation;
-				float k=E*E/(sigma*sigma);
-				float theta=sigma*sigma/E;
-			//	Convert to C++ notation
-				auto beta=theta;
-				float alpha=k;
-
-				std::gamma_distribution<float> G(alpha,beta);
-				auto scale=G(randgen);
-				ice_particle.parameterSet(deformation->name,scale);
-				}
+			ice_particle.parameterSet(deformation->name.data()
+				,deformation->drawMethod(*deformation,randgen));
 			++deformation;
 			}
 		}
