@@ -20,6 +20,7 @@ namespace SnowflakeModel
 		{
 		Twins(T&& a,T&& b):std::pair<T,T>(std::move(a),std::move(b)){}
 		Twins(const T& a,const T& b):std::pair<T,T>(a,b){}
+		Twins()=default;
 		};
 	}
 #endif

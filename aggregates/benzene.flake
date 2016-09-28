@@ -1,4 +1,7 @@
 crystal(bullet, ../crystal-prototypes/bullet.ice)
+crystal(empty, ../crystal-prototypes/empty.ice)
+
+node(root,empty)
 
 node(c0, bullet)
 node(c1, bullet)
@@ -54,9 +57,12 @@ node_param_set(h5,a,0.25)
 node_param_set(h5,t,+0.125)
 
 vector(u, 1, 0, 0)
-
 vector(v, -1, 0, 0)
 
+vector(O, -1, -2, -3)
+
+
+nodes_connect(root, O, c0, O, 0, 0, 0)
 nodes_connect(c0, u, c1, v, 0, 0, 0.166666)
 nodes_connect(c1, u, c2, v, 0, 0, 0.166666)
 nodes_connect(c2, u, c3, v, 0, 0, 0.166667)
