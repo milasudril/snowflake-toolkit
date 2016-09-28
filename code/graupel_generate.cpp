@@ -603,7 +603,7 @@ void Simstate::step()
 	auto p=particleGenerate(m_prototype,deformations,randgen);
 	std::uniform_real_distribution<float> U(0,E_0);
 	auto E=U(randgen);
-	auto T_a=faceChoose2(solid_out,randgen,E,decay_distance,1);
+	auto T_a=faceChoose(solid_out,randgen,E,decay_distance,1);
 	if(T_a.second==INFINITY)
 		{
 		++pass;

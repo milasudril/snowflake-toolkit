@@ -245,7 +245,7 @@ int main(int argc,char** argv)
 		SnowflakeModel::Solid m;
 		graph.nodesVisit(SnowflakeModel::SolidBuilderBBC(m));
 
-		m.centerCentroidAt(SnowflakeModel::Point{0,0,0,1});
+	//	m.centerCentroidAt(SnowflakeModel::Point{0,0,0,1});
 
 		if(setup.m_mesh_output!="")
 			{

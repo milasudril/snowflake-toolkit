@@ -170,7 +170,6 @@ namespace SnowflakeModel
 
 			size_t facesCount() const noexcept
 				{
-				assert(m_n_faces_tot!=0);
 				return m_n_faces_tot;
 				}
 
