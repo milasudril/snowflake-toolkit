@@ -27,7 +27,7 @@
 #include "randomgenerator.h"
 #include "xytable.h"
 #include "stride_iterator.h"
-#include "alice/commandline.hpp" //Alice will replace getopt
+#include "alice/commandline.hpp" //Alice will replace getopt later
 
 #include <getopt.h>
 
@@ -98,18 +98,24 @@ typedef float (*DrawMethod)(const DeformationData& obj,SnowflakeModel::RandomGen
 
 struct DeformationData
 	{
+	DeformationData()=default;
+	explicit DeformationData(const SnowflakeModel::DataDump& dump,const char* name);
+
 	std::string name;
 	float mean;
 	float standard_deviation;
-	mutable std::piecewise_linear_distribution<float> distribution;
+	std::string distribution_src;
+	mutable std::piecewise_linear_distribution<float> distribution_data;
 	DrawMethod drawMethod;
+
+	void write(const char* key,SnowflakeModel::DataDump& dump) const;
 	};
 
 
 static float custom_distribution(const DeformationData& obj,SnowflakeModel::RandomGenerator& randgen)
-	{return obj.distribution(randgen);}
+	{return obj.distribution_data(randgen);}
 
-static float deterministic_distribution(const DeformationData& obj,SnowflakeModel::RandomGenerator& randgen)
+static float delta_distribution(const DeformationData& obj,SnowflakeModel::RandomGenerator& randgen)
 	{return obj.mean;}
 
 static float exp_distribution(const DeformationData& obj,SnowflakeModel::RandomGenerator& randgen)
@@ -136,23 +142,35 @@ static float gamma_distribution(const DeformationData& obj,SnowflakeModel::Rando
 	return G(randgen);
 	}
 
-static DrawMethod drawMethodFromName(const std::string& name)
+static const char* keyFromDrawMethod(DrawMethod name)
 	{
-	switch(Alice::Stringkey(name.c_str()))
+	if(name==custom_distribution)
+		{return "custom";}
+	if(name==delta_distribution)
+		{return "delta";}
+	if(name==exp_distribution)
+		{return "exponential";}
+	if(name==gamma_distribution)
+		{return "gamma";}
+
+	return "";
+	}
+
+static DrawMethod drawMethodFromName(const char* name)
+	{
+	switch(Alice::Stringkey(name))
 		{
 		case Alice::Stringkey("custom"):
 			return custom_distribution;
-		case Alice::Stringkey("dirac"):
-			return deterministic_distribution;
-		case Alice::Stringkey("deterministic"):
-			return deterministic_distribution;
-		case Alice::Stringkey("exp"):
+		case Alice::Stringkey("delta"):
+			return delta_distribution;
+		case Alice::Stringkey("exponential"):
 			return exp_distribution;
 		case Alice::Stringkey("gamma"):
 			return gamma_distribution;
 		}
 	throw "Unknown distribution";
-	}
+	}	
 
 static bool hasStd(DrawMethod m)
 	{
@@ -168,21 +186,52 @@ static std::piecewise_linear_distribution<float> distributionLoad(const std::str
 	return std::piecewise_linear_distribution<float>(x,x+table.size(),y);
 	}
 
+void DeformationData::write(const char* key,SnowflakeModel::DataDump& dump) const 
+	{
+	auto group=dump.groupCreate(key);
+	std::string keyname(key);
+
+	dump.write((keyname + "/mean").c_str(),&mean,1);
+	dump.write((keyname + "/standard_deviation").c_str(),&standard_deviation,1);
+	auto draw_method_name=keyFromDrawMethod(drawMethod);
+	dump.write((keyname + "/drawMethod").c_str(),&draw_method_name,1);
+	auto intervals=distribution_data.intervals();
+	auto densities=distribution_data.densities();
+	dump.write((keyname + "/distribution_data_intervals").c_str(),intervals.data(),intervals.size());
+	dump.write((keyname + "/distribution_data_densities").c_str(),densities.data(),intervals.size());
+	dump.write((keyname + "/distribution_src").c_str(),&distribution_src,1);
+	}
+
+DeformationData::DeformationData(const SnowflakeModel::DataDump& dump,const char* name)
+	{
+	auto groupname=std::string(name);
+	
+	dump.arrayRead<decltype(mean)>((groupname +"/mean").c_str()).dataRead(&mean,1);
+	dump.arrayRead<decltype(standard_deviation)>((groupname +"/standard_deviation").c_str())
+		.dataRead(&standard_deviation,1);
+	auto draw_method_name=std::move(dump.arrayGet<SnowflakeModel::DataDump::StringHolder>
+		((groupname + "/drawMethod").c_str()).at(0));
+	drawMethod=drawMethodFromName(draw_method_name);
+	auto densities=dump.arrayGet<decltype(distribution_data)::result_type>
+		((groupname + "/distribution_data_densities").c_str());
+	auto intervals=dump.arrayGet<decltype(distribution_data)::result_type>
+		((groupname + "/distribution_data_intervals").c_str());
+	distribution_data=decltype(distribution_data)(intervals.data()
+		,intervals.data() + intervals.size()
+		,densities.data());
+	distribution_src=dump.arrayGet<SnowflakeModel::DataDump::StringHolder>
+		((groupname + "/distribution_src").c_str()).at(0);
+	}
 
 
 namespace Alice
 	{
 	DeformationData make_value(const std::string& str)
 		{
-		DeformationData ret
-			{
-			 std::string("")
-			,1.0f
-			,0.0f
-			,std::piecewise_linear_distribution<float>{}
-			,deterministic_distribution
-			};
-
+		DeformationData ret;
+		ret.mean=1.0f;
+		ret.standard_deviation=1.0f;
+		ret.drawMethod=delta_distribution;
 		auto ptr=str.c_str();
 		enum class State:int{INIT,DISTRIBUTION,DISTRIBUTION_CUSTOM,VALUE_1,VALUE_2};
 		auto state_current=State::INIT;
@@ -213,7 +262,7 @@ namespace Alice
 					switch(ch_in)
 						{
 						case ',':
-							ret.drawMethod=drawMethodFromName(word_current);
+							ret.drawMethod=drawMethodFromName(word_current.c_str());
 							word_current.clear();
 							state_current=ret.drawMethod==custom_distribution?
 								State::DISTRIBUTION_CUSTOM:State::VALUE_1;
@@ -233,7 +282,8 @@ namespace Alice
 						case ',':
 							throw "Custom distributions only take one argument";
 						case '\0':
-							ret.distribution=distributionLoad(word_current);
+							ret.distribution_data=distributionLoad(word_current);
+							ret.distribution_src=word_current;
 							return std::move(ret);
 						default:
 							word_current+=ch_in;
@@ -591,10 +641,14 @@ void helpShow()
 		"    Generate data using the shape stored in crystal_file."
 		" See the reference manal for information about how to create "
 		"such a file.\n\n"
-		"--deformation=name,mean,std\n"
+		"--deformation=name,random_distribution\n"
 		"    Crystal file parameter to use for size modification. Use\n\n"
 		"         --param-show\n\n"
-		"    to list the name of available parameters.\n\n"
+		"to list the name of available parameters. The availible random distributions are\n"
+		"    custom,filename  A custom probability distribution stored in a text file. See xytab.txt for an example.\n"
+		"    delta,mean  A Dirac delta distribution. This will distribution will always return mean.\n"
+		"    exponential,mean  An exponential distribution with a give mean\n"
+		"    gamma,mean,std   A gamma distribution with mean and standard deviation\n\n"
 		"--output-dir=output_directory\n"
 		"    Directory for storing output data\n\n"
 		"--dump-stats=N\n"
@@ -645,28 +699,6 @@ struct DeformationDataIn
 namespace SnowflakeModel
 	{
 	template<>
-	const DataDump::FieldDescriptor DataDump::MetaObject<DeformationDataOut>::fields[]=
-		{
-		 {"name",offsetOf(&DeformationDataOut::name),DataDump::MetaObject<decltype(DeformationDataOut::name)>().typeGet()}
-		,{"mean",offsetOf(&DeformationDataOut::mean),DataDump::MetaObject<decltype(DeformationDataOut::mean)>().typeGet()}
-		,{"standard_deviation",offsetOf(&DeformationDataOut::standard_deviation),DataDump::MetaObject<decltype(DeformationDataOut::standard_deviation)>().typeGet()}
-		};
-
-	template<>
-	const size_t DataDump::MetaObject<DeformationDataOut>::field_count=3;
-
-	template<>
-	const DataDump::FieldDescriptor DataDump::MetaObject<DeformationDataIn>::fields[]=
-		{
-		 {"name",offsetOf(&DeformationDataIn::name),DataDump::MetaObject<decltype(DeformationDataIn::name)>().typeGet()}
-		,{"mean",offsetOf(&DeformationDataIn::mean),DataDump::MetaObject<decltype(DeformationDataIn::mean)>().typeGet()}
-		,{"standard_deviation",offsetOf(&DeformationDataIn::standard_deviation),DataDump::MetaObject<decltype(DeformationDataIn::standard_deviation)>().typeGet()}
-		};
-
-	template<>
-	const size_t DataDump::MetaObject<DeformationDataIn>::field_count=3;
-
-	template<>
 	const DataDump::FieldDescriptor DataDump::MetaObject<Setup::Data>::fields[]=
 		{
 		 {"actions",offsetOf(&Setup::Data::m_actions),DataDump::MetaObject<decltype(Setup::Data::m_actions)>().typeGet()}
@@ -696,15 +728,20 @@ void Setup::write(SnowflakeModel::DataDump& dump)
 	dump.write("setup/stopcond_arg",&m_stopcond_arg,1);
 
 		{
-		std::vector<DeformationDataOut> deformations;
-		auto ptr=m_deformations.data();
-		auto ptr_end=ptr+m_deformations.size();
-		while(ptr!=ptr_end)
+		size_t k=0;
+		auto defs_begin=m_deformations.data();
+		auto defs_end=defs_begin + m_deformations.size();
+		auto defgroup=dump.groupCreate("setup/deformations");
+		auto defgroup_name=std::string("setup/deformations/");
+		while(defs_begin!=defs_end)
 			{
-			deformations.push_back({ptr->name.c_str(),ptr->mean,ptr->standard_deviation});
-			++ptr;
+			char id[32];
+			sprintf(id,"%016zx",k);
+			auto group_name_current=defgroup_name + id;
+			defs_begin->write(group_name_current.c_str(),dump);
+			++defs_begin;
+			++k;
 			}
-		dump.write("setup/deformations",deformations.data(),deformations.size());
 		}
 	dump.write("setup/data",&m_data,1);
 	}
@@ -716,18 +753,17 @@ Setup::Setup(const SnowflakeModel::DataDump& dump)
 	m_crystal=dump.arrayGet<SnowflakeModel::DataDump::StringHolder>("setup/crystal").at(0);
 	m_stopcond_name=dump.arrayGet<SnowflakeModel::DataDump::StringHolder>("setup/stopcond_name").at(0);
 	m_stopcond_arg=dump.arrayGet<SnowflakeModel::DataDump::StringHolder>("setup/stopcond_arg").at(0);
-
+		
 		{
-		auto deformations=dump.arrayGet<DeformationDataIn>("setup/deformations");
-		auto ptr=deformations.data();
-		auto ptr_end=ptr + deformations.size();
-		while(ptr!=ptr_end)
+		auto defgroup_name=std::string("setup/deformations");
+		auto defgroup=dump.groupOpen(defgroup_name.c_str());
+		defgroup_name+='/';
+		dump.iterate(*defgroup,[&dump,&defgroup_name,this]
+			(const char* group_name)
 			{
-			m_deformations.push_back(
-				DeformationData{std::string(ptr->name),ptr->mean,ptr->standard_deviation}
-				);
-			++ptr;
-			}
+			auto group_name_current=defgroup_name + group_name;
+			m_deformations.push_back(DeformationData(dump,group_name_current.c_str()));
+			});
 		}
 	}
 
