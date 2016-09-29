@@ -84,7 +84,7 @@ VoxelbuilderAdda::VoxelbuilderAdda(FileOut& dest
 	r_dest.printf("# Bounding box is from (%.7g,%.7g,%.7g) to (%.7g,%.7g,%.7g)\n"
 		,bounding_box.m_min.x,bounding_box.m_min.y,bounding_box.m_min.z
 		,bounding_box.m_max.x,bounding_box.m_max.y,bounding_box.m_max.z);
-	r_dest.printf("# Number of divisions is (%d,%d,%d)\n",m_n_x,m_n_y,m_n_z);
+	r_dest.printf("# Number of divisions are (%d,%d,%d)\n",m_n_x,m_n_y,m_n_z);
 	}
 
 VoxelbuilderAdda::~VoxelbuilderAdda()

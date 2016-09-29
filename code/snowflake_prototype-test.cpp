@@ -318,6 +318,7 @@ int main(int argc,char** argv)
 
 		if(setup.m_output_obj!="")
 			{
+			fflush(stdout);
 			SnowflakeModel::FileOut file_out(setup.m_output_obj.data());
 			SnowflakeModel::SolidWriter writer(file_out);
 			writer.write(particle_out.solidGet());
@@ -325,6 +326,7 @@ int main(int argc,char** argv)
 
 		if(setup.m_geom_output!="")
 			{
+			fflush(stdout);
 			SnowflakeModel::FileOut file_out(setup.m_geom_output.data());
 			SnowflakeModel::VoxelbuilderAdda builder(file_out
 				,setup.m_size_x,setup.m_size_y,setup.m_size_z
@@ -335,6 +337,7 @@ int main(int argc,char** argv)
 
 		if(setup.m_output_ice!="")
 			{
+			fflush(stdout);
 			SnowflakeModel::FileOut file_out(setup.m_output_ice.data());
 			SnowflakeModel::SolidWriterPrototype writer(file_out);
 			writer.write(particle_out.solidGet());

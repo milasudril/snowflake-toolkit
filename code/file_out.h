@@ -40,6 +40,7 @@ namespace SnowflakeModel
 			
 			~FileOut() noexcept
 				{
+				flush();
 				if(m_own)
 					{::fclose(file_out);}
 				}
@@ -57,6 +58,9 @@ namespace SnowflakeModel
 
 			FILE* handleGet() noexcept
 				{return file_out;}
+
+			void flush()
+				{fflush(file_out);}
 			
 		private:
 			FILE* file_out;
