@@ -231,7 +231,7 @@ void Setup::paramsDump()
 	printf("# Parameters:\n\n"
 		"# Shape:       %s\n"
 		,m_crystal.data());
-	printf("# \nDeformations:\n");
+	printf("\n# Deformations:\n");
 		{
 		auto ptr=m_deformations.data();
 		auto ptr_end=ptr+m_deformations.size();
