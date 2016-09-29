@@ -66,7 +66,7 @@ VoxelbuilderAdda::VoxelbuilderAdda(FileOut& dest
 		else
 		if(n_y > 0)
 			{
-			m_n_y=n_y*(bounding_box.m_max.z -  bounding_box.m_min.z)
+			m_n_z=n_y*(bounding_box.m_max.z -  bounding_box.m_min.z)
 				/(bounding_box.m_max.y -  bounding_box.m_min.y)+ 0.5;
 			}
 		else
