@@ -228,16 +228,16 @@ Setup::Setup(int argc,char** argv):m_actions(0)
 
 void Setup::paramsDump()
 	{
-	printf("Parameters:\n\n"
-		"Shape:       %s\n"
+	printf("# Parameters:\n\n"
+		"# Shape:       %s\n"
 		,m_crystal.data());
-	printf("\nDeformations:\n");
+	printf("# \nDeformations:\n");
 		{
 		auto ptr=m_deformations.data();
 		auto ptr_end=ptr+m_deformations.size();
 		while(ptr!=ptr_end)
 			{
-			printf("    name=%s, value=%.7g\n",ptr->name.data(),ptr->value);
+			printf("#    name=%s, value=%.7g\n",ptr->name.data(),ptr->value);
 			++ptr;
 			}
 		}
