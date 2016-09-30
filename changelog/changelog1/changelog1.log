@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.14159265-2.6-1.40.16 (TeX Live 2015/Debian) (preloaded format=pdflatex 2016.9.19)  30 SEP 2016 15:49
+This is pdfTeX, Version 3.14159265-2.6-1.40.16 (TeX Live 2015/Debian) (preloaded format=pdflatex 2016.9.19)  30 SEP 2016 15:50
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -774,32 +774,32 @@ Package hyperref Warning: Token not allowed in a PDF string (PDFDocEncoding):
 (hyperref)                removing `math shift' on input line 44.
 
 
-Overfull \hbox (4.06242pt too wide) in paragraph at lines 57--57
+Overfull \hbox (4.06242pt too wide) in paragraph at lines 58--58
 []\T1/lmtt/m/n/10 d_max_max=d_max| 
  []
 
 
-Overfull \hbox (4.06242pt too wide) in paragraph at lines 59--59
+Overfull \hbox (4.06242pt too wide) in paragraph at lines 60--60
 []\T1/lmtt/m/n/10 n_dropped_max=N| 
  []
 
 [2] [3] [4]
-LaTeX Font Info:    Try loading font information for OMS+lmr on input line 119.
+LaTeX Font Info:    Try loading font information for OMS+lmr on input line 121.
 
  (/usr/share/texmf/tex/latex/lm/omslmr.fd
 File: omslmr.fd 2009/10/30 v1.6 Font defs for Latin Modern
 )
 LaTeX Font Info:    Font shape `OMS/lmr/m/n' in size <10> not available
-(Font)              Font shape `OMS/lmsy/m/n' tried instead on input line 119.
-Package atveryend Info: Empty hook `BeforeClearDocument' on input line 141.
+(Font)              Font shape `OMS/lmsy/m/n' tried instead on input line 121.
+Package atveryend Info: Empty hook `BeforeClearDocument' on input line 143.
  [5]
-Package atveryend Info: Empty hook `AfterLastShipout' on input line 141.
+Package atveryend Info: Empty hook `AfterLastShipout' on input line 143.
  (./changelog1.aux)
-Package atveryend Info: Executing hook `AtVeryEndDocument' on input line 141.
-Package atveryend Info: Executing hook `AtEndAfterFileList' on input line 141.
+Package atveryend Info: Executing hook `AtVeryEndDocument' on input line 143.
+Package atveryend Info: Executing hook `AtEndAfterFileList' on input line 143.
 Package rerunfilecheck Info: File `changelog1.out' has not changed.
 (rerunfilecheck)             Checksum: 9FABCB5C0D9E1371D942B9388EC26641;966.
-Package atveryend Info: Empty hook `AtVeryVeryEnd' on input line 141.
+Package atveryend Info: Empty hook `AtVeryVeryEnd' on input line 143.
  ) 
 Here is how much of TeX's memory you used:
  8972 strings out of 494333
@@ -808,7 +808,7 @@ Here is how much of TeX's memory you used:
  12174 multiletter control sequences out of 15000+600000
  52561 words of font info for 48 fonts, out of 8000000 for 9000
  372 hyphenation exceptions out of 8191
- 43i,9n,50p,479b,340s stack positions out of 5000i,500n,10000p,200000b,80000s
+ 43i,9n,50p,479b,339s stack positions out of 5000i,500n,10000p,200000b,80000s
 {/usr/share/texmf/fonts/enc/dvips/lm/lm-mathsy.enc}{/usr/share/texmf/fonts/en
 c/dvips/lm/lm-rm.enc}{/usr/share/texmf/fonts/enc/dvips/lm/lm-mathex.enc}{/usr/s
 hare/texmf/fonts/enc/dvips/lm/lm-mathit.enc}{/usr/share/texmf/fonts/enc/dvips/l
@@ -820,7 +820,7 @@ ts/type1/public/lm/lmmi7.pfb></usr/share/texmf/fonts/type1/public/lm/lmr10.pfb>
 /public/lm/lmr7.pfb></usr/share/texmf/fonts/type1/public/lm/lmssbx10.pfb></usr/
 share/texmf/fonts/type1/public/lm/lmsy10.pfb></usr/share/texmf/fonts/type1/publ
 ic/lm/lmtt10.pfb>
-Output written on changelog1.pdf (5 pages, 184143 bytes).
+Output written on changelog1.pdf (5 pages, 184249 bytes).
 PDF statistics:
  183 PDF objects out of 1000 (max. 8388607)
  163 compressed objects within 2 object streams
