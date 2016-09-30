@@ -37,6 +37,12 @@ namespace SnowflakeModel
 				file_out=dest;
 				m_own=0;
 				}
+
+			FileOut(FileOut&& obj) noexcept:file_out(obj.file_out)
+				,m_own(obj.m_own)
+				{
+				obj.m_own=0;
+				}
 			
 			~FileOut() noexcept
 				{

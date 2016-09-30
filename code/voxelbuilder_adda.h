@@ -28,6 +28,9 @@ namespace SnowflakeModel
 		public:
 			VoxelbuilderAdda(FileOut& dest,int n_x,int n_y,int n_z
 				,const BoundingBox& bounding_box);
+
+			VoxelbuilderAdda(FileOut& dest,double dx,double dy,double dz
+				,const BoundingBox& bounding_box);
 			
 			~VoxelbuilderAdda();
 			bool fill(const PointInt& v);
@@ -39,11 +42,14 @@ namespace SnowflakeModel
 			FileOut& r_dest;
 			uint8_t* m_data_filled;
 			uint8_t* m_data_stop;
-			BoundingBox m_bounding_box;
 			const VolumeConvex* r_volume_current;
+			double m_dx;
+			double m_dy;
+			double m_dz;
 			int m_n_x;
 			int m_n_y;
 			int m_n_z;
+			BoundingBox m_bounding_box;
 		};
 	}
 

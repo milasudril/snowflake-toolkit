@@ -17,6 +17,10 @@
 #include "solid_writer_prototype.h"
 #include "file_out.h"
 #include "voxelbuilder_adda.h"
+#include "grid_definition.h"
+#include "grid_definition2.h"
+#include "alice/commandline.hpp"
+
 
 #include <getopt.h>
 #include <vector>
@@ -41,289 +45,271 @@ static const struct option PROGRAM_OPTIONS[]=
 		,{0,0,0,0}
 	};
 
-struct DeformationData
+struct DeformationRule
 	{
 	std::string name;
 	double value;
 	};
 
-struct Setup
+namespace Alice
 	{
-	std::string m_crystal;
-	std::vector<DeformationData> m_deformations;
-	std::string m_output_obj;
-	std::string m_output_ice;
-	std::string m_geom_output;
+//	Type alias for filenames
+	template<>
+	struct MakeType<Stringkey("Filename")>:public MakeType<Stringkey("String")>
+		{};
 
-	static constexpr uint32_t HELP_SHOW=1;
-	static constexpr uint32_t PARAM_SHOW=16;
-
-	uint32_t m_actions;
-	int m_size_x;
-	int m_size_y;
-	int m_size_z;
-
-	Setup(int argc,char** argv);
-	void paramsDump();
-	};
-
-Setup::Setup(int argc,char** argv):m_actions(0)
-	{
-	int option_index;
-	int c;
-	std::vector<std::string> deformations;
-	const char* sample_geometry=nullptr;
-
-
-	while( (c=getopt_long(argc,argv,"",PROGRAM_OPTIONS,&option_index))!=-1)
+	template<>
+	struct MakeType<Stringkey("Deformation rule")>
 		{
-		switch(c)
+		typedef DeformationRule Type;
+		};
+
+	template<>
+	DeformationRule make_value<DeformationRule>(const std::string& str)
+		{
+		auto ptr=str.c_str();
+		DeformationRule ret;
+		enum class State:int{NAME,VALUE};
+		auto state_current=State::NAME;
+		std::string buffer;
+		while(1)
 			{
-			case PARAM_HELP:
-				m_actions|=HELP_SHOW;
-				break;
-
-			case PARAM_SHAPE:
-				m_crystal=optarg;
-				break;
-
-			case PARAM_DEFORMATION:
-			//	This option takes sub-options
-				deformations.push_back(optarg);
-				break;
-
-			case PARAM_GEOMETRY_SAMPLE:
-			//	This option takes sub-options.
-				sample_geometry=optarg;
-				break;
-
-			case PARAM_PARAMSHOW:
-				m_actions|=PARAM_SHOW;
-				break;
-
-			case PARAM_OUTFILE:
-				m_output_obj=optarg;
-				break;
-
-			case PARAM_OUTFILE_ICE:
-				m_output_ice=optarg;
-				break;
-
-			case '?':
-				throw "Invalid parameter given";
-
-			}
-		}
-
-	if(m_crystal=="" && !(m_actions&HELP_SHOW))
-		{
-		throw "Crystal file is not given. "
-			"Try --help for more information.";
-		}
-
-	if(m_output_obj=="" && m_output_ice=="" && sample_geometry==nullptr
-		&& !(  (m_actions&HELP_SHOW) || (m_actions&PARAM_SHOW) ))
-		{
-		throw "Output file is not given. "
-			"Try --help for more information.";
-		}
-
-	if(deformations.size()==0 && !( (m_actions&HELP_SHOW) || (m_actions&PARAM_SHOW)))
-		{
-		throw "No deformation is given. "
-			"Try --param-show together with the chosen crystal file for more "
-			"information.";
-		}
-
-		{
-		auto ptr=deformations.data();
-		auto ptr_end=ptr+deformations.size();
-		DeformationData deformation;
-		deformation.value=1;
-		while(ptr!=ptr_end)
-			{
-			auto strptr=ptr->data();
-			auto str_end=strptr+ptr->size();
-			std::string str_temp;
-			size_t fieldcount=0;
-			while(strptr!=str_end)
+			auto ch_in=*ptr;
+			switch(state_current)
 				{
-				switch(*strptr)
-					{
-					case ',':
-						switch(fieldcount)
-							{
-							case 0:
-								deformation.name=str_temp;
-								break;
-							case 1:
-								deformation.value=atof(str_temp.data());
-								break;
-							default:
-								throw "Too many arguments for deformation";
-							}
-						++fieldcount;
-						str_temp.clear();
-						break;
-
-					default:
-						str_temp+=*strptr;
-					}
-				++strptr;
-				}
-			switch(fieldcount)
-				{
-				case 0:
-					deformation.name=str_temp;
-					break;
-				case 1:
-					deformation.value=atof(str_temp.data());
-					break;
-				}
-			m_deformations.push_back(deformation);
-			deformation.value=1;
-			deformation.name.clear();
-			++ptr;
-			}
-		}
-
-	if(sample_geometry!=nullptr)
-		{
-		int k=0;
-		std::string temp;
-		while(*sample_geometry!='\0' && k!=3)
-			{
-			switch(*sample_geometry)
-				{
-				case ',':
-					switch(k)
+				case State::NAME:
+					switch(ch_in)
 						{
-						case 0:
-							m_size_x=atoi(temp.data());
+						case '=':
+						case ',':
+						case ':':
+							state_current=State::VALUE;
 							break;
-						case 1:
-							m_size_y=atoi(temp.data());
-							break;
-						case 2:
-							m_size_z=atoi(temp.data());
-							break;
+						case '\0':
+							throw "No value given for parameter";
+						default:
+							ret.name+=ch_in;
 						}
-					temp.clear();
-					++k;
 					break;
-				default:
-					temp+=*sample_geometry;
+				case State::VALUE:
+					switch(ch_in)
+						{
+						case '\0':
+							ret.value=make_value<double>(buffer);
+							return ret;
+						default:
+							buffer+=ch_in;
+						}
+					break;
 				}
-			++sample_geometry;
-			}
-		if(*sample_geometry=='\0')
-			{
-			m_size_z=atoi(temp.data());
-			m_geom_output="/dev/stdout";
-			}
-		else
-			{m_geom_output=sample_geometry;}
-		}
-	}
-
-void Setup::paramsDump()
-	{
-	printf("# Parameters:\n\n"
-		"# Shape:       %s\n"
-		,m_crystal.data());
-	printf("\n# Deformations:\n");
-		{
-		auto ptr=m_deformations.data();
-		auto ptr_end=ptr+m_deformations.size();
-		while(ptr!=ptr_end)
-			{
-			printf("#    name=%s, value=%.7g\n",ptr->name.data(),ptr->value);
 			++ptr;
 			}
 		}
 	}
 
-void helpShow()
+ALICE_OPTION_DESCRIPTOR(OptionDescriptor
+	,{
+	  "Information","help","Print usage information to stdout, or optionally to Filename"
+	 ,"Filename",Alice::Option::Multiplicity::ZERO_OR_ONE
+	 }
+	,{
+	  "Information","params-show","Print availible parameters for the loaded prototype to stdout, or optionally to Filename"
+	 ,"Filename",Alice::Option::Multiplicity::ZERO_OR_ONE
+	 }
+	,{
+	  "Input options","prototype","Load crystal prototype from Filename","Filename"
+	 ,Alice::Option::Multiplicity::ONE
+	 }
+	,{
+	 "Input options","deformations"
+	,"Set deformation rules for the loaded prototype. A deformation rule is written on the form [name,value]. "
+	 "Use --params-show to see availible parameters."
+	,"Deformation rule",Alice::Option::Multiplicity::ZERO_OR_MORE
+	 }
+	,{
+	 "Output options","dump-geometry","Dumps the rendered geometry in Wavefront format to stdout, or optionally to Filename"
+	,"Filename",Alice::Option::Multiplicity::ZERO_OR_ONE
+	 }
+	,{
+	 "Output options","dump-geometry-ice","Dumps the rendered geometry in ice format to stdout, or optionally to Filename"
+	,"Filename",Alice::Option::Multiplicity::ZERO_OR_ONE
+	 }
+	,{
+	 "Output options","sample-geometry","Samples the rendered geometry using a grid of size [N_x,N_y,N_z,Filename]. "
+	 "If any of N_x, N_y, or N_z is set to zero, its value is set from one of the two others, such that the aspect "
+	 "ratio of the bounding box is preserved. If Filename is omitted, data is written to stdout."
+	,"Grid definition",Alice::Option::Multiplicity::ONE
+	 }
+	,{
+	 "Output options","sample-geometry-2","Samples the rendered geometry using grid of size N, with "
+	 "ratio r_x:r_y:r_z. The step size is derived from the total volume."
+	,"Grid definition 2",Alice::Option::Multiplicity::ONE
+	 }
+	);
+
+static void helpPrint(const Alice::CommandLine<OptionDescriptor>& cmdline
+	,const std::vector<std::string>& dests)
 	{
-	printf("Options:\n\n"
-		"--shape=crystal_file\n"
-		"    Generate data using the shape stored in crystal_file."
-		" See the reference manal for information about how to create "
-		"such a file.\n\n"
-		"--deformation=name,value\n"
-		"    Crystal file parameter to use for size modification. Use\n\n"
-		"         --param-show\n\n"
-		"    to list the name of available parameters.\n\n"
-		"--output=output_file\n"
-		"    Wavefront file to write transformed geometry to.\n\n"
-		"--output-ice=output_file\n"
-		"    Ice crystal prototype file to write transformed geometry to.\n\n"
-		"--sample-geometry=Nx,Ny,Nz,filename\n"
-		"    Sample the output geometry to a grid of size Nx x Ny x Nz\n\n"
-		);
+	if(dests.size()==0)
+		{cmdline.help(1);}
+	else
+		{
+		SnowflakeModel::FileOut output(dests[0].c_str());
+		cmdline.help(1,output.handleGet());
+		}
+	}
+
+static SnowflakeModel::Solid solidLoad(const std::string& prototype)
+	{
+	if(prototype.size()==0)
+		{throw "No crystal prototype is given";}
+
+	SnowflakeModel::Solid solid_in;
+		{
+		SnowflakeModel::FileIn file_in(prototype.c_str());
+		SnowflakeModel::ConfigParser parser(file_in);
+		SnowflakeModel::SolidLoader loader(solid_in);
+		parser.commandsRead(loader);
+		}
+
+	return std::move(solid_in);
+	}
+
+
+static void paramsShow(const SnowflakeModel::Solid& solid_in
+	,const std::vector<std::string>& filename)
+	{
+	auto dest=filename.size()==0?
+		SnowflakeModel::FileOut(stdout):SnowflakeModel::FileOut(filename[0].c_str());
+
+	auto& params=solid_in.deformationTemplatesGet();
+	auto ptr=params.data();
+	auto end=ptr+params.size();
+	dest.printf("Available parameters\n");
+	dest.printf("--------------------\n");
+	while(ptr!=end)
+		{
+		dest.printf("\n%s:\n\n",ptr->nameGet().c_str());
+		auto paramname=ptr->paramnamesBegin();
+		auto paramnames_end=ptr->paramnamesEnd();
+		while(paramname!=paramnames_end)
+			{
+			dest.printf(" * %s\n",paramname->data());
+			++paramname;
+			}
+		++ptr;
+		}
+	}
+
+static void deformationsPrint(const std::vector<DeformationRule>& deformations)
+	{
+	auto ptr=deformations.data();
+	auto ptr_end=ptr + deformations.size();
+	printf("# Deformations\n");
+	while(ptr!=ptr_end)
+		{
+		printf("#   %s=%.7g\n",ptr->name.c_str(),ptr->value);
+		++ptr;
+		}
+	}
+
+static SnowflakeModel::IceParticle
+particleGenerate(const SnowflakeModel::Solid& solid_in
+	,const std::vector<DeformationRule>& deformations)
+	{
+	SnowflakeModel::IceParticle particle_out;
+	particle_out.solidSet(solid_in);
+	auto ptr_param=deformations.data();
+	auto ptr_end=ptr_param + deformations.size();
+	while(ptr_param!=ptr_end)
+		{
+		particle_out.parameterSet(ptr_param->name,ptr_param->value);
+		++ptr_param;
+		}
+	return std::move(particle_out);
+	}
+
+static void geometryDumpObj(const SnowflakeModel::Solid& solid
+	,const std::vector<std::string>& filename)
+	{
+	auto dest=filename.size()==0?
+		SnowflakeModel::FileOut(stdout):SnowflakeModel::FileOut(filename[0].c_str());
+	SnowflakeModel::SolidWriter writer(dest);
+	writer.write(solid);
+	}
+
+static void geometryDumpIce(const SnowflakeModel::Solid& solid
+	,const std::vector<std::string>& filename)
+	{
+	auto dest=filename.size()==0?
+		SnowflakeModel::FileOut(stdout):SnowflakeModel::FileOut(filename[0].c_str());
+	SnowflakeModel::SolidWriterPrototype writer(dest);
+	writer.write(solid);
+	}
+
+static void geometrySample(const SnowflakeModel::Solid& solid
+	,const SnowflakeModel::GridDefinition& grid)
+	{
+	auto dest=grid.filename.size()==0?
+		SnowflakeModel::FileOut(stdout):SnowflakeModel::FileOut(grid.filename.c_str());
+
+
+	SnowflakeModel::VoxelbuilderAdda builder(dest
+		,grid.N_x,grid.N_y,grid.N_z
+		,solid.boundingBoxGet());
+
+	solid.geometrySample(builder);
 	}
 
 int main(int argc,char** argv)
 	{
 	try
 		{
-		Setup setup(argc,argv);
-		if(setup.m_actions&Setup::HELP_SHOW)
+		Alice::CommandLine<OptionDescriptor> cmdline(argc,argv);
 			{
-			helpShow();
-			return 0;
-			}
-		SnowflakeModel::Solid solid_in;
-			{
-			SnowflakeModel::FileIn file_in(setup.m_crystal.data());
-			SnowflakeModel::ConfigParser parser(file_in);
-			SnowflakeModel::SolidLoader loader(solid_in);
-			parser.commandsRead(loader);
-			}
-
-		if(setup.m_actions&Setup::PARAM_SHOW)
-			{
-			auto& params=solid_in.deformationTemplatesGet();
-			auto ptr=params.data();
-			auto end=ptr+params.size();
-			printf("Available parameters are:\n");
-			while(ptr!=end)
+			auto& x=cmdline.get<Alice::Stringkey("help")>();
+			if(x)
 				{
-				auto paramname=ptr->paramnamesBegin();
-				auto paramnames_end=ptr->paramnamesEnd();
-				while(paramname!=paramnames_end)
-					{
-					printf("    %s\n",paramname->data());
-					++paramname;
-					}
-				++ptr;
-				}
-			return 0;
-			}
-
-		setup.paramsDump();
-
-		SnowflakeModel::IceParticle particle_out;
-		particle_out.solidSet(solid_in);
-
-			{
-			auto ptr_param=setup.m_deformations.data();
-			auto ptr_end=ptr_param+setup.m_deformations.size();
-			while(ptr_param!=ptr_end)
-				{
-				particle_out.parameterSet(ptr_param->name,ptr_param->value);
-				++ptr_param;
+				helpPrint(cmdline,x.valueGet());
+				return 0;
 				}
 			}
 
-		if(setup.m_output_obj!="")
+		auto solid_in=solidLoad(cmdline.get<Alice::Stringkey("prototype")>().valueGet());
 			{
-			fflush(stdout);
-			SnowflakeModel::FileOut file_out(setup.m_output_obj.data());
-			SnowflakeModel::SolidWriter writer(file_out);
-			writer.write(particle_out.solidGet());
+			auto& x=cmdline.get<Alice::Stringkey("params-show")>();
+			if(x)
+				{
+				paramsShow(solid_in,x.valueGet());
+				return 0;
+				}
 			}
 
+		const auto& deformations=cmdline.get<Alice::Stringkey("deformations")>().valueGet();
+		deformationsPrint(deformations);
+
+		auto particle_out=particleGenerate(solid_in,deformations);
+
+			{
+			auto& x=cmdline.get<Alice::Stringkey("dump-geometry")>();
+			if(x)
+				{geometryDumpObj(particle_out.solidGet(),x.valueGet());}
+			}
+
+			{
+			auto& x=cmdline.get<Alice::Stringkey("dump-geometry-ice")>();
+			if(x)
+				{geometryDumpIce(particle_out.solidGet(),x.valueGet());}
+			}
+
+			{
+			auto& x=cmdline.get<Alice::Stringkey("sample-geometry")>();
+			if(x)
+				{geometrySample(particle_out.solidGet(),x.valueGet());}
+			}
+
+
+	/*	
 		if(setup.m_geom_output!="")
 			{
 			fflush(stdout);
@@ -334,16 +320,14 @@ int main(int argc,char** argv)
 
 			particle_out.solidGet().geometrySample(builder);
 			}
-
-		if(setup.m_output_ice!="")
-			{
-			fflush(stdout);
-			SnowflakeModel::FileOut file_out(setup.m_output_ice.data());
-			SnowflakeModel::SolidWriterPrototype writer(file_out);
-			writer.write(particle_out.solidGet());
-			}
+*/
 
 		return 0;
+		}
+	catch(const Alice::ErrorMessage& msg)
+		{
+		fprintf(stderr,"Error: %s\n",msg.data);
+		return -1;
 		}
 	catch(const char* message)
 		{
