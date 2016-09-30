@@ -28,12 +28,14 @@ The Snowflake-Toolkit is a software toolkit intended to generate shape data for 
 \tableofcontents
 
 \section{Converting code to a new build system}
-While \prgname{wand} has been a great tool for managing semi-large projects, its algorithm does not detect any cyclical dependencies. Also, the codebase, especially the frontend, is quite messy. Moreover, \prgname{wand} has no good API for calling the engine without invoking \prgname{wand} itself. Also, it has no plug-in framework, and no support for code generation. With this background, a new tool called \prgname{maike}\cite{maike} was written. This tool resolves all listed problems, and it also improves compilation times an order of magnitude, as well as diagnostics.
+While \prgname{wand} has been a great tool for managing semi-large projects, its algorithm does not detect any cyclical dependencies. Also, the codebase, especially the frontend, is quite messy. Moreover, \prgname{wand} has no good API for calling the engine without invoking \prgname{wand} itself. Also, it has no plug-in framework, and no support for code generation.
 
-Maike requires \prgname{libjansson}. Therefore, the corresponding development packages are needed to compile and link the \prgname{maike} executable. However, the snowflake toolkit has not a dependency to that library itself.
+With this background, a new tool called \prgname{maike}\cite{maike} was written. This tool resolves all listed problems, and it also improves compilation times an order of magnitude, as well as diagnostics. For example, it is easy to list all external dependencies by using the option \texttt{list-external-targets}\cite{maikecmd}. Using this option in the code directory for the snowflake toolkit currently produces the list in \cref{deps}.
+
+Maike requires \prgname{libjansson}\cite{maike}\cite{jansson}. Therefore, the corresponding development packages are needed to compile and link the \prgname{maike} executable. However, the snowflake toolkit has not a dependency to that library itself.
 
 \section{Saving simulation state}
-Since simulations can run for some time, it is useful to be able to save the current state to disk, so the simulation process can be continued later. This new feature is implemented using the \prgname{libhdf5} libraries. The choice of HDF5 is motivated by its capabilities to store a large amount data in a machine-friendly format. The simulation state can be reloaded with the \texttt{statefile} option.
+Since simulations can run for some time, it is useful to be able to save the current state to disk, so the simulation process can be continued later. This new feature is implemented using the \prgname{libhdf5} libraries. The choice of HDF5 is motivated by its capabilities to store a large amount data in a machine-friendly format \cite{hdf5}. The simulation state can be reloaded with the \texttt{statefile} option.
 
 The statefile is standalone. This means that all external resources are embedded into the statefile. For reference, the path to the external resources are stored also, but no data are read from these files when recovering the state.
 
@@ -107,16 +109,33 @@ Sometimes, it is easier to specify the total number of voxels, instead of the nu
 \]
 where $V$ is the volume of the particle.
 
+\appendix
 
+\section{External libraries required by the snowflake toolkit}
+\label{deps}
+This is a list of all external libraries used by the toolkit, as reported by \prgname{maike}.
 
+\begin{itemize}
+ \item \texttt{hdf5}
+ \item \texttt{hdf5\_cpp}
+ \item \texttt{pthread}
+ \item \texttt{hdf5\_hl\_cpp}
+ \end{itemize}
+ 
 
 \begin{thebibliography}{9}
  \bibitem{maike}
  \url{https://milasudril.github.io/maike/}
+ \bibitem{maikecmdline}
+ \url{https://milasudril.github.io/maike/cmdline.html}
+ \bibitem{jansson}
+ \url{http://www.digip.org/jansson/}
+ \bibitem{hdf5}
+ \url{https://support.hdfgroup.org/HDF5/whatishdf5.html}
+  \bibitem{alice}
+ \url{https://github.com/milasudril/alice}
  \bibitem{GCC}
  \url{https://gcc.gnu.org/projects/cxx-status.html}
- \bibitem{alice}
- \url{https://github.com/milasudril/alice}
 \end{thebibliography}
 
 \end{document}

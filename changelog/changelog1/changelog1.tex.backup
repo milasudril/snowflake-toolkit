@@ -10,6 +10,7 @@
 
 
 \newcommand{\prgname}[1]{\texttt{#1}}
+\newcommand{\dd}{\mathrm{d}}
 
 %opening
 \title{The Snowflake-Toolkit Updates}
@@ -27,12 +28,12 @@ The Snowflake-Toolkit is a software toolkit intended to generate shape data for 
 \tableofcontents
 
 \section{Converting code to a new build system}
-While \prgname{wand} has been a great tool for managing semi-large projects, its algorithm does not detect any cyclical dependencies. Also, the codebase, especially the frontend, is quite messy. Moreover, \prgname{wand} has no good API for calling the engine without invoking \prgname{wand} itself. Also, it has no plug-in framework, and no support for code generation. With this background, a new tool called \prgname{maike}\cite{maike} was written. This tool resolves all listed problems, and it also improves compilation times an order of magnitude, as well as diagnostics.
+While \prgname{wand} has been a great tool for managing semi-large projects, its algorithm does not detect any cyclical dependencies. Also, the codebase, especially the frontend, is quite messy. Moreover, \prgname{wand} has no good API for calling the engine without invoking \prgname{wand} itself. Also, it has no plug-in framework, and no support for code generation. With this background, a new tool called \prgname{maike}\cite{maike} was written. This tool resolves all listed problems, and it also improves compilation times an order of magnitude, as well as diagnostics. For example, it is easy to list all external dependencies by using the option \texttt{list-external-targets}. 
 
-Maike requires \prgname{libjansson}. Therefore, the corresponding development packages are needed to compile and link the \prgname{maike} executable. However, the snowflake toolkit has not a dependency to that library itself.
+Maike requires \prgname{libjansson}\cite{maike}\cite{jansson}. Therefore, the corresponding development packages are needed to compile and link the \prgname{maike} executable. However, the snowflake toolkit has not a dependency to that library itself.
 
 \section{Saving simulation state}
-Since simulations can run for some time, it is useful to be able to save the current state to disk, so the simulation process can be continued later. This new feature is implemented using the \prgname{libhdf5} libraries. The choice of HDF5 is motivated by its capabilities to store a large amount data in a machine-friendly format. The simulation state can be reloaded with the \texttt{statefile} option.
+Since simulations can run for some time, it is useful to be able to save the current state to disk, so the simulation process can be continued later. This new feature is implemented using the \prgname{libhdf5} libraries. The choice of HDF5 is motivated by its capabilities to store a large amount data in a machine-friendly format \cite{hdf5}. The simulation state can be reloaded with the \texttt{statefile} option.
 
 The statefile is standalone. This means that all external resources are embedded into the statefile. For reference, the path to the external resources are stored also, but no data are read from these files when recovering the state.
 
@@ -86,7 +87,7 @@ An attempt has been made to implement a graupel generator. While it generates sp
 \section{Adding Alice Long optIons C++ Extractor}
 As more options are added to the programs, maintaining synchronisation between the help text and the actual implementation becomes a heavy work. Therefore, \prgname{Alice}\cite{alice} has been used instead of GNU \prgname{getopts} for processing the command line in two of the programs. The goal is to replace GNU \prgname{getopts} everywhere.
 
-Alice improves readability, and maintainability, of the code, but adds pushes the requirement from C++11 to C++14. This means that GCC version 5 or later is required to compile the toolkit.
+Alice improves readability, and maintainability, of the code, but adds pushes the requirement from C++11 to C++14. This means that GCC version 5 or later\cite{GCC} is required to compile the toolkit.
 
 \section{Empty element for the graph traversing program}
 A \texttt{flake} file can now use an empty prototype. This makes it possible to choose starting coordinates explicitly. Also, this makes it possible to use the graph traversing program to assemble an aggregate with only one non-empty prototype.
@@ -100,16 +101,36 @@ Neither $\delta$ or $\text{Exp}$ accepts a standard deviation. The former, since
 
 
 \section{Improvements on geometry sampling}
-Sometimes, it is easier to specify the total number of voxels, instead of the number of voxels in each direction.
+Sometimes, it is easier to specify the total number of voxels, instead of the number of voxels in each direction. Now, it is possible to specify a desired number of voxels $N$, and an aspect ratio $r_x:r_y:r_z$, which determines the step size in each direction. The step size in direction $i$ is computed using the expression
+\[
+ \dd x_i = r_i \left(\frac{V}{N r_x r_y r_z}\right)^{1/3}
+\]
+where $V$ is the volume of the particle.
 
+\appendix
 
+\section{External libraries required by the snowflake toolkit}
+This is a list of all external libraries used by the toolkit, as reported by \prgname{maike}.
 
+\begin{itemize}
+ \item \texttt{hdf5}
+ \item \texttt{hdf5\_cpp}
+ \item \texttt{pthread}
+ \item \texttt{hdf5\_hl\_cpp}
+ \end{itemize}
+ 
 
 \begin{thebibliography}{9}
  \bibitem{maike}
  \url{https://milasudril.github.io/maike/}
- \bibitem{alice}
+ \bibitem{jansson}
+ \url{http://www.digip.org/jansson/}
+ \bibitem{hdf5}
+ \url{https://support.hdfgroup.org/HDF5/whatishdf5.html}
+  \bibitem{alice}
  \url{https://github.com/milasudril/alice}
+ \bibitem{GCC}
+ \url{https://gcc.gnu.org/projects/cxx-status.html}
 \end{thebibliography}
 
 \end{document}
