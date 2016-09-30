@@ -77,6 +77,7 @@ namespace Alice
 						default:
 							ret.filename+=ch_in;					
 						}
+					break;
 				}
 			++ptr;
 			}

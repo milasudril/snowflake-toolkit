@@ -1,4 +1,7 @@
-//@	{"targets":[{"name":"grid_definition2.h","type":"include"}]}
+//@	{
+//@	 "targets":[{"name":"grid_definition2.h","type":"include"}]
+//@	,"dependencies_extra":[{"ref":"grid_definition2.o","rel":"implementation"}]
+//@	}
 
 #ifndef SNOWFLAKEMODEL_GRIDDEFINTION2_H
 #define SNOWflAKEMODEL_GRIDDEFINTION2_H
@@ -23,7 +26,7 @@ namespace Alice
 	template<>
 	struct MakeType<Stringkey("Grid definition 2")>
 		{
-		typedef SnowflakeModel::GridDefinition Type;
+		typedef SnowflakeModel::GridDefinition2 Type;
 		};
 	}
 

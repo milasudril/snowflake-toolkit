@@ -21,30 +21,6 @@
 #include "grid_definition2.h"
 #include "alice/commandline.hpp"
 
-
-#include <getopt.h>
-#include <vector>
-
-static constexpr char PARAM_HELP='@';
-static constexpr char PARAM_SHAPE='A';
-static constexpr char PARAM_DEFORMATION='B';
-static constexpr char PARAM_OUTFILE='C';
-static constexpr char PARAM_PARAMSHOW='N';
-static constexpr char PARAM_GEOMETRY_SAMPLE='D';
-static constexpr char PARAM_OUTFILE_ICE='E';
-
-static const struct option PROGRAM_OPTIONS[]=
-	{
-		 {"help",no_argument,nullptr,PARAM_HELP}
-		,{"shape",required_argument,nullptr,PARAM_SHAPE}
-		,{"deformation",required_argument,nullptr,PARAM_DEFORMATION}
-		,{"output",required_argument,nullptr,PARAM_OUTFILE}
-		,{"output-ice",required_argument,nullptr,PARAM_OUTFILE_ICE}
-		,{"param-show",no_argument,nullptr,PARAM_PARAMSHOW}
-		,{"sample-geometry",required_argument,nullptr,PARAM_GEOMETRY_SAMPLE}
-		,{0,0,0,0}
-	};
-
 struct DeformationRule
 	{
 	std::string name;
@@ -141,8 +117,9 @@ ALICE_OPTION_DESCRIPTOR(OptionDescriptor
 	,"Grid definition",Alice::Option::Multiplicity::ONE
 	 }
 	,{
-	 "Output options","sample-geometry-2","Samples the rendered geometry using grid of size N, with "
-	 "ratio r_x:r_y:r_z. The step size is derived from the total volume."
+	 "Output options","sample-geometry-2","Samples the rendered geometry using grid [N,r_x:r_y:r_z,Filename]. "
+	 "N defines the number of samples, and r_x:r_y:r_z the ratio of each voxel. The step size is derived from "
+	 "the total volume of the rendered geometry. If Filename is ommited, the output is written to stdout."
 	,"Grid definition 2",Alice::Option::Multiplicity::ONE
 	 }
 	);
@@ -261,6 +238,27 @@ static void geometrySample(const SnowflakeModel::Solid& solid
 	solid.geometrySample(builder);
 	}
 
+static void geometrySample(const SnowflakeModel::Solid& solid
+	,const SnowflakeModel::GridDefinition2& grid)
+	{
+	auto dest=grid.filename.size()==0?
+		SnowflakeModel::FileOut(stdout):SnowflakeModel::FileOut(grid.filename.c_str());
+
+	auto scale=grid.r_x*grid.r_y*grid.r_z;
+
+	auto dV=solid.volumeGet()/grid.N;
+
+	auto dx=grid.r_x*std::pow(dV/scale,1.0/3.0);
+	auto dy=grid.r_y*std::pow(dV/scale,1.0/3.0);
+	auto dz=grid.r_z*std::pow(dV/scale,1.0/3.0);
+
+	SnowflakeModel::VoxelbuilderAdda builder(dest
+		,dx,dy,dz
+		,solid.boundingBoxGet());
+
+	solid.geometrySample(builder);
+	}
+
 int main(int argc,char** argv)
 	{
 	try
@@ -308,19 +306,11 @@ int main(int argc,char** argv)
 				{geometrySample(particle_out.solidGet(),x.valueGet());}
 			}
 
-
-	/*	
-		if(setup.m_geom_output!="")
 			{
-			fflush(stdout);
-			SnowflakeModel::FileOut file_out(setup.m_geom_output.data());
-			SnowflakeModel::VoxelbuilderAdda builder(file_out
-				,setup.m_size_x,setup.m_size_y,setup.m_size_z
-				,particle_out.solidGet().boundingBoxGet());
-
-			particle_out.solidGet().geometrySample(builder);
+			auto& x=cmdline.get<Alice::Stringkey("sample-geometry-2")>();
+			if(x)
+				{geometrySample(particle_out.solidGet(),x.valueGet());}
 			}
-*/
 
 		return 0;
 		}
