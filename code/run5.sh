@@ -11,7 +11,7 @@ mkdir -p $dir_out
 rm -rf $dir_out/$k-$l-$m
 mkdir $dir_out/$k-$l-$m
 
-__targets_rel/snowflake_simulate3 \
+__targets_dbg/snowflake_simulate3 \
 	--shape=../crystal-prototypes/bullet.ice --deformation=L,gamma,1,0.25 \
 	--deformation=a,custom,xytab.txt --deformation=t,delta,0 \
 	--output-dir=$dir_out/$k-$l-$m --dump-stats=256 --N=4999 \
