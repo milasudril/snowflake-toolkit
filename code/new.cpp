@@ -41,3 +41,7 @@ void operator delete(void* buffer,size_t n)
 	free(buffer);
 	}
 
+void operator delete[](void* buffer,size_t n)
+	{
+	free(buffer);
+	}
