@@ -91,7 +91,7 @@ An attempt has been made to implement a graupel generator. While it generates sp
 \section{Adding Alice Long optIons C++ Extractor}
 As more options are added to the programs, maintaining synchronisation between the help text and the actual implementation becomes a heavy work. Therefore, \prgname{Alice}\cite{alice} has been used instead of GNU \prgname{getopts} for processing the command line in two of the programs. The goal is to replace GNU \prgname{getopts} everywhere.
 
-Alice improves readability, and maintainability, of the code, but adds pushes the requirement from C++11 to C++14. This means that GCC version 5 or later\cite{GCC} is required to compile the toolkit.
+Alice improves readability, and maintainability, of the code, but pushes the requirement from C++11 to C++14. This means that GCC version 5 or later\cite{GCC} is required to compile the toolkit.
 
 \section{Empty element for the graph traversing program}
 A \texttt{flake} file can now use an empty prototype. This makes it possible to choose starting coordinates explicitly. Also, this makes it possible to use the graph traversing program to assemble an aggregate with only one non-empty prototype.
@@ -99,7 +99,7 @@ A \texttt{flake} file can now use an empty prototype. This makes it possible to 
 \section{More probability distributions for setting deformation parameters}
 The aggregate generator now has more choices for probability distributions when for particle deformations. In addition to the $\Gamma$ distribution, $\delta$, and $\text{Exp}$ is available. Also it is possible to use sampled probability distributions stored in tab delimited text files.
 
-The $\delta$ distribution---that is, a distribution which always return its mean value---has been present since the first release by detecting a small standard deviation. With this change, the user explicitly states that a $\delta$ distribution should be used.
+The $\delta$ distribution---that is, a distribution which always returns its mean value---has been present since the first release by detecting a small standard deviation. With this change, the user explicitly states that a $\delta$ distribution should be used.
 
 Neither $\delta$ or $\text{Exp}$ accepts a standard deviation. The former, since it is zero anyway, and the latter, because it is the same as its mean value. A \texttt{custom} distribution is parameterised by the data stored in the text file.
 
