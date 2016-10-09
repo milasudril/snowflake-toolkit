@@ -46,9 +46,9 @@ struct Setup
 	std::string m_geom_output;
 	std::string m_stat_output;
 
-	int size_x;
-	int size_y;
-	int size_z;
+	unsigned int size_x;
+	unsigned int size_y;
+	unsigned int size_z;
 	bool help_show;
 
 	uint32_t seed;

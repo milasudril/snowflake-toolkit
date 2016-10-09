@@ -31,17 +31,26 @@ namespace Alice
 	{
 //	Type alias for filenames
 	template<>
-	struct MakeType<Stringkey("Filename")>:public MakeType<Stringkey("String")>
+	struct MakeType<Stringkey("filename")>:public MakeType<Stringkey("string")>
 		{};
 
 	template<>
-	struct MakeType<Stringkey("Deformation rule")>
+	struct MakeType<Stringkey("deformation rule")>
 		{
 		typedef DeformationRule Type;
+		static constexpr const char* descriptionGet()
+			{return "";}
 		};
 
-	template<>
-	DeformationRule make_value<DeformationRule>(const std::string& str)
+	template<class ErrorHandler>
+	struct MakeValue<DeformationRule,ErrorHandler>
+		{
+		static DeformationRule make_value(const std::string& str);
+		};
+
+	template<class ErrorHandler>
+	DeformationRule
+	MakeValue<DeformationRule,ErrorHandler>::make_value(const std::string& str)
 		{
 		auto ptr=str.c_str();
 		DeformationRule ret;
@@ -71,7 +80,7 @@ namespace Alice
 					switch(ch_in)
 						{
 						case '\0':
-							ret.value=make_value<double>(buffer);
+							ret.value=Alice::make_value<double,ErrorHandler>(buffer);
 							return ret;
 						default:
 							buffer+=ch_in;
@@ -85,42 +94,42 @@ namespace Alice
 
 ALICE_OPTION_DESCRIPTOR(OptionDescriptor
 	,{
-	  "Information","help","Print usage information to stdout, or optionally to Filename"
-	 ,"Filename",Alice::Option::Multiplicity::ZERO_OR_ONE
+	  "Information","help","Print usage information to stdout, or optionally to filename"
+	 ,"filename",Alice::Option::Multiplicity::ZERO_OR_ONE
 	 }
 	,{
-	  "Information","params-show","Print availible parameters for the loaded prototype to stdout, or optionally to Filename"
-	 ,"Filename",Alice::Option::Multiplicity::ZERO_OR_ONE
+	  "Information","params-show","Print availible parameters for the loaded prototype to stdout, or optionally to filename"
+	 ,"filename",Alice::Option::Multiplicity::ZERO_OR_ONE
 	 }
 	,{
-	  "Input options","prototype","Load crystal prototype from Filename","Filename"
+	  "Input options","prototype","Load crystal prototype from filename","filename"
 	 ,Alice::Option::Multiplicity::ONE
 	 }
 	,{
 	 "Input options","deformations"
 	,"Set deformation rules for the loaded prototype. A deformation rule is written on the form [name,value]. "
 	 "Use --params-show to see availible parameters."
-	,"Deformation rule",Alice::Option::Multiplicity::ZERO_OR_MORE
+	,"deformation rule",Alice::Option::Multiplicity::ZERO_OR_MORE
 	 }
 	,{
-	 "Output options","dump-geometry","Dumps the rendered geometry in Wavefront format to stdout, or optionally to Filename"
-	,"Filename",Alice::Option::Multiplicity::ZERO_OR_ONE
+	 "Output options","dump-geometry","Dumps the rendered geometry in Wavefront format to stdout, or optionally to filename"
+	,"filename",Alice::Option::Multiplicity::ZERO_OR_ONE
 	 }
 	,{
-	 "Output options","dump-geometry-ice","Dumps the rendered geometry in ice format to stdout, or optionally to Filename"
-	,"Filename",Alice::Option::Multiplicity::ZERO_OR_ONE
+	 "Output options","dump-geometry-ice","Dumps the rendered geometry in ice format to stdout, or optionally to filename"
+	,"filename",Alice::Option::Multiplicity::ZERO_OR_ONE
 	 }
 	,{
-	 "Output options","sample-geometry","Samples the rendered geometry using a grid of size [N_x,N_y,N_z,Filename]. "
+	 "Output options","sample-geometry","Samples the rendered geometry using a grid of size [N_x,N_y,N_z,filename]. "
 	 "If any of N_x, N_y, or N_z is set to zero, its value is set from one of the two others, such that the aspect "
 	 "ratio of the bounding box is preserved. If Filename is omitted, data is written to stdout."
-	,"Grid definition",Alice::Option::Multiplicity::ONE
+	,"grid definition",Alice::Option::Multiplicity::ONE
 	 }
 	,{
-	 "Output options","sample-geometry-2","Samples the rendered geometry using grid [N,r_x:r_y:r_z,Filename]. "
+	 "Output options","sample-geometry-2","Samples the rendered geometry using grid [N,r_x:r_y:r_z,filename]. "
 	 "N defines the number of samples, and r_x:r_y:r_z the ratio of each voxel. The step size is derived from "
-	 "the total volume of the rendered geometry. If Filename is ommited, the output is written to stdout."
-	,"Grid definition 2",Alice::Option::Multiplicity::ONE
+	 "the total volume of the rendered geometry. If filename is ommited, the output is written to stdout."
+	,"grid definition 2",Alice::Option::Multiplicity::ONE
 	 }
 	);
 

@@ -26,7 +26,8 @@ namespace SnowflakeModel
 	class VoxelbuilderAdda:public VoxelBuilder
 		{
 		public:
-			VoxelbuilderAdda(FileOut& dest,int n_x,int n_y,int n_z
+			VoxelbuilderAdda(FileOut& dest,unsigned int n_x
+				,unsigned int n_y,unsigned int n_z
 				,const BoundingBox& bounding_box);
 
 			VoxelbuilderAdda(FileOut& dest,double dx,double dy,double dz

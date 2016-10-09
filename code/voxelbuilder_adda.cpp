@@ -40,13 +40,13 @@ VoxelbuilderAdda::VoxelbuilderAdda(FileOut& dest,double dx,double dy,double dz
 	}
 
 VoxelbuilderAdda::VoxelbuilderAdda(FileOut& dest
-	,int n_x,int n_y,int n_z
+	,unsigned int n_x,unsigned int n_y,unsigned int n_z
 	,const BoundingBox& bounding_box):
 	r_dest(dest)
 	,m_n_x(n_x),m_n_y(n_y),m_n_z(n_z)
 	,m_bounding_box(bounding_box)
 	{
-	if(m_n_x<=0)
+	if(m_n_x==0)
 		{
 		if(n_y > 0)
 			{
@@ -63,7 +63,7 @@ VoxelbuilderAdda::VoxelbuilderAdda(FileOut& dest
 			{throw "At leas one of Ny and Nz must be grater than zero";}
 		}
 	
-	if(m_n_y<=0)
+	if(m_n_y==0)
 		{
 		if(n_x > 0)
 			{
@@ -80,7 +80,7 @@ VoxelbuilderAdda::VoxelbuilderAdda(FileOut& dest
 			{throw "At leas one of Nx and Nz must be grater than zero";}
 		}
 	
-	if(m_n_z<=0)
+	if(m_n_z==0)
 		{
 		if(n_x > 0)
 			{

@@ -28,9 +28,9 @@ struct Setup
 	std::string m_geom_output;
 	std::string m_mesh_ice_output;
 	std::map<std::string,std::string> m_params;
-	int size_x;
-	int size_y;
-	int size_z;
+	unsigned int size_x;
+	unsigned int size_y;
+	unsigned int size_z;
 	bool help_show;
 	bool param_show;
 

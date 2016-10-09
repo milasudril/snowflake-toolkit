@@ -354,9 +354,9 @@ struct Setup
 		uint32_t m_stat_saverate;
 		uint32_t m_actions;
 
-		int m_size_x;
-		int m_size_y;
-		int m_size_z;
+		unsigned int m_size_x;
+		unsigned int m_size_y;
+		unsigned int m_size_z;
 
 		size_t m_N;
 		uint32_t m_seed;
