@@ -1,5 +1,5 @@
 //@	{
-//@	    "dependencies_extra":[],
+//@	    "dependencies_extra":[{"ref":"new.o","rel":"implementation"}],
 //@	    "targets":[
 //@	        {
 //@	            "dependencies":[
