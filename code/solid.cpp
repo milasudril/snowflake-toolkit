@@ -148,6 +148,17 @@ void Solid::geometrySample(VoxelBuilder& builder) const
 		}
 	}
 
+void Solid::geometrySample(Grid& grid) const
+	{
+	auto subvolume=subvolumesBegin();
+	auto vol_end=subvolumesEnd();
+	while(subvolume!=vol_end)
+		{
+		subvolume->geometrySample(grid);
+		++subvolume;
+		}
+	}
+
 const VolumeConvex* Solid::inside(const Point& v) const noexcept
 	{
 	auto subvolume=subvolumesBegin();

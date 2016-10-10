@@ -97,6 +97,15 @@ namespace SnowflakeModel
 						}
 					}
 				}
+
+			const Point& minGet() const noexcept
+				{return m_min;}
+
+			PointInt sizeGet() const noexcept
+				{return {m_n_x,m_n_y,m_n_z,1};}
+
+			VectorDouble stepGet() const noexcept
+				{return VectorDouble(m_dx,m_dy,m_dz);}
 			
 		private:
 			uint8_t* m_data;

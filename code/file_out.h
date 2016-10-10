@@ -54,12 +54,13 @@ namespace SnowflakeModel
 			void putc(char ch_out) noexcept
 				{::putc(ch_out,file_out);}
 				
-			void printf(const char* format,...) noexcept
+			FileOut& printf(const char* format,...) noexcept
 				{
 				va_list args;
 				va_start(args, format);
 				vfprintf(file_out, format, args);
 				va_end(args);
+				return *this;
 				}
 
 			FILE* handleGet() noexcept

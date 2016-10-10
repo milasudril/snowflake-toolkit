@@ -141,7 +141,7 @@ namespace SnowflakeModel
 
 			void geometrySample(VoxelBuilder& builder) const;
 
-			void geometrySample(Grid& grid) const noexcept;
+			void geometrySample(Grid& grid) const;
 
 			void transform(const Matrix& T,bool mirrored) noexcept;
 

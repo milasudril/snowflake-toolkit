@@ -29,6 +29,7 @@ namespace SnowflakeModel
 	typedef glm::vec4 Point;
 	typedef glm::mat4 Matrix;
 	typedef glm::vec3 Vector;
+	typedef glm::dvec3 VectorDouble;
 	typedef glm::i32vec4 PointInt;
 	typedef glm::i32vec3 VectorInt;
 
