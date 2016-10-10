@@ -24,6 +24,8 @@ namespace SnowflakeModel
 	class Grid
 		{
 		public:
+			static constexpr auto npos=std::numeric_limits<size_t>::max();
+
 			Grid(unsigned int n_x,unsigned int n_y,unsigned int n_z
 				,const BoundingBox& bounding_box);
 
@@ -46,8 +48,7 @@ namespace SnowflakeModel
 	
 			Point dequantize(const PointInt& p) const
 				{
-			
-//	TODO (perf): Vectorize?	
+			//	TODO (perf): Vectorize?	
 				return Point
 					{
 					 m_min.x + (p.x+0.5)*m_dx
@@ -57,26 +58,45 @@ namespace SnowflakeModel
 					};
 				}
 
-			size_t offsetGet(int x,int y,int z) const noexcept
+			size_t offsetGet(const PointInt& pos) const noexcept
 				{
-				assert(x>=0 && y>=0 && z>=0);
+				assert(pos.x>=0 && pos.y>=0 && pos.z>=0);
 				auto ny=static_cast<size_t>(m_n_y);
 				auto nz=static_cast<size_t>(m_n_z);
-				if(x<m_n_x && y<m_n_y && z<m_n_z) 
-					{return x*ny*nz + y*nz + z;}
-				return std::numeric_limits<size_t>::max();
+				if(pos.x<m_n_x && pos.y<m_n_y && pos.z<m_n_z) 
+					{return pos.x*ny*nz + pos.y*nz + pos.z;}
+				return npos;
 				}
 
-			bool cellFilled(size_t offset) const noexcept
+			bool cellFilled(size_t offset,uint8_t mask) const noexcept
 				{
-				return offset==std::numeric_limits<size_t>::max()?
-					1:m_data[offset];
+				return offset==npos?1:m_data[offset]&mask;
 				}
 
-			void fill(size_t offset,uint8_t mask) const noexcept
+			void cellFill(size_t offset,uint8_t mask)noexcept
 				{m_data[offset]|=mask;}
 
-			void dataClear(uint8_t mask) noexcept;
+			void bitAnd(uint8_t mask) noexcept;
+
+			template<class Callback>
+			void pointsVisit(Callback&& cb) const noexcept
+				{
+				auto nx=m_n_x;
+				auto ny=m_n_y;
+				auto nz=m_n_z;
+				auto pval=m_data;
+				for(int k=0;k<nx;++k)
+					{
+					for(int l=0;l<ny;++l)
+						{
+						for(int m=0;m<nz;++m)
+							{
+							cb(k,l,m,*pval);
+							++pval;
+							}
+						}
+					}
+				}
 			
 		private:
 			uint8_t* m_data;

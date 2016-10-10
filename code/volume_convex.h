@@ -25,6 +25,7 @@
 namespace SnowflakeModel
 	{
 	class VoxelBuilder;
+	class Grid;
 	class VolumeConvex
 		{
 		public:
@@ -177,6 +178,8 @@ namespace SnowflakeModel
 			bool inside(const Point& v) const;
 
 			void geometrySample(VoxelBuilder& builder) const;
+
+			void geometrySample(Grid& grid) const;
 
 			void normalsFlip();
 

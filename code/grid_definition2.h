@@ -90,7 +90,7 @@ namespace Alice
 						{
 						case ':':
 							ret.r_y=Alice::make_value<decltype(ret.r_y),ErrorHandler>(buffer);
-							state_current=State::RY;
+							state_current=State::RZ;
 							buffer.clear();
 							break;
 						case '\0':

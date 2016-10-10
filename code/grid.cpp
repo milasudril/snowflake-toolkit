@@ -105,7 +105,7 @@ Grid::~Grid()
 	delete[] m_data;
 	}
 
-void Grid::dataClear(uint8_t mask) noexcept
+void Grid::bitAnd(uint8_t mask) noexcept
 	{
 //	TODO: make this faster (fill a vectorized type with mask);
 	auto size=m_n_x*m_n_y*m_n_z;
@@ -113,7 +113,7 @@ void Grid::dataClear(uint8_t mask) noexcept
 	auto ptr_end=m_data+size;
 	while(ptr!=ptr_end)
 		{
-		*ptr&=~mask;
+		*ptr&=mask;
 		++ptr;
 		}
 	}
