@@ -3,6 +3,8 @@
 #ifndef SNOWFLAKEMODEL_SPHERE_H
 #define SNOWFLAKEMODEL_SPHERE_H
 
+#include "vector.h"
+#include "bounding_box.h"
 #include <cmath>
 
 namespace SnowflakeModel
@@ -18,7 +20,7 @@ namespace SnowflakeModel
 				}
 
 			const Point& midpointGet() const noexcept
-				{m_location;}
+				{return m_location;}
 
 			float volumeGet() const noexcept
 				{
@@ -36,7 +38,6 @@ namespace SnowflakeModel
 				,const Vector& direction
 				,float E_0,float decay_distance) const noexcept
 				{
-				Vector ret(INFINITY,INFINITY,INFINIT);
 				auto d=Vector(source-m_location);
 				auto a=glm::dot(direction,d);
 				auto b=glm::dot(d,d);
@@ -45,14 +46,15 @@ namespace SnowflakeModel
 				
 				auto sqr=a*a-b+r2;
 				if(sqr<0.0f)
-					{return ret;}
+					{return INFINITY;}
 
 				sqr=std::sqrt(sqr);
 				auto distance=std::min(-a+sqr, -a-sqr);
 				assert(distance>=0.0f);
-
+				auto v=normalize(Vector(source + Point(distance*direction,1.0f) - m_location));
+				auto proj=glm::dot(v,direction);
 				auto E_out=E_0*(1.0f - proj)
-					*std::exp(-temp.second/decay_distance);
+					*std::exp(-distance/decay_distance);
 
 				return E_out<1.0f?distance:INFINITY;
 				}
@@ -65,7 +67,7 @@ namespace SnowflakeModel
 				auto r=m_radius;
 				auto v=Point(r,r,r,0.0f);
 				auto pos=m_location;
-				return {terpos - v,pos + v};
+				return {pos - v,pos + v};
 				};
 
 		private:
@@ -73,7 +75,7 @@ namespace SnowflakeModel
 			Point m_location;
 		};
 
-	bool overlap(const Sphere& a const Sphere& b)
+	inline bool overlap(const Sphere& a, const Sphere& b)
 		{
 		auto v=a.midpointGet() - b.midpointGet();
 		auto r_tot=a.radiusGet() + b.radiusGet();
