@@ -17,7 +17,6 @@
 #include "solid_writer.h"
 #include "solid_writer_prototype.h"
 #include "file_out.h"
-#include "voxelbuilder_adda.h"
 #include "grid_definition.h"
 #include "grid_definition2.h"
 #include "adda.h"
@@ -238,15 +237,12 @@ static void geometryDumpIce(const SnowflakeModel::Solid& solid
 static void geometrySample(const SnowflakeModel::Solid& solid
 	,const SnowflakeModel::GridDefinition& grid)
 	{
+	SnowflakeModel::Grid grid_out(grid.N_x,grid.N_y,grid.N_z
+		,solid.boundingBoxGet());
+	solid.geometrySample(grid_out);
 	auto dest=grid.filename.size()==0?
 		SnowflakeModel::FileOut(stdout):SnowflakeModel::FileOut(grid.filename.c_str());
-
-
-	SnowflakeModel::VoxelbuilderAdda builder(dest
-		,grid.N_x,grid.N_y,grid.N_z
-		,solid.boundingBoxGet());
-
-	solid.geometrySample(builder);
+	addaShapeWrite(grid_out,std::move(dest));
 	}
 
 static void geometrySample(const SnowflakeModel::Solid& solid
