@@ -23,7 +23,6 @@
 
 namespace SnowflakeModel
 	{
-	class VoxelBuilder;
 	class Grid;
 
 	class Solid
@@ -138,8 +137,6 @@ namespace SnowflakeModel
 					{dMaxCompute();}
 				return m_extrema;
 				}
-
-			void geometrySample(VoxelBuilder& builder) const;
 
 			void geometrySample(Grid& grid) const;
 

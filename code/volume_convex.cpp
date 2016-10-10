@@ -9,7 +9,6 @@
 //@	    ]
 //@	}
 #include "volume_convex.h"
-#include "voxel_builder.h"
 #include "twins.h"
 #include "triangle.h"
 #include "grid.h"
@@ -67,20 +66,6 @@ void VolumeConvex::transformGroup(const std::string& name,const Matrix& T)
 	}
 
 
-static PointInt seedGenerate(const VolumeConvex& v,const VoxelBuilder& builder)
-	{
-//	Try some points inside the bounding box to see if we get a hit.
-	PointInt seed;
-	std::minstd_rand rng;
-	auto& bb=v.boundingBoxGet();
-	do
-		{
-		seed=builder.quantize( randomPoint(bb,rng) );
-		}
-	while(!v.inside( builder.dequantize(seed)) );
-	return seed;
-	}
-
 static PointInt seedGenerate(const VolumeConvex& v,const Grid& grid)
 	{
 //	Try some points inside the bounding box to see if we get a hit.
@@ -118,30 +103,6 @@ void VolumeConvex::geometrySample(Grid& grid) const
 				nodes.push(node_current+PointInt(0,0,-1,0));
 				nodes.push(node_current+PointInt(0,0, 1,0));
 				}
-			}
-		}
-	}
-
-
-void VolumeConvex::geometrySample(VoxelBuilder& builder) const
-	{
-	std::stack<PointInt> nodes;
-
-	nodes.push(seedGenerate(*this,builder));
-	builder.volumeStart(*this);
-	while(nodes.size()!=0)
-		{
-		auto node_current=nodes.top();
-		nodes.pop();
-
-		if(builder.fill(node_current))
-			{
-			nodes.push(node_current+PointInt(-1,0,0,0));
-			nodes.push(node_current+PointInt(1 ,0,0,0));
-			nodes.push(node_current+PointInt(0,-1,0,0));
-			nodes.push(node_current+PointInt(0,1, 0,0));
-			nodes.push(node_current+PointInt(0,0,-1,0));
-			nodes.push(node_current+PointInt(0,0, 1,0));
 			}
 		}
 	}

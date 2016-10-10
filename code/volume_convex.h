@@ -24,7 +24,6 @@
 
 namespace SnowflakeModel
 	{
-	class VoxelBuilder;
 	class Grid;
 	class VolumeConvex
 		{
@@ -176,8 +175,6 @@ namespace SnowflakeModel
 			void transformGroup(const std::string& name,const Matrix& T);
 
 			bool inside(const Point& v) const;
-
-			void geometrySample(VoxelBuilder& builder) const;
 
 			void geometrySample(Grid& grid) const;
 
