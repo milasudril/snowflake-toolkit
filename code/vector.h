@@ -30,6 +30,7 @@ namespace SnowflakeModel
 	typedef glm::mat4 Matrix;
 	typedef glm::vec3 Vector;
 	typedef glm::i32vec4 PointInt;
+	typedef glm::i32vec3 VectorInt;
 
 	inline std::pair<float,uint32_t> extentMax(const Vector& v)
 		{
