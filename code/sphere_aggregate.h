@@ -59,6 +59,9 @@ namespace SnowflakeModel
 			float volumeGet() const noexcept
 				{return m_volume;}
 
+			std::pair<Point,Vector> shoot(const Point& source,const Vector& direction
+				,float E_0,float decay_distance) const noexcept;
+
 		private:
 			std::vector<Sphere> m_subvolumes;
 			BoundingBox m_bounding_box;
