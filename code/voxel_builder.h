@@ -20,10 +20,10 @@ namespace SnowflakeModel
 	class VoxelBuilder
 		{
 		public:
-			virtual void fill(const PointInt& position)=0;
+			virtual bool fill(const PointInt& position)=0;
+			virtual void volumeStart(const VolumeConvex& volume_new)=0;
 			virtual PointInt quantize(const Point& position) const=0;
 			virtual Point dequantize(const PointInt& position) const=0;
-			virtual VectorInt gridSizeGet() const noexcept=0;
 		};
 		
 	}

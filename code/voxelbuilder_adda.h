@@ -35,14 +35,15 @@ namespace SnowflakeModel
 			
 			~VoxelbuilderAdda();
 			bool fill(const PointInt& v);
+			void volumeStart(const VolumeConvex& volume_next);
 			PointInt quantize(const Point& p) const;
 			Point dequantize(const PointInt& p) const;
-
-			VectorInt gridSizeGet() const noexcept
-				{return {m_n_x,m_n_y,m_n_z};}
 			
 		private:
 			FileOut& r_dest;
+			uint8_t* m_data_filled;
+			uint8_t* m_data_stop;
+			const VolumeConvex* r_volume_current;
 			double m_dx;
 			double m_dy;
 			double m_dz;

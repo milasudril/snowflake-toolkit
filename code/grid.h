@@ -1,107 +1,68 @@
-//@	{"targets":[{"name":"grid.h","type":"include"}]}
-
+//@	{
+//@	    "dependencies_extra":[
+//@	        {
+//@	            "ref":"grid.o",
+//@	            "rel":"implementation"
+//@	        }
+//@	    ],
+//@	    "targets":[
+//@	        {
+//@	            "dependencies":[],
+//@	            "name":"grid.h",
+//@	            "type":"include"
+//@	        }
+//@	    ]
+//@	}
 #ifndef SNOWFLAKEMODEL_GRID_H
 #define SNOWFLAKEMODEL_GRID_H
 
-#include "bounding_box.h"
-#include <cmath>
-#include <limits>
+#include "vector.h"
 
 namespace SnowflakeModel
 	{
+	class BoundingBox;
 	class Grid
 		{
 		public:
-			Grid(const BoundingBox& bounding_box
-				,double dx,double dy,double dz)
-				{
-				auto range=bounding_box.m_max - bounding_box.m_min;
-
-				auto nx=static_cast<size_t>( ceil( range.x/dx ) );
-				auto ny=static_cast<size_t>( ceil( range.y/dy ) );
-				auto nz=static_cast<size_t>( ceil( range.z/dz ) );
-
-				m_n_x=static_cast<int>( nx );
-				m_n_y=static_cast<int>( ny );
-				m_n_z=static_cast<int>( nz );
-
-				m_data=new uint8_t[nx*ny*nz];
-				}
-
 			Grid(unsigned int n_x,unsigned int n_y,unsigned int n_z
-				,const BoundingBox& bounding_box):m_n_x(x),m_n_y(y),m_n_z(z)
+				,const BoundingBox& bounding_box);
+
+			Grid(double dx,double dy,double dz,const BoundingBox& bounding_box);
+			
+			~Grid();
+
+			PointInt quantize(const Point& p) const
 				{
-				if(m_n_x==0)
+				auto pos=p-m_min;
+			//	TODO (perf): Vectorize?	
+				return PointInt
 					{
-					if(n_y > 0)
-						{
-						m_n_x=n_y*(bounding_box.m_max.x -  bounding_box.m_min.x)
-							/(bounding_box.m_max.y -  bounding_box.m_min.y)+ 0.5;
-						}
-					else
-					if(n_z > 0)
-						{
-						m_n_x=n_z*(bounding_box.m_max.x -  bounding_box.m_min.x)
-							/(bounding_box.m_max.z -  bounding_box.m_min.z)+ 0.5;
-						}
-					else
-						{throw "At leas one of Ny and Nz must be grater than zero";}
-					}
-				
-				if(m_n_y==0)
-					{
-					if(n_x > 0)
-						{
-						m_n_y=n_x*(bounding_box.m_max.y -  bounding_box.m_min.y)
-							/(bounding_box.m_max.x -  bounding_box.m_min.x)+ 0.5;
-						}
-					else
-					if(n_z > 0)
-						{
-						m_n_y=n_z*(bounding_box.m_max.y -  bounding_box.m_min.y)
-							/(bounding_box.m_max.z -  bounding_box.m_min.z)+ 0.5;
-						}
-					else
-						{throw "At leas one of Nx and Nz must be grater than zero";}
-					}
-				
-				if(m_n_z==0)
-					{
-					if(n_x > 0)
-						{
-						m_n_z=n_x*(bounding_box.m_max.z -  bounding_box.m_min.z)
-							/(bounding_box.m_max.x -  bounding_box.m_min.x)+ 0.5;
-						}
-					else
-					if(n_y > 0)
-						{
-						m_n_z=n_y*(bounding_box.m_max.z -  bounding_box.m_min.z)
-							/(bounding_box.m_max.y -  bounding_box.m_min.y)+ 0.5;
-						}
-					else
-						{throw "At leas one of Nx and Ny must be grater than zero";}
-					}
-				
-				if(m_n_x==0 || m_n_y==0 || m_n_z==0)
-					{throw "More points are needed to sample the generated geometry";}
-
-				auto nx=static_cast<size_t>(m_n_x);
-				auto ny=static_cast<size_t>(m_n_y);
-				auto nz=static_cast<size_t>(m_n_z);
-
-				m_data=new uint8_t[nx*ny*nz];
+					 pos.x/m_dx
+					,pos.y/m_dy
+					,pos.z/m_dz
+					,1
+					};
 				}
-
-			~Grid()
-				{delete[] m_data;]}
+	
+			Point dequantize(const PointInt& p) const
+				{
+			
+//	TODO (perf): Vectorize?	
+				return Point
+					{
+					 m_min.x + (p.x+0.5)*m_dx
+					,m_min.y + (p.y+0.5)*m_dy
+					,m_min.z + (p.z+0.5)*m_dz
+					,1
+					};
+				}
 
 			size_t offsetGet(int x,int y,int z) const noexcept
 				{
 				assert(x>=0 && y>=0 && z>=0);
-				auto nx=static_cast<size_t>(m_n_x);
 				auto ny=static_cast<size_t>(m_n_y);
 				auto nz=static_cast<size_t>(m_n_z);
-				if(x<nx && y<ny && z<nz) 
+				if(x<m_n_x && y<m_n_y && z<m_n_z) 
 					{return x*ny*nz + y*nz + z;}
 				return std::numeric_limits<size_t>::max();
 				}
@@ -112,15 +73,21 @@ namespace SnowflakeModel
 					1:m_data[offset];
 				}
 
-			void fill(size_t offset) const noexcept
-				{m_data[offset]=1;}
+			void fill(size_t offset,uint8_t mask) const noexcept
+				{m_data[offset]|=mask;}
 
+			void dataClear(uint8_t mask) noexcept;
+			
 		private:
+			uint8_t* m_data;
+			double m_dx;
+			double m_dy;
+			double m_dz;
+			Point m_min;
 			int m_n_x;
 			int m_n_y;
 			int m_n_z;
-			uint8_t* m_data;
 		};
-	};
+	}
 
 #endif
