@@ -12,6 +12,7 @@
 #include "voxel_builder.h"
 #include "twins.h"
 #include "triangle.h"
+#include "grid.h"
 #include <stack>
 
 using namespace SnowflakeModel;
@@ -79,6 +80,48 @@ static PointInt seedGenerate(const VolumeConvex& v,const VoxelBuilder& builder)
 	while(!v.inside( builder.dequantize(seed)) );
 	return seed;
 	}
+
+static PointInt seedGenerate(const VolumeConvex& v,const Grid& grid)
+	{
+//	Try some points inside the bounding box to see if we get a hit.
+	PointInt seed;
+	std::minstd_rand rng;
+	auto& bb=v.boundingBoxGet();
+	do
+		{
+		seed=grid.quantize( randomPoint(bb,rng) );
+		}
+	while(!v.inside( grid.dequantize(seed)) );
+	return seed;
+	}
+
+void VolumeConvex::geometrySample(Grid& grid) const
+	{
+	std::stack<PointInt> nodes;
+
+	nodes.push(seedGenerate(*this,grid));
+	grid.bitAnd(0xf0);
+	while(nodes.size()!=0)
+		{
+		auto node_current=nodes.top();
+		nodes.pop();
+		auto offset=grid.offsetGet(node_current);
+		if(!grid.cellFilled(offset,0xf))
+			{
+			if(inside(grid.dequantize(node_current) ) )
+				{
+				grid.cellFill(offset,0xff);
+				nodes.push(node_current+PointInt(-1,0,0,0));
+				nodes.push(node_current+PointInt(1 ,0,0,0));
+				nodes.push(node_current+PointInt(0,-1,0,0));
+				nodes.push(node_current+PointInt(0,1, 0,0));
+				nodes.push(node_current+PointInt(0,0,-1,0));
+				nodes.push(node_current+PointInt(0,0, 1,0));
+				}
+			}
+		}
+	}
+
 
 void VolumeConvex::geometrySample(VoxelBuilder& builder) const
 	{
