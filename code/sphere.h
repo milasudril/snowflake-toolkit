@@ -35,12 +35,22 @@ namespace SnowflakeModel
 			std::pair<Triangle,float> shoot(const Point& source
 				,const Vector& direction
 				,float E_0,float decay_distance
-				,bool backface_culling) const noexcept;			
+				,bool backface_culling) const noexcept;	
+
+			float radiusGet() const noexcept
+				{return m_radius;}
 
 		private:
 			float m_radius;
 			Point m_location;
 		};
+
+	bool overlap(const Sphere& a const Sphere& b)
+		{
+		auto v=a.midpointGet() - b.midpointGet();
+		auto r_tot=a.radiusGet() + b.radiusGet();
+		return glm::dot(v,v) <= r_tot*r_tot;
+		}
 	}
 
 #endif
