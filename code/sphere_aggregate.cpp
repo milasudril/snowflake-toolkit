@@ -62,3 +62,16 @@ std::pair<Point,Vector> SphereAggregate::shoot(const Point& source
 	auto normal=glm::normalize(Vector(point - obj_min->midpointGet()));
 	return std::make_pair(point,normal);
 	}
+
+void SphereAggregate::geometrySample(VoxelBuilder& builder) const
+	{
+	auto subvols_begin=subvolumesBegin();
+	auto subvols_end=subvolumesEnd();
+
+	while(subvols_begin!=subvols_end)
+		{
+		auto seed=subvols_begin->floodfillSeedGet(builder);
+	//	subvols_begin->geometrySample(builder);
+		++subvols_begin;
+		}
+	}

@@ -10,6 +10,8 @@
 
 namespace SnowflakeModel
 	{
+	class VoxelBuilder;
+
 	class SphereAggregate
 		{
 		public:
@@ -61,6 +63,8 @@ namespace SnowflakeModel
 
 			std::pair<Point,Vector> shoot(const Point& source,const Vector& direction
 				,float E_0,float decay_distance) const noexcept;
+
+			void geometrySample(VoxelBuilder& builder) const;
 
 		private:
 			std::vector<Sphere> m_subvolumes;
