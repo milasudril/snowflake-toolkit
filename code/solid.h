@@ -24,6 +24,7 @@
 namespace SnowflakeModel
 	{
 	class Grid;
+	class SphereAggregate;
 
 	class Solid
 		{
@@ -40,7 +41,9 @@ namespace SnowflakeModel
 				,m_mirror_flags(0)
 				{}
 
-			Solid(const DataDump& dump,const char* name);
+			explicit Solid(const DataDump& dump,const char* name);
+
+			explicit Solid(const SphereAggregate& input,unsigned int subdivs);
 
 			VolumeConvex& subvolumeAdd(const VolumeConvex& volume
 				,double overlap_est,size_t overlap_count)

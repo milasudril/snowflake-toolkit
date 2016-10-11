@@ -25,6 +25,7 @@
 namespace SnowflakeModel
 	{
 	class Grid;
+	class Sphere;
 	class VolumeConvex
 		{
 		public:
@@ -65,9 +66,11 @@ namespace SnowflakeModel
 					|AREA_VISIBLE_DIRTY)
 				{}
 
-			VolumeConvex(const DataDump& dump,const char* id);
+			explicit VolumeConvex(const DataDump& dump,const char* id);
 
 			VolumeConvex(const VolumeConvex& vc)=default;
+
+			explicit VolumeConvex(const Sphere& sphere,unsigned int subdivs);
 
 			size_t vertexAdd(const Matrix& T,const Point& v)
 				{

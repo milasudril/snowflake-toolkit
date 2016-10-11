@@ -9,6 +9,7 @@
 //@	    ]
 //@	}
 #include "solid.h"
+#include "sphere_aggregate.h"
 #include <algorithm>
 
 using namespace SnowflakeModel;
@@ -512,4 +513,16 @@ std::pair<Triangle,float> Solid::shoot(const Point& source,const Vector& directi
 			}
 		}
 	return ret;
+	}
+
+Solid::Solid(const SphereAggregate& input,unsigned int subdivs):Solid()
+	{
+	auto ptr=input.subvolumesBegin();
+	auto ptr_end=input.subvolumesEnd();
+	while(ptr!=ptr_end)
+		{
+		subvolumeAdd(VolumeConvex(*ptr,subdivs),0,0);
+		++ptr;
+		}
+	m_volume=input.volumeGet();
 	}
