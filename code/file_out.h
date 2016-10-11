@@ -37,9 +37,16 @@ namespace SnowflakeModel
 				file_out=dest;
 				m_own=0;
 				}
+
+			FileOut(FileOut&& obj) noexcept:file_out(obj.file_out)
+				,m_own(obj.m_own)
+				{
+				obj.m_own=0;
+				}
 			
 			~FileOut() noexcept
 				{
+				flush();
 				if(m_own)
 					{::fclose(file_out);}
 				}
@@ -47,16 +54,20 @@ namespace SnowflakeModel
 			void putc(char ch_out) noexcept
 				{::putc(ch_out,file_out);}
 				
-			void printf(const char* format,...) noexcept
+			FileOut& printf(const char* format,...) noexcept
 				{
 				va_list args;
 				va_start(args, format);
 				vfprintf(file_out, format, args);
 				va_end(args);
+				return *this;
 				}
 
 			FILE* handleGet() noexcept
 				{return file_out;}
+
+			void flush()
+				{fflush(file_out);}
 			
 		private:
 			FILE* file_out;

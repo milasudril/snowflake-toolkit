@@ -24,7 +24,7 @@
 
 namespace SnowflakeModel
 	{
-	class VoxelBuilder;
+	class Grid;
 	class VolumeConvex
 		{
 		public:
@@ -176,7 +176,7 @@ namespace SnowflakeModel
 
 			bool inside(const Point& v) const;
 
-			void geometrySample(VoxelBuilder& builder) const;
+			void geometrySample(Grid& grid) const;
 
 			void normalsFlip();
 
@@ -234,7 +234,7 @@ namespace SnowflakeModel
 			std::pair<Triangle,float> shoot(const Point& source
 				,const Vector& direction
 				,float E_0,float decay_distance
-				,bool culling) const noexcept;
+				,bool backface_culling) const noexcept;
 
 
 		private:

@@ -137,13 +137,13 @@ void Solid::midpointCompute() const noexcept
 	m_flags_dirty&=~MIDPOINT_DIRTY;
 	}
 
-void Solid::geometrySample(VoxelBuilder& builder) const
+void Solid::geometrySample(Grid& grid) const
 	{
 	auto subvolume=subvolumesBegin();
 	auto vol_end=subvolumesEnd();
 	while(subvolume!=vol_end)
 		{
-		subvolume->geometrySample(builder);
+		subvolume->geometrySample(grid);
 		++subvolume;
 		}
 	}

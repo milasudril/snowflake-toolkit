@@ -43,10 +43,20 @@ namespace Alice
 	struct MakeType<Stringkey("Deformation rule")>
 		{
 		typedef Deformation Type;
+		static constexpr const char* descriptionGet() noexcept
+			{
+			return "A deformation rule is written in the form parameter:mean:standard deviation"; 
+			}
 		};
 
-	template<>
-	Deformation make_value<Deformation>(const std::string& str)
+	template<class ErrorHandler>
+	struct MakeValue<Deformation,ErrorHandler>
+		{
+		static Deformation make_value(const std::string& str);
+		};
+
+	template<class ErrorHandler>
+	Deformation MakeValue<Deformation,ErrorHandler>::make_value(const std::string& str)
 		{
 		Deformation ret{};
 		auto ptr=str.data();
@@ -108,22 +118,35 @@ namespace Alice
 		}
 	};
 
+
+
+namespace Alice
+	{
+	template<>
+	struct MakeType<Stringkey("filename")>:public MakeType<Stringkey("string")>
+		{
+		typedef std::string Type;
+		static constexpr const char* descriptionGet() noexcept
+			{return "A valid filename";}
+		};
+	}
+
 ALICE_OPTION_DESCRIPTOR(OptionDescriptor
-	,{"Help","help","Print option summary to stdout, or, if a filename is given, to that file","String",Alice::Option::Multiplicity::ZERO_OR_ONE}
-	,{"Help","params-show","Print a summary of availible deformation parameters to stdout, or, if a filename is given, to that file","String",Alice::Option::Multiplicity::ZERO_OR_ONE}
-	,{"Simulation parameters","prototype","Generate data using the given prototype","String",Alice::Option::Multiplicity::ONE}
-	,{"Simulation parameters","deformations","Defines all deformations to apply to the prototype. A deformation rule is written in the form parameter:mean:standard deviation","Deformation rule",Alice::Option::Multiplicity::ONE_OR_MORE}
-	,{"Simulation parameters","E_0","The maximal initial particle energe. The energy is chosen as U(0, E_0)","Double",Alice::Option::Multiplicity::ONE}
-	,{"Simulation parameters","decay_distance","The number of units before the energy has decayed to 1/e","Double",Alice::Option::Multiplicity::ONE}
-	,{"Simulation parameters","D_max","Generate a graupel of diameter D_max. D_max is defined as the largest distance between two vertices.","Double",Alice::Option::Multiplicity::ONE}
-	,{"Simulation parameters","seed","Random seed mod 2^32","Integer",Alice::Option::Multiplicity::ONE}
+	,{"Help","help","Print option summary to stdout, or, if a filename is given, to that file","filename",Alice::Option::Multiplicity::ZERO_OR_ONE}
+	,{"Help","params-show","Print a summary of availible deformation parameters to stdout, or, if a filename is given, to that file","filename",Alice::Option::Multiplicity::ZERO_OR_ONE}
+	,{"Simulation parameters","prototype","Generate data using the given prototype","filename",Alice::Option::Multiplicity::ONE}
+	,{"Simulation parameters","deformations","Defines all deformations to apply to the prototype.","Deformation rule",Alice::Option::Multiplicity::ONE_OR_MORE}
+	,{"Simulation parameters","E_0","The maximal initial particle energe. The energy is chosen as U(0, E_0)","double",Alice::Option::Multiplicity::ONE}
+	,{"Simulation parameters","decay_distance","The number of units before the energy has decayed to 1/e","double",Alice::Option::Multiplicity::ONE}
+	,{"Simulation parameters","D_max","Generate a graupel of diameter D_max. D_max is defined as the largest distance between two vertices.","double",Alice::Option::Multiplicity::ONE}
+	,{"Simulation parameters","seed","Random seed mod 2^32","unsigned int",Alice::Option::Multiplicity::ONE}
 	,{"Simulation parameters","fill-ratio","Set minimum fill ratio of the bounding sphere. This option is used when D_max has been reached, to increase the total mass. "
-		 "If the fill ratio is non-zero, and D_max is fullfilled, only events that do not increase D_max are accepted.","Double"
+		 "If the fill ratio is non-zero, and D_max is fullfilled, only events that do not increase D_max are accepted.","double"
 		,Alice::Option::Multiplicity::ONE}
-	,{"Output options","dump-geometry","Specify output Wavefront file","String",Alice::Option::Multiplicity::ONE}
-	,{"Output options","dump-geometry-ice","Same as --dump-geometry but write data as Ice crystal prototype files, so they can be used by other tools provided by the toolkit.","String",Alice::Option::Multiplicity::ONE}
-	,{"Output options","dump-stats","Write statistics to the given file","String",Alice::Option::Multiplicity::ONE}
-	,{"Other","statefile","Reload state from file","String",Alice::Option::Multiplicity::ONE}
+	,{"Output options","dump-geometry","Specify output Wavefront file","filename",Alice::Option::Multiplicity::ONE}
+	,{"Output options","dump-geometry-ice","Same as --dump-geometry but write data as Ice crystal prototype files, so they can be used by other tools provided by the toolkit.","filename",Alice::Option::Multiplicity::ONE}
+	,{"Output options","dump-stats","Write statistics to the given file","filename",Alice::Option::Multiplicity::ONE}
+	,{"Other","statefile","Reload state from file","filename",Alice::Option::Multiplicity::ONE}
 	);
 
 
@@ -318,6 +341,48 @@ faceChoose(const SnowflakeModel::Solid& s_a,SnowflakeModel::RandomGenerator& ran
 	auto source=bb_mid - SnowflakeModel::Point(r*direction,1.0);
 
 	return s_a.shoot(source,direction,E_0,decay_distance,backface_culling);
+	}
+
+
+static SnowflakeModel::Point drawBall(SnowflakeModel::RandomGenerator& randgen
+	,const SnowflakeModel::Point& mid,float r)
+	{
+	std::uniform_real_distribution<float> X(mid.x - r,mid.x + r);
+	std::uniform_real_distribution<float> Y(mid.x - r,mid.y + r);
+	std::uniform_real_distribution<float> Z(mid.z - r,mid.z + r);
+
+	SnowflakeModel::Point ret;
+	do
+		{
+		ret={X(randgen),Y(randgen),Z(randgen),1.0f};
+		}
+	while(glm::distance(ret,mid)>=r);
+	return ret;
+	}
+
+static std::pair<SnowflakeModel::Triangle,float>
+faceChoose2(const SnowflakeModel::Solid& s_a,SnowflakeModel::RandomGenerator& randgen
+	,float E_0,float decay_distance,bool backface_culling)
+	{
+//	Construct a sphere from the bounding box
+	auto& bb=s_a.boundingBoxGet();
+	auto bb_size=bb.sizeGet();
+	auto bb_mid=bb.centerGet();
+	auto r=0.5f*glm::length( bb_size );
+
+	auto direction=drawSphere(randgen);
+
+
+//	Set the source on the sphere
+	auto source=bb_mid - SnowflakeModel::Point(r*direction,1.0);
+
+//	Set the target somewhere inside the ball
+	auto target=drawBall(randgen,bb_mid,r);
+
+//	Compute a new direction
+	direction=SnowflakeModel::Vector(target-source);
+
+	return s_a.shoot(source,direction/glm::length(direction),E_0,decay_distance,backface_culling);
 	}
 
 static void statsDump(SnowflakeModel::FileOut* file_out,const SnowflakeModel::Solid& solid)

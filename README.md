@@ -12,10 +12,11 @@ The toolkit has been design with so it should not have to many external dependen
 
  * glm - The "OpenGL Mathematics Library"
  * libhdf5-cpp + its dependencies
+ 
 
 Compiling
 ---------
-This is a shell script that can be used to compile the toolkit
+This is a shell script that can be used to compile the toolkit. The toolkit requires support for C++14 or later.	
 
     #!/bin/bash
 

@@ -1,0 +1,136 @@
+\documentclass[a4paper,10pt]{scrartcl}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{varioref}
+\usepackage{hyperref}
+\usepackage{cleveref}
+\usepackage[intlimits]{amsmath}
+\usepackage{amssymb}
+
+
+\newcommand{\prgname}[1]{\texttt{#1}}
+\newcommand{\dd}{\mathrm{d}}
+
+%opening
+\title{The Snowflake-Toolkit Updates}
+\author{Torbjörn Rathsman}
+
+\begin{document}
+
+\maketitle
+\begin{abstract}
+The Snowflake-Toolkit is a software toolkit intended to generate shape data for simulating microwave scattering from snow and ice particles. This paper briefly describes changes since the publication of the Master's thesis, roughly in chronological order. 
+\end{abstract}
+
+
+
+\tableofcontents
+
+\section{Converting code to a new build system}
+While \prgname{wand} has been a great tool for managing semi-large projects, its algorithm does not detect any cyclical dependencies. Also, the codebase, especially the frontend, is quite messy. Moreover, \prgname{wand} has no good API for calling the engine without invoking \prgname{wand} itself. Also, it has no plug-in framework, and no support for code generation. With this background, a new tool called \prgname{maike}\cite{maike} was written. This tool resolves all listed problems, and it also improves compilation times an order of magnitude, as well as diagnostics. For example, it is easy to list all external dependencies by using the option \texttt{list-external-targets}. 
+
+Maike requires \prgname{libjansson}\cite{maike}\cite{jansson}. Therefore, the corresponding development packages are needed to compile and link the \prgname{maike} executable. However, the snowflake toolkit has not a dependency to that library itself.
+
+\section{Saving simulation state}
+Since simulations can run for some time, it is useful to be able to save the current state to disk, so the simulation process can be continued later. This new feature is implemented using the \prgname{libhdf5} libraries. The choice of HDF5 is motivated by its capabilities to store a large amount data in a machine-friendly format \cite{hdf5}. The simulation state can be reloaded with the \texttt{statefile} option.
+
+The statefile is standalone. This means that all external resources are embedded into the statefile. For reference, the path to the external resources are stored also, but no data are read from these files when recovering the state.
+
+It is important to notice that statefiles are not intended to be compatible with other versions of the toolkit. This means that an old simulation cannot be continued with another version of the toolkit than the one that created the file.
+
+\section{Computing $D_\text{max}$}
+Previously, the toolkit has only provided the radius of \texttt{Solid}s, defined as the largest distance from its centroid to one vertex. Now, $D_\text{max}$ is also available, and it is computed from the largest distance between any two vertices. 
+
+\section{More stop conditions}
+\begin{table}
+ \caption{\label{stopcond}All stop conditions supported by the aggregate generator}
+ \begin{tabular}{p{0.2\textwidth}p{0.6\textwidth}}
+ \hline
+ \hline
+  \textbf{Condition} & \textbf{Description}\\
+  \hline
+  \texttt{iterations=N} &  Run a fixed number of iterations \\
+  \texttt{subvols\_max=N}              &  Run until there is an aggregate with \texttt{N} elements \\
+  \texttt{d\_max\_max=d\_max}            &  Run until there is an aggregate with \texttt{d\_max} as largest its extent \\
+  \texttt{v\_max=V}                     & Run until there is an aggregate with volume \texttt{V} \\
+  \texttt{n\_dropped\_max=N}           & Run until the model has dropped \texttt{N} particles \\
+  \texttt{infinity}                    & Run forever, or until the simulation is stopped externally \\
+  \hline
+  \hline
+ \end{tabular}
+\end{table}
+
+A desired feature has been the ability to use different stop conditions. With these changes, the aggregate generator can stop based on the following conditions listed in \cref{stopcond}.
+
+\section{Forcing aggregate merge}
+Another addition to the aggregate generator is a force-merging mode. In this mode, a merge event that failed due to an overlap is not rejected directly, but instead a different pair of faces are chosen until the merge succeeds, or until the number of retries left goes to zero. This behaviour is controlled by the \texttt{merge-retries} option.
+
+\section{Options for controlling overlap}
+It is now possible to generate aggregates with overlap. The overlap is given relative to the number of sub-volumes in the smallest aggregate. Zero corresponds to no overlap while one corresponds to an overlap everywhere. It is possible to set both lower and an upper limits on the amount of overlap. This is done by the options \texttt{overlap-min}, and \texttt{overlap-max}, respectively.
+
+The overlap introduces a slight error in the total volume. Currently, the toolkit assumes that the overlapping volume in each overlap is one tenth of the smallest sub-volume in that overlap.
+
+\section{Non-convex sub-volumes}
+The restriction on non-convex sub-volumes makes it hard to use non-convex shapes as crystal prototypes, because it requires that the user splits the prototype into convex sub-volumes before it can be used.
+
+This restriction has now been removed, by using a new hit-test algorithm, based on ray-casting. The test is based on the fact that a ray that begins inside the volume has to cross the boundary an odd number of times.
+
+Another issue with non-convex sub-volumes is the seed for the geometry sampler. With convex sub-volumes, the centroid works as a seed, since it has to be inside the volume. This approach has been replaced by a stochastic approach, where a number of points inside the bounding box is tried, and the first point that hits the sub-volume will be used as starting point.
+
+\section{Global scaling of prototypes}
+All crystal prototypes now supports a global and isotropic scaling parameter. This makes it possible to have a randomised size, without a random aspect ratio.
+
+\section{Initial work on graupel generator}
+An attempt has been made to implement a graupel generator. While it generates spheres out of spheres, it produces particles with too low effective densities. It is possible to increase the effective density, but it increases the processing time. For graupels, the polygon mesh structure is impractical, and it is probably much faster to model the spheres as a centre and a radius. Then there is no need to track individual faces and vertices.
+
+\section{Adding Alice Long optIons C++ Extractor}
+As more options are added to the programs, maintaining synchronisation between the help text and the actual implementation becomes a heavy work. Therefore, \prgname{Alice}\cite{alice} has been used instead of GNU \prgname{getopts} for processing the command line in two of the programs. The goal is to replace GNU \prgname{getopts} everywhere.
+
+Alice improves readability, and maintainability, of the code, but adds pushes the requirement from C++11 to C++14. This means that GCC version 5 or later\cite{GCC} is required to compile the toolkit.
+
+\section{Empty element for the graph traversing program}
+A \texttt{flake} file can now use an empty prototype. This makes it possible to choose starting coordinates explicitly. Also, this makes it possible to use the graph traversing program to assemble an aggregate with only one non-empty prototype.
+
+\section{More probability distributions for setting deformation parameters}
+The aggregate generator now has more choices for probability distributions when for particle deformations. In addition to the $\Gamma$ distribution, $\delta$, and $\text{Exp}$ is available. Also it is possible to use sampled probability distributions stored in tab delimited text files.
+
+The $\delta$ distribution---that is, a distribution which always return its mean value---has been present since the first release by detecting a small standard deviation. With this change, the user explicitly states that a $\delta$ distribution should be used.
+
+Neither $\delta$ or $\text{Exp}$ accepts a standard deviation. The former, since it is zero anyway, and the latter, because it is the same as its mean value. A \texttt{custom} distribution is parameterised by the data stored in the text file.
+
+
+\section{Improvements on geometry sampling}
+Sometimes, it is easier to specify the total number of voxels, instead of the number of voxels in each direction. Now, it is possible to specify a desired number of voxels $N$, and an aspect ratio $r_x:r_y:r_z$, which determines the step size in each direction. The step size in direction $i$ is computed using the expression
+\[
+ \dd x_i = r_i \left(\frac{V}{N r_x r_y r_z}\right)^{1/3}
+\]
+where $V$ is the volume of the particle.
+
+\appendix
+
+\section{External libraries required by the snowflake toolkit}
+This is a list of all external libraries used by the toolkit, as reported by \prgname{maike}.
+
+\begin{itemize}
+ \item \texttt{hdf5}
+ \item \texttt{hdf5\_cpp}
+ \item \texttt{pthread}
+ \item \texttt{hdf5\_hl\_cpp}
+ \end{itemize}
+ 
+
+\begin{thebibliography}{9}
+ \bibitem{maike}
+ \url{https://milasudril.github.io/maike/}
+ \bibitem{jansson}
+ \url{http://www.digip.org/jansson/}
+ \bibitem{hdf5}
+ \url{https://support.hdfgroup.org/HDF5/whatishdf5.html}
+  \bibitem{alice}
+ \url{https://github.com/milasudril/alice}
+ \bibitem{GCC}
+ \url{https://gcc.gnu.org/projects/cxx-status.html}
+\end{thebibliography}
+
+\end{document}

@@ -15,7 +15,8 @@
 #include "solid_builder_bbc.h"
 #include "solid_writer.h"
 #include "solid_writer_prototype.h"
-#include "voxelbuilder_adda.h"
+#include "grid.h"
+#include "adda.h"
 #include "file_out.h"
 
 #include <string>
@@ -28,9 +29,9 @@ struct Setup
 	std::string m_geom_output;
 	std::string m_mesh_ice_output;
 	std::map<std::string,std::string> m_params;
-	int size_x;
-	int size_y;
-	int size_z;
+	unsigned int size_x;
+	unsigned int size_y;
+	unsigned int size_z;
 	bool help_show;
 	bool param_show;
 
@@ -263,11 +264,12 @@ int main(int argc,char** argv)
 
 		if(setup.m_geom_output!="")
 			{
-			SnowflakeModel::FileOut file_out(setup.m_geom_output.data());
-			SnowflakeModel::VoxelbuilderAdda builder(file_out
-				,setup.size_x,setup.size_y,setup.size_z
+			SnowflakeModel::Grid grid(setup.size_x,setup.size_y,setup.size_z
 				,m.boundingBoxGet());
-			m.geometrySample(builder);
+
+			m.geometrySample(grid);
+
+			addaShapeWrite(grid,SnowflakeModel::FileOut(setup.m_geom_output.data()));
 			}
 		}
 	catch(const char* message)

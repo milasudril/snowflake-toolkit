@@ -23,7 +23,7 @@
 
 namespace SnowflakeModel
 	{
-	class VoxelBuilder;
+	class Grid;
 
 	class Solid
 		{
@@ -138,7 +138,7 @@ namespace SnowflakeModel
 				return m_extrema;
 				}
 
-			void geometrySample(VoxelBuilder& builder) const;
+			void geometrySample(Grid& grid) const;
 
 			void transform(const Matrix& T,bool mirrored) noexcept;
 
@@ -170,7 +170,6 @@ namespace SnowflakeModel
 
 			size_t facesCount() const noexcept
 				{
-				assert(m_n_faces_tot!=0);
 				return m_n_faces_tot;
 				}
 
