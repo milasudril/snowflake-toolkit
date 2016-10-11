@@ -1,4 +1,7 @@
-//@	{"targets":[{"name":"sphere.h","type":"include"}]}
+//@	{
+//@	 "targets":[{"name":"sphere.h","type":"include"}]
+//@	,"dependencies_extra":[{"ref":"sphere.o","rel":"implementation"}]
+//@	}
 
 #ifndef SNOWFLAKEMODEL_SPHERE_H
 #define SNOWFLAKEMODEL_SPHERE_H
@@ -9,9 +12,12 @@
 
 namespace SnowflakeModel
 	{
+	class Grid;
 	class Sphere
 		{
 		public:
+			void geometrySample(Grid& grid) const;
+
 			bool inside(const Point& p) const noexcept
 				{
 				auto v=p-m_location;
