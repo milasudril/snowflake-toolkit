@@ -3,7 +3,7 @@
 //@	    "targets":[
 //@	        {
 //@	            "dependencies":[],
-//@	            "name":"snowflake_prototype-test",
+//@	            "name":"snowflake_prototype-test2",
 //@	            "type":"application"
 //@			,"cxxoptions":{"cflags_extra":["L/usr/lib/x86_64-linux-gnu/hdf5/serial"]}
 //@	        }
@@ -12,13 +12,14 @@
 #include "config_parser.h"
 #include "solid_loader.h"
 #include "solid.h"
+#include "grid.h"
 #include "ice_particle.h"
 #include "solid_writer.h"
 #include "solid_writer_prototype.h"
 #include "file_out.h"
-#include "voxelbuilder_adda.h"
 #include "grid_definition.h"
 #include "grid_definition2.h"
+#include "adda.h"
 #include "alice/commandline.hpp"
 
 struct DeformationRule
@@ -236,23 +237,17 @@ static void geometryDumpIce(const SnowflakeModel::Solid& solid
 static void geometrySample(const SnowflakeModel::Solid& solid
 	,const SnowflakeModel::GridDefinition& grid)
 	{
+	SnowflakeModel::Grid grid_out(grid.N_x,grid.N_y,grid.N_z
+		,solid.boundingBoxGet());
+	solid.geometrySample(grid_out);
 	auto dest=grid.filename.size()==0?
 		SnowflakeModel::FileOut(stdout):SnowflakeModel::FileOut(grid.filename.c_str());
-
-
-	SnowflakeModel::VoxelbuilderAdda builder(dest
-		,grid.N_x,grid.N_y,grid.N_z
-		,solid.boundingBoxGet());
-
-	solid.geometrySample(builder);
+	addaShapeWrite(grid_out,std::move(dest));
 	}
 
 static void geometrySample(const SnowflakeModel::Solid& solid
 	,const SnowflakeModel::GridDefinition2& grid)
 	{
-	auto dest=grid.filename.size()==0?
-		SnowflakeModel::FileOut(stdout):SnowflakeModel::FileOut(grid.filename.c_str());
-
 	auto scale=grid.r_x*grid.r_y*grid.r_z;
 
 	auto dV=solid.volumeGet()/grid.N;
@@ -261,11 +256,13 @@ static void geometrySample(const SnowflakeModel::Solid& solid
 	auto dy=grid.r_y*std::pow(dV/scale,1.0/3.0);
 	auto dz=grid.r_z*std::pow(dV/scale,1.0/3.0);
 
-	SnowflakeModel::VoxelbuilderAdda builder(dest
-		,dx,dy,dz
-		,solid.boundingBoxGet());
+	SnowflakeModel::Grid grid_out(dx,dy,dz,solid.boundingBoxGet());
+	solid.geometrySample(grid_out);
 
-	solid.geometrySample(builder);
+	auto dest=grid.filename.size()==0?
+		 SnowflakeModel::FileOut(stdout)
+		:SnowflakeModel::FileOut(grid.filename.c_str());
+	addaShapeWrite(grid_out,std::move(dest));
 	}
 
 int main(int argc,char** argv)

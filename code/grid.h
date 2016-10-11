@@ -60,7 +60,8 @@ namespace SnowflakeModel
 
 			size_t offsetGet(const PointInt& pos) const noexcept
 				{
-				assert(pos.x>=0 && pos.y>=0 && pos.z>=0);
+				if(pos.x<0 || pos.y<0 || pos.z<0)
+					{return npos;}
 				auto ny=static_cast<size_t>(m_n_y);
 				auto nz=static_cast<size_t>(m_n_z);
 				if(pos.x<m_n_x && pos.y<m_n_y && pos.z<m_n_z) 

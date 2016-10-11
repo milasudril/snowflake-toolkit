@@ -13,7 +13,8 @@
 #include "solid_loader.h"
 #include "solid_writer.h"
 #include "solid.h"
-#include "voxelbuilder_adda.h"
+#include "grid.h"
+#include "adda.h"
 #include "file_out.h"
 #include "ice_particle.h"
 #include "twins.h"
@@ -521,16 +522,13 @@ int main(int argc,char** argv)
 			size_t count=1;
 			while(i!=solids_out.end())
 				{
-				char num_buff[16];
-				sprintf(num_buff,"%zx.adda",count);
-				SnowflakeModel::FileOut file_out(
-					(setup.m_geom_output+num_buff).data()
-					);
-				SnowflakeModel::VoxelbuilderAdda builder(file_out
-					,setup.size_x,setup.size_y,setup.size_z
+				SnowflakeModel::Grid grid(setup.size_x,setup.size_y,setup.size_z
 					,i->boundingBoxGet());
 
-				i->geometrySample(builder);
+				char num_buff[16];
+				sprintf(num_buff,"%zx.adda",count);
+				i->geometrySample(grid);
+				addaShapeWrite(grid,SnowflakeModel::FileOut((setup.m_geom_output+num_buff).data()));
 				++i;
 				++count;
 				}

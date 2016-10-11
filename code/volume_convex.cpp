@@ -9,7 +9,6 @@
 //@	    ]
 //@	}
 #include "volume_convex.h"
-#include "voxel_builder.h"
 #include "twins.h"
 #include "triangle.h"
 #include "grid.h"
@@ -67,20 +66,6 @@ void VolumeConvex::transformGroup(const std::string& name,const Matrix& T)
 	}
 
 
-static PointInt seedGenerate(const VolumeConvex& v,const VoxelBuilder& builder)
-	{
-//	Try some points inside the bounding box to see if we get a hit.
-	PointInt seed;
-	std::minstd_rand rng;
-	auto& bb=v.boundingBoxGet();
-	do
-		{
-		seed=builder.quantize( randomPoint(bb,rng) );
-		}
-	while(!v.inside( builder.dequantize(seed)) );
-	return seed;
-	}
-
 static PointInt seedGenerate(const VolumeConvex& v,const Grid& grid)
 	{
 //	Try some points inside the bounding box to see if we get a hit.
@@ -122,30 +107,6 @@ void VolumeConvex::geometrySample(Grid& grid) const
 		}
 	}
 
-
-void VolumeConvex::geometrySample(VoxelBuilder& builder) const
-	{
-	std::stack<PointInt> nodes;
-
-	nodes.push(seedGenerate(*this,builder));
-	builder.volumeStart(*this);
-	while(nodes.size()!=0)
-		{
-		auto node_current=nodes.top();
-		nodes.pop();
-
-		if(builder.fill(node_current))
-			{
-			nodes.push(node_current+PointInt(-1,0,0,0));
-			nodes.push(node_current+PointInt(1 ,0,0,0));
-			nodes.push(node_current+PointInt(0,-1,0,0));
-			nodes.push(node_current+PointInt(0,1, 0,0));
-			nodes.push(node_current+PointInt(0,0,-1,0));
-			nodes.push(node_current+PointInt(0,0, 1,0));
-			}
-		}
-	}
-
 void VolumeConvex::facesNormalCompute() const
 	{
 	auto face_current=facesBegin();
@@ -170,12 +131,27 @@ void VolumeConvex::facesNormalCompute() const
 	m_flags_dirty&=~FACES_NORMAL_DIRTY;
 	}
 
+static Vector hittestDirection(const Point& v, const Point& mid
+	,const BoundingBox& bb)
+	{
+//	Shoot towards inwards or outwards to reduce the risk of numerical
+//	errors.
+	
+	auto delta=Vector(mid - v);
+	auto n=glm::length(delta);
+	if(n>.125f*glm::length(Vector(bb.m_max - bb.m_min)))
+		{return delta/n;}
+
+	return Vector(1.0f,0.0f,0.0f);
+	}
+
 bool VolumeConvex::inside(const Point& v) const
 	{
 //	Check bounding box first
 	if(!::inside(v,boundingBoxGet()))
 		{return 0;}
 
+	auto dir=hittestDirection(v,midpointGet(),boundingBoxGet());
 	if(m_flags_dirty&FACES_NORMAL_DIRTY)
 		{facesNormalCompute();}
 	auto face_current=facesBegin();
@@ -183,6 +159,8 @@ bool VolumeConvex::inside(const Point& v) const
 	auto verts=verticesBegin();
 	size_t intersect_count=0;
 	float intersection;
+//	Shoot towards the 
+
 	while(face_current!=faces_end)
 		{
 		auto T=Triangle
@@ -194,7 +172,7 @@ bool VolumeConvex::inside(const Point& v) const
 				}
 			,face_current->m_normal
 			};
-		if(intersects(T,v,Vector(1.0f,0.0f,0.0f),intersection))
+		if(intersects(T,v,dir,intersection))
 			{++intersect_count;}
 		++face_current;
 		}

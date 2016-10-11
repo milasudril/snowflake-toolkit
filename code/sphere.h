@@ -5,7 +5,6 @@
 
 #include "vector.h"
 #include "bounding_box.h"
-#include "voxel_builder.h"
 #include <cmath>
 
 namespace SnowflakeModel
@@ -70,9 +69,6 @@ namespace SnowflakeModel
 				auto pos=m_location;
 				return {pos - v,pos + v};
 				};
-
-			PointInt floodfillSeedGet(const VoxelBuilder& builder) const noexcept
-				{return builder.quantize(m_location);}
 
 		private:
 			float m_radius;

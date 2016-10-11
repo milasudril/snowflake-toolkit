@@ -14,7 +14,8 @@
 #include "solid_writer.h"
 #include "solid_writer_prototype.h"
 #include "solid.h"
-#include "voxelbuilder_adda.h"
+#include "grid.h"
+#include "adda.h"
 #include "file_out.h"
 #include "ice_particle.h"
 #include "twins.h"
@@ -1225,14 +1226,14 @@ void Simstate::rasterize() const
 		{
 		if(!i->dead())
 			{
-			char num_buff[32];
-			sprintf(num_buff,"/geom-%zx.adda",count);
-			SnowflakeModel::FileOut file_out((r_setup.m_output_dir+num_buff).data());
-			SnowflakeModel::VoxelbuilderAdda builder(file_out
-				,r_setup.m_data.m_size_x,r_setup.m_data.m_size_y,r_setup.m_data.m_size_z
+			SnowflakeModel::Grid grid(
+				 r_setup.m_data.m_size_x,r_setup.m_data.m_size_y,r_setup.m_data.m_size_z
 				,i->solidGet().boundingBoxGet());
 
-			i->solidGet().geometrySample(builder);
+			i->solidGet().geometrySample(grid);
+			char num_buff[32];
+			sprintf(num_buff,"/geom-%zx.adda",count);
+			addaShapeWrite(grid,SnowflakeModel::FileOut((r_setup.m_output_dir+num_buff).data()));
 			++count;
 			}
 		++i;
