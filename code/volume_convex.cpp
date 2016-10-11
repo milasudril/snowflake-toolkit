@@ -12,6 +12,7 @@
 #include "twins.h"
 #include "triangle.h"
 #include "grid.h"
+#include "sphere.h"
 #include <stack>
 
 using namespace SnowflakeModel;
@@ -446,4 +447,91 @@ std::pair<Triangle,float> VolumeConvex::shoot(const Point& source,const Vector& 
 		}
 
 	return ret;
+	}
+
+static void vertexAddNormalized(VolumeConvex& v,const Vector& vec)
+	{
+	v.vertexAdd(VolumeConvex::Vertex(vec/glm::length(vec),1.0f));
+	}
+
+
+VolumeConvex::VolumeConvex(const Sphere& sphere,unsigned int subdivs):
+m_flags_dirty(MIDPOINT_DIRTY|FACES_NORMAL_DIRTY|FACES_MIDPOINT_DIRTY|VOLUME_DIRTY
+	|AREA_VISIBLE_DIRTY)
+	{
+//	From http://blog.andreaskahler.com/2009/06/creating-icosphere-mesh-in-code.html
+
+	auto constexpr t = (1.0f + std::sqrt(5.0f)) / 2.0f;
+
+	vertexAddNormalized(*this,Vector(-1.0f,  t,  0.0f));
+	vertexAddNormalized(*this,Vector( 1.0f,  t,  0.0f));
+	vertexAddNormalized(*this,Vector(-1.0f, -t,  0.0f));
+	vertexAddNormalized(*this,Vector( 1.0f, -t,  0.0f));
+
+	vertexAddNormalized(*this,Vector( 0.0f, -1.0f,  t));
+	vertexAddNormalized(*this,Vector( 0.0f,  1.0f,  t));
+	vertexAddNormalized(*this,Vector( 0.0f, -1.0f, -t));
+	vertexAddNormalized(*this,Vector( 0.0f,  1.0f, -t));
+
+	vertexAddNormalized(*this,Vector( t,  0.0f, -1.0f));
+	vertexAddNormalized(*this,Vector( t,  0.0f,  1.0f));
+	vertexAddNormalized(*this,Vector(-t,  0.0f, -1.0f));
+	vertexAddNormalized(*this,Vector(-t,  0.0f,  1.0f));
+
+
+
+	faceAdd(Face(0, 11, 5));
+	faceAdd(Face(0, 5, 1));
+	faceAdd(Face(0, 1, 7));
+	faceAdd(Face(0, 7, 10));
+	faceAdd(Face(0, 10, 11));
+
+	// 5 adjacent faces 
+	faceAdd(Face(1, 5, 9));
+	faceAdd(Face(5, 11, 4));
+	faceAdd(Face(11, 10, 2));
+	faceAdd(Face(10, 7, 6));
+	faceAdd(Face(7, 1, 8));
+
+	// 5 faces around point 3
+	faceAdd(Face(3, 9, 4));
+	faceAdd(Face(3, 4, 2));
+	faceAdd(Face(3, 2, 6));
+	faceAdd(Face(3, 6, 8));
+	faceAdd(Face(3, 8, 9));
+
+	// 5 adjacent faces 
+	faceAdd(Face(4, 9, 5));
+	faceAdd(Face(2, 4, 11));
+	faceAdd(Face(6, 2, 10));
+	faceAdd(Face(8, 6, 7));
+	faceAdd(Face(9, 8, 1));
+
+//TODO: Subdivide mesh...
+
+	////make all faces visible
+		{
+		auto ptr=facesBegin();
+		auto ptr_end=facesEnd();
+		while(ptr!=ptr_end)
+			{
+			faceOutAdd((ptr_end - ptr) - 1);
+			++ptr;
+			}
+		}
+
+	////Apply transformation
+		{
+		auto ptr=verticesBegin();
+		auto ptr_end=verticesEnd();
+		Matrix T;
+		auto r=sphere.radiusGet();
+		T=glm::translate(T,Vector(sphere.midpointGet()));
+		T=glm::scale(T,Vector(r,r,r));
+		while(ptr!=ptr_end)
+			{
+			*ptr=T*(*ptr);
+			++ptr;
+			}
+		}
 	}

@@ -29,6 +29,21 @@ bool SnowflakeModel::overlap(const SphereAggregate& v_a, const SphereAggregate& 
 	return 0;
 	}
 
+bool SnowflakeModel::overlap(const SphereAggregate& v_a,const Sphere& v_b)
+	{
+	if(!overlap(v_a.boundingBoxGet(),v_b.boundingBoxGet()))
+		{return 0;}
+	auto subvolume=v_a.subvolumesBegin();
+	auto vol_end=v_a.subvolumesEnd();
+	while(subvolume!=vol_end)
+		{
+		if(overlap(v_b,*subvolume))
+			{return 1;}
+		++subvolume;
+		}
+	return 0;
+	}
+
 std::pair<Point,Vector> SphereAggregate::shoot(const Point& source
 	,const Vector& direction
 	,float E_0,float decay_distance) const noexcept
@@ -58,19 +73,19 @@ std::pair<Point,Vector> SphereAggregate::shoot(const Point& source
 				}
 			}
 		}
-	auto point=source + Point(d*direction,1.0f);
+	auto point=source + Point(d*direction,0.0f);
 	auto normal=glm::normalize(Vector(point - obj_min->midpointGet()));
 	return std::make_pair(point,normal);
 	}
 
-void SphereAggregate::geometrySample(Grid& builder) const
+void SphereAggregate::geometrySample(Grid& grid) const
 	{
 	auto subvols_begin=subvolumesBegin();
 	auto subvols_end=subvolumesEnd();
 
 	while(subvols_begin!=subvols_end)
 		{
-	//	subvols_begin->geometrySample(grid);
+		subvols_begin->geometrySample(grid);
 		++subvols_begin;
 		}
 	}
