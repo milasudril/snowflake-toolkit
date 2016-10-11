@@ -82,6 +82,16 @@ namespace SnowflakeModel
 
 			void bitAnd(size_t offset_start,size_t offset_end,uint8_t mask) noexcept;
 
+			void bitAnd(const PointInt& pos_start,const PointInt& pos_end,uint8_t mask) noexcept
+				{
+				auto offset_start=offsetGet(pos_start);
+				offset_start=offset_start==npos?0:offset_start;
+
+				auto offset_end=offsetGet(pos_end);
+				offset_end=offset_end==npos?m_n_x*m_n_y*m_n_z:offset_end;
+				bitAnd(offset_start,offset_end,mask);
+				}
+
 			template<class Callback>
 			void pointsVisit(Callback&& cb) const noexcept
 				{
