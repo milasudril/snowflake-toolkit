@@ -526,6 +526,9 @@ m_flags_dirty(MIDPOINT_DIRTY|FACES_NORMAL_DIRTY|FACES_MIDPOINT_DIRTY|VOLUME_DIRT
 		auto ptr_end=verticesEnd();
 		Matrix T;
 		auto r=sphere.radiusGet();
+		auto V_0=4.0f*std::acos(-1)/3.0f;
+		r*=std::pow(V_0/volumeGet(),1.0f/3.0f);
+
 		T=glm::translate(T,Vector(sphere.midpointGet()));
 		T=glm::scale(T,Vector(r,r,r));
 		while(ptr!=ptr_end)
