@@ -85,7 +85,8 @@ void VolumeConvex::geometrySample(Grid& grid) const
 	std::stack<PointInt> nodes;
 
 	nodes.push(seedGenerate(*this,grid));
-	grid.bitAnd(0xf0);
+	auto& bb=boundingBoxGet();
+	grid.bitAnd(grid.quantize(bb.m_min),grid.quantize(bb.m_max),0xf0);
 	while(nodes.size()!=0)
 		{
 		auto node_current=nodes.top();
@@ -128,14 +129,15 @@ void VolumeConvex::facesNormalCompute() const
 
 		++face_current;
 		}
+
 	m_flags_dirty&=~FACES_NORMAL_DIRTY;
 	}
 
 static Vector hittestDirection(const Point& v, const Point& mid
 	,const BoundingBox& bb)
 	{
-//	Shoot towards inwards or outwards to reduce the risk of numerical
-//	errors.
+//	Shoot towards center, or outwards (depending on v) to reduce
+//	the risk of numerical errors.
 	
 	auto delta=Vector(mid - v);
 	auto n=glm::length(delta);
@@ -159,8 +161,6 @@ bool VolumeConvex::inside(const Point& v) const
 	auto verts=verticesBegin();
 	size_t intersect_count=0;
 	float intersection;
-//	Shoot towards the 
-
 	while(face_current!=faces_end)
 		{
 		auto T=Triangle
