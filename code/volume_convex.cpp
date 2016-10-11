@@ -12,6 +12,7 @@
 #include "twins.h"
 #include "triangle.h"
 #include "grid.h"
+#include "sphere.h"
 #include <stack>
 
 using namespace SnowflakeModel;
@@ -454,7 +455,9 @@ static void vertexAddNormalized(VolumeConvex& v,const Vector& vec)
 	}
 
 
-VolumeConvex::VolumeConvex(const Sphere& sphere,unsigned int subdivs)
+VolumeConvex::VolumeConvex(const Sphere& sphere,unsigned int subdivs):
+m_flags_dirty(MIDPOINT_DIRTY|FACES_NORMAL_DIRTY|FACES_MIDPOINT_DIRTY|VOLUME_DIRTY
+	|AREA_VISIBLE_DIRTY)
 	{
 //	From http://blog.andreaskahler.com/2009/06/creating-icosphere-mesh-in-code.html
 
@@ -504,6 +507,7 @@ VolumeConvex::VolumeConvex(const Sphere& sphere,unsigned int subdivs)
 	faceAdd(Face(8, 6, 7));
 	faceAdd(Face(9, 8, 1));
 
+//TODO: Subdivide mesh...
 
 	////make all faces visible
 		{
@@ -511,9 +515,23 @@ VolumeConvex::VolumeConvex(const Sphere& sphere,unsigned int subdivs)
 		auto ptr_end=facesEnd();
 		while(ptr!=ptr_end)
 			{
-			faceOutAdd(ptr-ptr_end);
+			faceOutAdd((ptr_end - ptr) - 1);
 			++ptr;
 			}
 		}
 
+	////Apply transformation
+		{
+		auto ptr=verticesBegin();
+		auto ptr_end=verticesEnd();
+		Matrix T;
+		auto r=sphere.radiusGet();
+		T=glm::translate(T,Vector(sphere.midpointGet()));
+		T=glm::scale(T,Vector(r,r,r));
+		while(ptr!=ptr_end)
+			{
+			*ptr=T*(*ptr);
+			++ptr;
+			}
+		}
 	}

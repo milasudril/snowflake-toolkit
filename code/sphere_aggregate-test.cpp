@@ -10,6 +10,8 @@
 #include "grid.h"
 #include "adda.h"
 #include "file_out.h"
+#include "solid.h"
+#include "solid_writer.h"
 
 int main()
 	{
@@ -34,14 +36,24 @@ int main()
 			{printf("Overlap\n");}
 		test.subvolumeAdd(v_2);
 
+			{
+			auto dV=test.volumeGet()/2000;
+			auto dx=std::pow(dV,1.0/3.0);
+			auto dy=std::pow(dV,1.0/3.0);
+			auto dz=std::pow(dV,1.0/3.0);
+			SnowflakeModel::Grid grid(dx,dy,dz,test.boundingBoxGet());
+			test.geometrySample(grid);
+			addaShapeWrite(grid,SnowflakeModel::FileOut("test.adda"));
+			}
 
-		auto dV=test.volumeGet()/2000;
-		auto dx=std::pow(dV,1.0/3.0);
-		auto dy=std::pow(dV,1.0/3.0);
-		auto dz=std::pow(dV,1.0/3.0);
-		SnowflakeModel::Grid grid(dx,dy,dz,test.boundingBoxGet());
-		test.geometrySample(grid);
-		addaShapeWrite(grid,SnowflakeModel::FileOut("test.adda"));
+			{
+			SnowflakeModel::Solid s(test,1);
+		//	s.subvolumeAdd(SnowflakeModel::VolumeConvex(v_2,1),0,0);
+			SnowflakeModel::FileOut test_obj("test.obj");
+			SnowflakeModel::SolidWriter writer(test_obj);
+			writer.write(s);
+			}
+
 		}
 	catch(const char* message)
 		{
