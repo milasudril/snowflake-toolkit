@@ -41,8 +41,6 @@ int main()
 		auto dz=std::pow(dV,1.0/3.0);
 		SnowflakeModel::Grid grid(dx,dy,dz,test.boundingBoxGet());
 		test.geometrySample(grid);
-
-
 		addaShapeWrite(grid,SnowflakeModel::FileOut("test.adda"));
 		}
 	catch(const char* message)
