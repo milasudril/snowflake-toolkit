@@ -14,6 +14,9 @@ namespace SnowflakeModel
 	class SphereAggregate
 		{
 		public:
+			SphereAggregate():m_bounding_box{{INFINITY,INFINITY,INFINITY,1.0f},{-INFINITY,-INFINITY,-INFINITY,1.0f}}
+				{}
+
 			Sphere& subvolumeAdd(const Sphere& volume)
 				{
 			//	If this fails, the object is in a bad state hmm
@@ -24,7 +27,7 @@ namespace SnowflakeModel
 				auto bb=volume.boundingBoxGet();
 				m_bounding_box.m_min=glm::min(m_bounding_box.m_min
 					,bb.m_min);
-				m_bounding_box.m_max=glm::min(m_bounding_box.m_max
+				m_bounding_box.m_max=glm::max(m_bounding_box.m_max
 					,bb.m_max);
 				m_mid+=volume.midpointGet();
 				return m_subvolumes.back();

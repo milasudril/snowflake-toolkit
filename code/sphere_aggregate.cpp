@@ -63,14 +63,14 @@ std::pair<Point,Vector> SphereAggregate::shoot(const Point& source
 	return std::make_pair(point,normal);
 	}
 
-void SphereAggregate::geometrySample(Grid& builder) const
+void SphereAggregate::geometrySample(Grid& grid) const
 	{
 	auto subvols_begin=subvolumesBegin();
 	auto subvols_end=subvolumesEnd();
 
 	while(subvols_begin!=subvols_end)
 		{
-	//	subvols_begin->geometrySample(grid);
+		subvols_begin->geometrySample(grid);
 		++subvols_begin;
 		}
 	}
