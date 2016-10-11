@@ -24,7 +24,7 @@ namespace SnowflakeModel
 
 			bool inside(const Point& p) const noexcept
 				{
-				auto v=p-m_location;
+				auto v=Vector(p-m_location);
 				auto r=m_radius;
 				return glm::dot(v,v)<=r*r;
 				}
@@ -89,7 +89,7 @@ namespace SnowflakeModel
 		{
 		auto v=a.midpointGet() - b.midpointGet();
 		auto r_tot=a.radiusGet() + b.radiusGet();
-		return glm::dot(v,v) <= r_tot*r_tot;
+		return glm::dot(v,v) < r_tot*r_tot;
 		}
 	}
 

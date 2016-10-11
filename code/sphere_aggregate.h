@@ -76,6 +76,8 @@ namespace SnowflakeModel
 		};
 
 	bool overlap(const SphereAggregate& a, const SphereAggregate& b);
+
+	bool overlap(const SphereAggregate& v_a,const Sphere& v_b);
 	}
 
 #endif
