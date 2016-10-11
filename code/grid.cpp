@@ -105,12 +105,11 @@ Grid::~Grid()
 	delete[] m_data;
 	}
 
-void Grid::bitAnd(uint8_t mask) noexcept
+void Grid::bitAnd(size_t offset_start,size_t offset_end,uint8_t mask) noexcept
 	{
 //	TODO: make this faster (fill a vectorized type with mask);
-	auto size=m_n_x*m_n_y*m_n_z;
-	auto ptr=m_data;
-	auto ptr_end=m_data+size;
+	auto ptr=m_data + offset_start;
+	auto ptr_end=m_data + offset_end;
 	while(ptr!=ptr_end)
 		{
 		*ptr&=mask;

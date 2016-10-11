@@ -77,7 +77,10 @@ namespace SnowflakeModel
 			void cellFill(size_t offset,uint8_t mask)noexcept
 				{m_data[offset]|=mask;}
 
-			void bitAnd(uint8_t mask) noexcept;
+			void bitAnd(uint8_t mask) noexcept
+				{bitAnd(0,m_n_x*m_n_y*m_n_z,mask);}
+
+			void bitAnd(size_t offset_start,size_t offset_end,uint8_t mask) noexcept;
 
 			template<class Callback>
 			void pointsVisit(Callback&& cb) const noexcept
