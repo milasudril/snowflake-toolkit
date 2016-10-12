@@ -12,6 +12,7 @@
 #include "file_out.h"
 #include "solid.h"
 #include "solid_writer.h"
+#include "sphere_aggregate_writer.h"
 
 int main()
 	{
@@ -21,7 +22,7 @@ int main()
 		test.subvolumeAdd(SnowflakeModel::Sphere
 			{SnowflakeModel::Point(0.0f,0.0f,0.0f,1.0f),1.0f},0.0f);
 
-		auto posnormal=test.shoot(SnowflakeModel::Point(10.0f,0.0f,0.0f,1.0f)
+		auto posnormal=test.shoot(SnowflakeModel::Point(10.0f,std::sqrt(1.0f/2.0f),0.0f,1.0f)
 			,SnowflakeModel::Vector(-1.0f,0.0f,0.0f)
 			,1.0f,0.0f);
 
@@ -52,6 +53,12 @@ int main()
 			SnowflakeModel::FileOut test_obj("test.obj");
 			SnowflakeModel::SolidWriter writer(test_obj);
 			writer.write(s);
+			}
+
+			{
+			SnowflakeModel::FileOut test_obj("test.sa");
+			SnowflakeModel::SphereAggregateWriter writer(test_obj);
+			writer.write(test);
 			}
 
 		}
