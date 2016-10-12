@@ -14,16 +14,18 @@ namespace SnowflakeModel
 	class SphereAggregate
 		{
 		public:
-			SphereAggregate():m_bounding_box{{INFINITY,INFINITY,INFINITY,1.0f},{-INFINITY,-INFINITY,-INFINITY,1.0f}}
+			SphereAggregate():m_bounding_box{{INFINITY,INFINITY,INFINITY,1.0f}
+				,{-INFINITY,-INFINITY,-INFINITY,1.0f}},m_mid{0.0f,0.0f,0.0f,1.0f}
+				,m_volume(0.0f)
 				{}
 
-			Sphere& subvolumeAdd(const Sphere& volume)
+			Sphere& subvolumeAdd(const Sphere& volume,float overlap)
 				{
 			//	If this fails, the object is in a bad state hmm
 			//TODO:	extremaUpdate(volume);
 			//****************
 				m_subvolumes.push_back(volume);
-				m_volume+=volume.volumeGet();
+				m_volume+=volume.volumeGet() - overlap;
 				auto bb=volume.boundingBoxGet();
 				m_bounding_box.m_min=glm::min(m_bounding_box.m_min
 					,bb.m_min);
@@ -78,6 +80,12 @@ namespace SnowflakeModel
 	bool overlap(const SphereAggregate& a, const SphereAggregate& b);
 
 	bool overlap(const SphereAggregate& v_a,const Sphere& v_b);
+
+	size_t overlap(const SphereAggregate& v_a,const SphereAggregate& v_b
+		,size_t subvols,double& overlap_res) noexcept;
+
+	size_t overlap(const SphereAggregate& v_a,const Sphere& v_b,size_t subvols
+		,double& overlap_res) noexcept;
 	}
 
 #endif

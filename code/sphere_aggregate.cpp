@@ -32,16 +32,87 @@ bool SnowflakeModel::overlap(const SphereAggregate& v_a, const SphereAggregate& 
 bool SnowflakeModel::overlap(const SphereAggregate& v_a,const Sphere& v_b)
 	{
 	if(!overlap(v_a.boundingBoxGet(),v_b.boundingBoxGet()))
-		{return 0;}
+		{return 0.0f;}
 	auto subvolume=v_a.subvolumesBegin();
 	auto vol_end=v_a.subvolumesEnd();
 	while(subvolume!=vol_end)
 		{
-		if(overlap(v_b,*subvolume))
-			{return 1;}
+		auto v=overlap(v_b,*subvolume);
+		if(v>0.0f)
+			{return v;}
 		++subvolume;
 		}
 	return 0;
+	}
+
+size_t SnowflakeModel::overlap(const SphereAggregate& v_a
+	,const SphereAggregate& v_b
+	,size_t subvols,double& vol_overlap) noexcept
+	{
+	if(!overlap(v_a.boundingBoxGet(),v_b.boundingBoxGet()))
+		{
+		vol_overlap=0;
+		return 0;
+		}
+
+	double vol_overlap_temp=0;
+	size_t cross_count=0;
+
+	auto subvolume=v_a.subvolumesBegin();
+	auto vol_end=v_a.subvolumesEnd();
+	auto subvols_b_end=v_b.subvolumesEnd();
+	auto subvol_b_0=v_b.subvolumesBegin();
+	while(subvolume!=vol_end)
+		{
+		auto subvol_b=subvol_b_0;
+		while(subvol_b!=subvols_b_end)
+			{
+			auto vol=overlap(*subvol_b,*subvolume);
+			if( vol > 0.0f )
+				{
+				++cross_count;
+				if(cross_count > subvols)
+					{return cross_count;}
+				vol_overlap_temp+=vol;
+				}
+			++subvol_b;
+			}
+		++subvolume;
+		}
+	vol_overlap=vol_overlap_temp;
+	return cross_count;
+	}
+
+
+size_t SnowflakeModel::overlap(const SphereAggregate& v_a
+	,const Sphere& v_b
+	,size_t subvols,double& vol_overlap) noexcept
+	{
+	if(!overlap(v_a.boundingBoxGet(),v_b.boundingBoxGet()))
+		{
+		vol_overlap=0;
+		return 0;
+		}
+
+	double vol_overlap_temp=0;
+	size_t cross_count=0;
+
+	auto subvolume=v_a.subvolumesBegin();
+	auto vol_end=v_a.subvolumesEnd();
+	while(subvolume!=vol_end)
+		{
+		auto vol=overlap(v_b,*subvolume);
+		if( vol > 0.0f )
+			{
+			++cross_count;
+			if(cross_count > subvols)
+				{return cross_count;}
+			vol_overlap_temp+=vol;
+			}
+		++subvolume;
+		}
+	vol_overlap=vol_overlap_temp;
+	return cross_count;
 	}
 
 std::pair<Point,Vector> SphereAggregate::shoot(const Point& source
@@ -58,7 +129,7 @@ std::pair<Point,Vector> SphereAggregate::shoot(const Point& source
 
 	auto d=subvols_end->shoot(source,direction,E_0,decay_distance);
 	auto obj_min=subvols_end;
-	
+
 	while(subvols_begin!=subvols_end)
 		{
 		--subvols_end;
