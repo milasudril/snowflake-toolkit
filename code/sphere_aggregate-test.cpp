@@ -38,6 +38,9 @@ int main()
 			{printf("Overlap %.7g\n",o);}
 		test.subvolumeAdd(v_2,o);
 
+		auto extrema=test.extremaGet();
+		printf("D_max=%.7g",glm::distance(extrema.first,extrema.second));
+
 			{
 			auto dV=test.volumeGet()/2000;
 			auto dx=std::pow(dV,1.0/3.0);
