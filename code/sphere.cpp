@@ -6,6 +6,19 @@
 
 using namespace SnowflakeModel;
 
+namespace SnowflakeModel
+	{
+	template<>
+	const DataDump::FieldDescriptor DataDump::MetaObject<Sphere>::fields[]=
+		{
+		 {"location",offsetOf(&Sphere::m_location),pointObj().typeGet()}
+		,{"radius",offsetOf(&Sphere::m_radius),DataDump::MetaObject<decltype(Sphere::m_radius)>().typeGet()}
+		};
+
+	template<>
+	const size_t DataDump::MetaObject<Sphere>::field_count=2;
+	}
+
 void Sphere::geometrySample(Grid& grid) const
 	{
 	std::stack<PointInt> nodes;

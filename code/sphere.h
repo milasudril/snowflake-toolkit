@@ -8,6 +8,7 @@
 
 #include "vector.h"
 #include "bounding_box.h"
+#include "datadump.h"
 #include <cmath>
 
 namespace SnowflakeModel
@@ -16,6 +17,8 @@ namespace SnowflakeModel
 	class Sphere
 		{
 		public:
+			Sphere()=default;
+
 			explicit Sphere(const Point& location,float radius):
 				m_radius(radius),m_location(location)
 				{}
@@ -83,6 +86,9 @@ namespace SnowflakeModel
 		private:
 			float m_radius;
 			Point m_location;
+
+			template<class T>
+			friend class DataDump::MetaObject;
 		};
 
 	inline float overlap(const Sphere& a, const Sphere& b)
