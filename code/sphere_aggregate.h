@@ -25,13 +25,14 @@ namespace SnowflakeModel
 			//TODO:	extremaUpdate(volume);
 			//****************
 				m_subvolumes.push_back(volume);
-				m_volume+=volume.volumeGet() - overlap;
+				auto V=volume.volumeGet();
+				m_volume+=V - overlap;
 				auto bb=volume.boundingBoxGet();
 				m_bounding_box.m_min=glm::min(m_bounding_box.m_min
 					,bb.m_min);
 				m_bounding_box.m_max=glm::max(m_bounding_box.m_max
 					,bb.m_max);
-				m_mid+=volume.midpointGet();
+				m_mid+=volume.midpointGet()*V;
 				return m_subvolumes.back();
 				}
 
@@ -60,7 +61,7 @@ namespace SnowflakeModel
 				{return m_bounding_box;}
 
 			Point midpointGet() const noexcept
-				{return m_mid/static_cast<float>(subvolumesCount());}
+				{return m_mid/m_volume;}
 
 			float volumeGet() const noexcept
 				{return m_volume;}
