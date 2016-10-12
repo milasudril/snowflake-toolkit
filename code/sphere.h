@@ -53,7 +53,7 @@ namespace SnowflakeModel
 				auto b=glm::dot(d,d);
 				auto r2=m_radius;
 				r2*=r2;
-				
+
 				auto sqr=a*a-b+r2;
 				if(sqr<0.0f)
 					{return INFINITY;}
@@ -85,11 +85,21 @@ namespace SnowflakeModel
 			Point m_location;
 		};
 
-	inline bool overlap(const Sphere& a, const Sphere& b)
+	inline float overlap(const Sphere& a, const Sphere& b)
 		{
+	//	http://mathworld.wolfram.com/Sphere-SphereIntersection.html
 		auto v=a.midpointGet() - b.midpointGet();
 		auto r_tot=a.radiusGet() + b.radiusGet();
-		return glm::dot(v,v) < r_tot*r_tot;
+		auto d2=glm::dot(v,v);
+		if(d2>=r_tot*r_tot)
+			{return 0.0f;}
+
+		auto d=std::sqrt(d2);
+		auto r_a=a.radiusGet();
+		auto r_b=b.radiusGet();
+		return std::acos(-1.0f)*(r_tot - d)*(r_tot - d)
+			*(d2 + 2.0f*d*r_a - 3.0f*r_a*r_a + 2.0f*d*r_b + 6.0f*r_a*r_b - 3.0f*r_b*r_b)
+			/(12.0f*d);
 		}
 	}
 

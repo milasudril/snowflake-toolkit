@@ -19,9 +19,9 @@ int main()
 		{
 		SnowflakeModel::SphereAggregate test;
 		test.subvolumeAdd(SnowflakeModel::Sphere
-			{SnowflakeModel::Point(0.0f,0.0f,0.0f,1.0f),1.0f});
+			{SnowflakeModel::Point(0.0f,0.0f,0.0f,1.0f),1.0f},0.0f);
 
-		auto posnormal=test.shoot(SnowflakeModel::Point(10.0f,sqrt(1.0f/2.0f),0.0f,1.0f)
+		auto posnormal=test.shoot(SnowflakeModel::Point(10.0f,0.0f,0.0f,1.0f)
 			,SnowflakeModel::Vector(-1.0f,0.0f,0.0f)
 			,1.0f,0.0f);
 
@@ -30,11 +30,12 @@ int main()
 			,posnormal.first.x,posnormal.first.y,posnormal.first.z
 			,posnormal.second.x,posnormal.second.y,posnormal.second.z);
 
-		auto r_2=2.0f;
+		auto r_2=1.0f;
 		SnowflakeModel::Sphere v_2{posnormal.first + r_2*SnowflakeModel::Point(posnormal.second,0.0f),r_2};
-		if(overlap(test,v_2))
-			{printf("Overlap\n");}
-		test.subvolumeAdd(v_2);
+		double o;
+		if(overlap(test,v_2,1,o))
+			{printf("Overlap %.7g\n",o);}
+		test.subvolumeAdd(v_2,o);
 
 			{
 			auto dV=test.volumeGet()/2000;
