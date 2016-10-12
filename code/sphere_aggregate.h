@@ -14,7 +14,9 @@ namespace SnowflakeModel
 	class SphereAggregate
 		{
 		public:
-			SphereAggregate():m_bounding_box{{INFINITY,INFINITY,INFINITY,1.0f},{-INFINITY,-INFINITY,-INFINITY,1.0f}}
+			SphereAggregate():m_bounding_box{{INFINITY,INFINITY,INFINITY,1.0f}
+				,{-INFINITY,-INFINITY,-INFINITY,1.0f}},m_mid{0.0f,0.0f,0.0f,1.0f}
+				,m_volume(0.0f)
 				{}
 
 			Sphere& subvolumeAdd(const Sphere& volume)

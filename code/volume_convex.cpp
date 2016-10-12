@@ -139,7 +139,7 @@ static Vector hittestDirection(const Point& v, const Point& mid
 	{
 //	Shoot towards center, or outwards (depending on v) to reduce
 //	the risk of numerical errors.
-	
+
 	auto delta=Vector(mid - v);
 	auto n=glm::length(delta);
 	if(n>.125f*glm::length(Vector(bb.m_max - bb.m_min)))
@@ -165,7 +165,7 @@ bool VolumeConvex::inside(const Point& v) const
 	while(face_current!=faces_end)
 		{
 		auto T=Triangle
-			{ 
+			{
 				{
 				 verts[face_current->vertexGet(0)]
 				,verts[face_current->vertexGet(1)]
@@ -346,7 +346,7 @@ bool SnowflakeModel::overlap(const VolumeConvex& a,const VolumeConvex& b)
 	while(face_a!=faces_a_end)
 		{
 		auto T_1=Triangle
-			{ 
+			{
 				{
 				 v_a[face_a->vertexGet(0)]
 				,v_a[face_a->vertexGet(1)]
@@ -358,7 +358,7 @@ bool SnowflakeModel::overlap(const VolumeConvex& a,const VolumeConvex& b)
 		while(face_b!=faces_b_end)
 			{
 			auto T_2=Triangle
-				{ 
+				{
 					{
 					 v_b[face_b->vertexGet(0)]
 					,v_b[face_b->vertexGet(1)]
@@ -412,13 +412,13 @@ std::pair<Triangle,float> VolumeConvex::shoot(const Point& source,const Vector& 
 
 	if(normalsDirty())
 		{facesNormalCompute();}
-	
+
 	while(faces_begin!=faces_end)
 		{
 		std::pair<Triangle,float> temp
 			{
 			Triangle
-				{ 
+				{
 					{
 					 verts[faces_begin->vertexGet(0)]
 					,verts[faces_begin->vertexGet(1)]
@@ -442,16 +442,44 @@ std::pair<Triangle,float> VolumeConvex::shoot(const Point& source,const Vector& 
 					{ret=temp;}
 				}
 			}
-		
+
 		++faces_begin;
 		}
 
 	return ret;
 	}
 
+
+
 static void vertexAddNormalized(VolumeConvex& v,const Vector& vec)
 	{
 	v.vertexAdd(VolumeConvex::Vertex(vec/glm::length(vec),1.0f));
+	}
+
+static uint32_t makeEdgeKey(uint16_t a,uint16_t b)
+	{
+	if(a<b)
+		{return (a<<16)|b;}
+	return (b<<16)|a;
+	}
+
+static uint16_t vertexGenerate(std::map<uint32_t,uint16_t>& vert_indices
+	,VolumeConvex& v
+	,uint16_t vi1,uint16_t vi2)
+	{
+	auto key=makeEdgeKey(vi1,vi2);
+	auto i=vert_indices.find(key);
+	if(i!=vert_indices.end())
+		{return i->second;}
+
+	auto v1=v.vertexGet(vi1);
+	auto v2=v.vertexGet(vi2);
+
+	auto mid=0.5f*(v1 + v2);
+	auto index=v.verticesCount();
+	vertexAddNormalized(v,Vector(mid));
+	vert_indices.insert({key,index});
+	return index;
 	}
 
 
@@ -478,36 +506,59 @@ m_flags_dirty(MIDPOINT_DIRTY|FACES_NORMAL_DIRTY|FACES_MIDPOINT_DIRTY|VOLUME_DIRT
 	vertexAddNormalized(*this,Vector(-t,  0.0f, -1.0f));
 	vertexAddNormalized(*this,Vector(-t,  0.0f,  1.0f));
 
+	std::vector<Face> faces;
 
+	faces.push_back(Face(0, 11, 5));
+	faces.push_back(Face(0, 5, 1));
+	faces.push_back(Face(0, 1, 7));
+	faces.push_back(Face(0, 7, 10));
+	faces.push_back(Face(0, 10, 11));
 
-	faceAdd(Face(0, 11, 5));
-	faceAdd(Face(0, 5, 1));
-	faceAdd(Face(0, 1, 7));
-	faceAdd(Face(0, 7, 10));
-	faceAdd(Face(0, 10, 11));
+	faces.push_back(Face(1, 5, 9));
+	faces.push_back(Face(5, 11, 4));
+	faces.push_back(Face(11, 10, 2));
+	faces.push_back(Face(10, 7, 6));
+	faces.push_back(Face(7, 1, 8));
 
-	// 5 adjacent faces 
-	faceAdd(Face(1, 5, 9));
-	faceAdd(Face(5, 11, 4));
-	faceAdd(Face(11, 10, 2));
-	faceAdd(Face(10, 7, 6));
-	faceAdd(Face(7, 1, 8));
+	faces.push_back(Face(3, 9, 4));
+	faces.push_back(Face(3, 4, 2));
+	faces.push_back(Face(3, 2, 6));
+	faces.push_back(Face(3, 6, 8));
+	faces.push_back(Face(3, 8, 9));
 
-	// 5 faces around point 3
-	faceAdd(Face(3, 9, 4));
-	faceAdd(Face(3, 4, 2));
-	faceAdd(Face(3, 2, 6));
-	faceAdd(Face(3, 6, 8));
-	faceAdd(Face(3, 8, 9));
+	faces.push_back(Face(4, 9, 5));
+	faces.push_back(Face(2, 4, 11));
+	faces.push_back(Face(6, 2, 10));
+	faces.push_back(Face(8, 6, 7));
+	faces.push_back(Face(9, 8, 1));
 
-	// 5 adjacent faces 
-	faceAdd(Face(4, 9, 5));
-	faceAdd(Face(2, 4, 11));
-	faceAdd(Face(6, 2, 10));
-	faceAdd(Face(8, 6, 7));
-	faceAdd(Face(9, 8, 1));
+//	Subdivide
+	std::map<uint32_t,uint16_t> midpoints; //Midpoint cache
+	for(unsigned int k=0;k<subdivs;++k)
+		{
+		std::vector<Face> faces_temp;
+		auto ptr=faces.data();
+		auto ptr_end=ptr + faces.size();
+		while(ptr!=ptr_end)
+			{
+			auto v_0=ptr->vertexGet(0);
+			auto v_1=ptr->vertexGet(1);
+			auto v_2=ptr->vertexGet(2);
 
-//TODO: Subdivide mesh...
+			auto v_a=vertexGenerate(midpoints,*this,v_0,v_1);
+			auto v_b=vertexGenerate(midpoints,*this,v_1,v_2);
+			auto v_c=vertexGenerate(midpoints,*this,v_2,v_0);
+
+			faces_temp.push_back(Face(v_0,v_a,v_c));
+			faces_temp.push_back(Face(v_1,v_b,v_a));
+			faces_temp.push_back(Face(v_2,v_c,v_b));
+			faces_temp.push_back(Face(v_a,v_b,v_c));
+			++ptr;
+			}
+		faces=std::move(faces_temp);
+		}
+
+	m_faces=std::move(faces);
 
 	////make all faces visible
 		{

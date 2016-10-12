@@ -39,16 +39,15 @@ int main()
 			{
 			auto dV=test.volumeGet()/2000;
 			auto dx=std::pow(dV,1.0/3.0);
-			auto dy=std::pow(dV,1.0/3.0);
-			auto dz=std::pow(dV,1.0/3.0);
+			auto dy=dx;
+			auto dz=dx;
 			SnowflakeModel::Grid grid(dx,dy,dz,test.boundingBoxGet());
 			test.geometrySample(grid);
 			addaShapeWrite(grid,SnowflakeModel::FileOut("test.adda"));
 			}
 
 			{
-			SnowflakeModel::Solid s(test,1);
-		//	s.subvolumeAdd(SnowflakeModel::VolumeConvex(v_2,1),0,0);
+			SnowflakeModel::Solid s(test,3);
 			SnowflakeModel::FileOut test_obj("test.obj");
 			SnowflakeModel::SolidWriter writer(test_obj);
 			writer.write(s);
