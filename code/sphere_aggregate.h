@@ -12,6 +12,7 @@
 namespace SnowflakeModel
 	{
 	class Grid;
+	class DataDump;
 	class SphereAggregate
 		{
 		public:
@@ -20,6 +21,9 @@ namespace SnowflakeModel
 				,m_extrema{{0.0f,0.0f,0.0f,1.0f},{0.0f,0.0f,0.0f,1.0f}}
 				,m_volume(0.0f)
 				{}
+
+
+			explicit SphereAggregate(const DataDump& dump,const char* name);
 
 			Sphere& subvolumeAdd(const Sphere& volume,float overlap)
 				{
@@ -74,6 +78,8 @@ namespace SnowflakeModel
 
 			Twins<Point> extremaGet() const noexcept
 				{return m_extrema;}
+
+			void write(const char* id,DataDump& dump) const;
 
 		private:
 			std::vector<Sphere> m_subvolumes;

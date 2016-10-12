@@ -214,3 +214,21 @@ Twins<glm::vec4> SphereAggregate::extremaNew(const Sphere& volume) const noexcep
 		}
 	return extrema_in;
 	}
+
+void SphereAggregate::write(const char* id,DataDump& dump) const
+	{
+	auto group=dump.groupCreate(id);
+	std::string group_name(id);
+	dump.write((group_name + "/volume").c_str(),&m_volume,1);
+	dump.write((group_name + "/subvolumes").c_str(),subvolumesBegin()
+		,subvolumesCount());
+	}
+
+
+SphereAggregate::SphereAggregate(const DataDump& dump,const char* name):SphereAggregate()
+	{
+	std::string group_name(name);
+	m_subvolumes=dump.arrayGet<Sphere>((group_name+"/subvolumes").c_str());
+	m_volume=dump.arrayGet<decltype(m_volume)>
+		((group_name+"/volume").c_str()).at(0);
+	}

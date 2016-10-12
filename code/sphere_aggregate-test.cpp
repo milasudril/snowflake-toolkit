@@ -42,6 +42,12 @@ int main()
 		printf("D_max=%.7g",glm::distance(extrema.first,extrema.second));
 
 			{
+			SnowflakeModel::DataDump dump("test.h5"
+				,SnowflakeModel::DataDump::IOMode::WRITE);
+			test.write("test",dump);
+			}
+
+			{
 			auto dV=test.volumeGet()/2000;
 			auto dx=std::pow(dV,1.0/3.0);
 			auto dy=dx;
@@ -64,6 +70,15 @@ int main()
 			writer.write(test);
 			}
 
+			{
+			SnowflakeModel::DataDump dump("test.h5"
+				,SnowflakeModel::DataDump::IOMode::READ);
+			SnowflakeModel::SphereAggregate a(dump,"test");
+
+			SnowflakeModel::FileOut test_obj("test2.obj");
+			SnowflakeModel::SolidWriter writer(test_obj);
+			writer.write(SnowflakeModel::Solid(a,3));
+			}
 		}
 	catch(const char* message)
 		{
