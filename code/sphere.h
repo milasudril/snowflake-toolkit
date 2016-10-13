@@ -83,6 +83,16 @@ namespace SnowflakeModel
 				return {pos - v,pos + v};
 				};
 
+			void moveTo(const Point& location_new) noexcept
+				{
+				m_location=location_new;
+				}
+
+			void moveBy(const Vector& offset) noexcept
+				{
+				m_location+=Point(offset,0.0f);
+				}
+
 		private:
 			float m_radius;
 			Point m_location;
