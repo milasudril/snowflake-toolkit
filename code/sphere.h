@@ -65,8 +65,10 @@ namespace SnowflakeModel
 				auto distance=std::min(-a+sqr, -a-sqr);
 				assert(distance>=0.0f);
 				auto v=normalize(Vector(source + Point(distance*direction,1.0f) - m_location));
-				auto proj=glm::dot(v,direction);
-				auto E_out=E_0*(1.0f - proj)
+				auto proj=-glm::dot(v,direction);
+				if(proj<0.0f) //Backface culling
+					{return INFINITY;}
+				auto E_out=E_0*proj
 					*std::exp(-distance/decay_distance);
 
 				return E_out<1.0f?distance:INFINITY;

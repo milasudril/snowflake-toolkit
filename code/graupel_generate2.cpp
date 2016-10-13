@@ -309,10 +309,12 @@ struct Simstate
 	std::string statfile;
 	std::string objfile;
 	std::string icefile;
+
+	uint8_t iter_count;
 	};
 
 Simstate::Simstate(const Alice::CommandLine<OptionDescriptor>& cmd_line):
-	r_cmd_line(cmd_line),rejected(0),pass(0)
+	r_cmd_line(cmd_line),rejected(0),pass(0),iter_count(0)
 	{
 		{
 		const auto& x=cmd_line.get<Alice::Stringkey("scale")>();
@@ -459,13 +461,17 @@ void Simstate::step()
 		if(d_max<D_max)
 			{
 			solid_out.subvolumeAdd(std::move(v_2),overlap_res);
-			auto ex=solid_out.extremaGet();
-			d_max=length(ex.first - ex.second);
-			fill=solid_out.volumeGet()/( 4*std::acos(-1.0)*pow(0.5*d_max,3)/3.0 );
-			fprintf(stderr,"\r%.7g %.7g  (Cs: %zu,  Cr: %zu, Pass: %zu)      "
-				,d_max,fill,solid_out.subvolumesCount(),rejected,pass);
-			fflush(stderr);
-			statsDump(file_out.get(),solid_out);
+			if(iter_count%128==0)
+				{
+				auto ex=solid_out.extremaGet();
+				d_max=length(ex.first - ex.second);
+				fill=solid_out.volumeGet()/( 4*std::acos(-1.0)*pow(0.5*d_max,3)/3.0 );
+				fprintf(stderr,"\r%.7g %.7g  (Cs: %zu,  Cr: %zu, Pass: %zu)      "
+					,d_max,fill,solid_out.subvolumesCount(),rejected,pass);
+				fflush(stderr);
+				statsDump(file_out.get(),solid_out);
+				}
+			++iter_count;
 			}
 	/*	else
 			{
