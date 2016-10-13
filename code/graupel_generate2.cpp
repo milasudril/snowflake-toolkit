@@ -23,6 +23,8 @@
 #include "solid.h"
 #include "alice/commandline.hpp"
 
+#include <fenv.h>
+
 struct ParameterValue
 	{
 	float mean;
@@ -120,10 +122,9 @@ namespace Alice
 ALICE_OPTION_DESCRIPTOR(OptionDescriptor
 	,{"Help","help","Print option summary to stdout, or, if a filename is given, to that file","filename",Alice::Option::Multiplicity::ZERO_OR_ONE}
 	,{"Help","params-show","Print a summary of availible deformation parameters to stdout, or, if a filename is given, to that file","filename",Alice::Option::Multiplicity::ZERO_OR_ONE}
-	,{"Simulation parameters","prototype","Generate data using the given prototype","filename",Alice::Option::Multiplicity::ONE}
 	,{"Simulation parameters","scale","Determines the size of individual spheres","Parameter value",Alice::Option::Multiplicity::ONE}
 	,{"Simulation parameters","E_0","The maximal initial particle energe. The energy is chosen as U(0, E_0)","double",Alice::Option::Multiplicity::ONE}
-	,{"Simulation parameters","decay_distance","The number of units before the energy has decayed to 1/e","double",Alice::Option::Multiplicity::ONE}
+	,{"Simulation parameters","decay-distance","The number of units before the energy has decayed to 1/e","double",Alice::Option::Multiplicity::ONE}
 	,{"Simulation parameters","D_max","Generate a graupel of diameter D_max. D_max is defined as the largest distance between two vertices.","double",Alice::Option::Multiplicity::ONE}
 	,{"Simulation parameters","seed","Random seed mod 2^32","unsigned int",Alice::Option::Multiplicity::ONE}
 	,{"Simulation parameters","fill-ratio","Set minimum fill ratio of the bounding sphere. This option is used when D_max has been reached, to increase the total mass. "
@@ -329,7 +330,7 @@ Simstate::Simstate(const Alice::CommandLine<OptionDescriptor>& cmd_line):
 	fill_ratio=cmd_line.get<Alice::Stringkey("fill-ratio")>().valueGet();
 	E_0=cmd_line.get<Alice::Stringkey("E_0")>().valueGet();
 	decay_distance=
-		std::max(cmd_line.get<Alice::Stringkey("decay_distance")>().valueGet()
+		std::max(cmd_line.get<Alice::Stringkey("decay-distance")>().valueGet()
 			,1.0e-7);
 	
 		
@@ -426,11 +427,6 @@ void Simstate::save(const std::string& now) const
 		}
 
 		{
-		auto x=r_cmd_line.get<Alice::Stringkey("prototype")>().valueGet().c_str();
-		dump.write("prototype_source",&x,1);
-		}
-
-		{
 		dump.write("scale",&scale,1);
 		}
 	}
@@ -440,7 +436,6 @@ void Simstate::save(const std::string& now) const
 
 void Simstate::step()
 	{
-	auto p=particleGenerate(G,randgen);
 	std::uniform_real_distribution<float> U(0,E_0);
 	auto E=U(randgen);
 
@@ -452,23 +447,18 @@ void Simstate::step()
 		return;
 		}
 
+	auto r_2=G(randgen);
+	SnowflakeModel::Sphere v_2{posnormal.first + 0.8f*r_2*SnowflakeModel::Point(posnormal.second,0.0f),r_2};
 
-
-/*	auto u=(T_a.first.vertexGet(0) + T_a.first.vertexGet(1) + T_a.first.vertexGet(2))/3.0f;
-	auto v=(T_b.first.vertexGet(0) + T_b.first.vertexGet(1) + T_b.first.vertexGet(2))/3.0f;
-	
-	auto R=SnowflakeModel::vectorsAlign2(T_b.first.m_normal,-T_a.first.m_normal);
-	auto pos=SnowflakeModel::Vector(u - R*v);
-
-	SnowflakeModel::Matrix T;
-	T=glm::translate(T,pos);
-	auto& obj=p.solidGet();
-	obj.transform(T*R,0);
-	if(!overlap(obj,solid_out))
+//	size_t overlap(const SphereAggregate& v_a,const Sphere& v_b,size_t subvols
+//		,double& overlap_res) noexcept
+	double overlap_res;
+	auto n=overlap(solid_out,v_2,2,overlap_res);
+	if(n<3)
 		{
 		if(d_max<D_max)
 			{
-			solid_out.merge(std::move(obj),0,0);
+			solid_out.subvolumeAdd(std::move(v_2),overlap_res);
 			auto ex=solid_out.extremaGet();
 			d_max=length(ex.first - ex.second);
 			fill=solid_out.volumeGet()/( 4*std::acos(-1.0)*pow(0.5*d_max,3)/3.0 );
@@ -477,7 +467,7 @@ void Simstate::step()
 			fflush(stderr);
 			statsDump(file_out.get(),solid_out);
 			}
-		else
+	/*	else
 			{
 			auto s_a_temp=solid_out;
 			s_a_temp.merge(std::move(obj),0,0);
@@ -490,10 +480,10 @@ void Simstate::step()
 				,d_max,fill,solid_out.subvolumesCount(),rejected);
 			fflush(stderr);
 			statsDump(file_out.get(),solid_out);
-			}
+			}*/
 		}
 	else
-		{++rejected;}*/
+		{++rejected;}
 	}
 
 void Simstate::objfileWrite() const
@@ -503,7 +493,7 @@ void Simstate::objfileWrite() const
 		fprintf(stderr,"# Dumping wavefront file\n");
 		SnowflakeModel::FileOut dest(objfile.c_str());
 		SnowflakeModel::SolidWriter writer(dest);
-		writer.write(SnowflakeModel::Solid(solid_out,2));
+		writer.write(SnowflakeModel::Solid(solid_out,1));
 		}
 	}
 
@@ -534,6 +524,8 @@ int main(int argc,char** argv)
 	{
 	try
 		{
+		feenableexcept(FE_INVALID | FE_OVERFLOW);
+
 		Alice::CommandLine<OptionDescriptor> cmd_line(argc,argv);
 		if(printHelp(cmd_line))
 			{return 0;}

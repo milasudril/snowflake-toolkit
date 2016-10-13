@@ -519,10 +519,15 @@ Solid::Solid(const SphereAggregate& input,unsigned int subdivs):Solid()
 	{
 	auto ptr=input.subvolumesBegin();
 	auto ptr_end=input.subvolumesEnd();
+	size_t k=0;
 	while(ptr!=ptr_end)
 		{
-		subvolumeAdd(VolumeConvex(*ptr,subdivs),0,0);
+		VolumeConvex vc(*ptr,subdivs);
+		boundingBoxUpdate(vc);
+		m_subvolumes.push_back(std::move(vc));
+		++k;
 		++ptr;
 		}
+	m_flags_dirty|=DMAX_DIRTY|RMAX_DIRTY;
 	m_volume=input.volumeGet();
 	}
