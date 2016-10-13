@@ -452,11 +452,9 @@ void Simstate::step()
 	auto r_2=G(randgen);
 	SnowflakeModel::Sphere v_2{posnormal.first + 0.8f*r_2*SnowflakeModel::Point(posnormal.second,0.0f),r_2};
 
-//	size_t overlap(const SphereAggregate& v_a,const Sphere& v_b,size_t subvols
-//		,double& overlap_res) noexcept
 	double overlap_res;
-	auto n=overlap(solid_out,v_2,2,overlap_res);
-	if(n<3)
+	auto n=overlap(solid_out,v_2,3,overlap_res);
+	if(n<4)
 		{
 		if(d_max<D_max)
 			{
