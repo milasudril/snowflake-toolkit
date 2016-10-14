@@ -225,10 +225,8 @@ static void statsDump(SnowflakeModel::FileOut* file_out,const SnowflakeModel::Sp
 			"%.7g\t"
 			"%.7g\t"
 			"%.7g\t"
-			"%.7g\t"
 			"%zu\n"
 		//	"%zu\n"
-			,std::nan("")
 			,glm::distance(extrema.first,extrema.second)
 			,solid.volumeGet()
 			,L.x,L.x/L.y,L.x/L.z,solid.subvolumesCount()
@@ -388,7 +386,7 @@ Simstate::Simstate(const Alice::CommandLine<OptionDescriptor>& cmd_line):
 	if(statfile.size())
 		{
 		file_out=std::make_unique<SnowflakeModel::FileOut>(statfile.c_str());
-		file_out->printf("# R_max\tD_max\tVolume\tL_x\tr_xy\tr_xz\tNumber of sub-volumes\n"
+		file_out->printf("D_max\tVolume\tL_x\tr_xy\tr_xz\tNumber of sub-volumes\n"
 		//	"Overlap count\n"
 			);
 		}
