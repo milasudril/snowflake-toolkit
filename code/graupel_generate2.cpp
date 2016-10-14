@@ -370,7 +370,7 @@ Simstate::Simstate(const Alice::CommandLine<OptionDescriptor>& cmd_line):
 			{overlap_max=x.valueGet();}
 
 		if(merge_offset<1.0f && overlap_max==0)
-			{throw "A positive merge offset requires at least one overlap section";}
+			{throw "A negative merge offset requires at least one overlap section";}
 		}
 
 		{
