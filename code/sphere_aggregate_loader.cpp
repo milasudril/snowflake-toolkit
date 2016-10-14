@@ -24,7 +24,7 @@ std::string SphereAggregateLoader::invoke(const ConfigCommand& cmd, const FileIn
 		auto y=atof(cmd.m_arguments[1].c_str());
 		auto z=atof(cmd.m_arguments[2].c_str());
 		auto r=atof(cmd.m_arguments[3].c_str());
-		r_solid.subvolumeAdd(Sphere(Point(x,y,z,1.0f),r),0);
+		r_solid.subvolumeAddNoDMax(Sphere(Point(x,y,z,1.0f),r),0);
 		}
 	else
 		{

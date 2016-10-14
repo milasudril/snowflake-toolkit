@@ -29,15 +29,29 @@ namespace SnowflakeModel
 				{
 				auto e=extremaNew(volume);
 				m_subvolumes.push_back(volume);
-				auto V=volume.volumeGet();
-				m_volume+=V - overlap;
+				auto V=static_cast<double>( volume.volumeGet() );
+				m_volume+=V - static_cast<double>(overlap);
 				auto bb=volume.boundingBoxGet();
 				m_bounding_box.m_min=glm::min(m_bounding_box.m_min
 					,bb.m_min);
 				m_bounding_box.m_max=glm::max(m_bounding_box.m_max
 					,bb.m_max);
-				m_mid+=volume.midpointGet()*V;
+				m_mid+=volume.midpointGet()*volume.volumeGet();
 				m_extrema=e;
+				return m_subvolumes.back();
+				}
+
+			Sphere& subvolumeAddNoDMax(const Sphere& volume,float overlap)
+				{
+				m_subvolumes.push_back(volume);
+				auto V=static_cast<double>( volume.volumeGet() );
+				m_volume+=V - static_cast<double>(overlap);
+				auto bb=volume.boundingBoxGet();
+				m_bounding_box.m_min=glm::min(m_bounding_box.m_min
+					,bb.m_min);
+				m_bounding_box.m_max=glm::max(m_bounding_box.m_max
+					,bb.m_max);
+				m_mid+=volume.midpointGet()*volume.volumeGet();
 				return m_subvolumes.back();
 				}
 
@@ -66,7 +80,7 @@ namespace SnowflakeModel
 				{return m_bounding_box;}
 
 			Point midpointGet() const noexcept
-				{return m_mid/m_volume;}
+				{return m_mid/static_cast<float>(m_volume);}
 
 			float volumeGet() const noexcept
 				{return m_volume;}
@@ -81,14 +95,14 @@ namespace SnowflakeModel
 
 			void write(const char* id,DataDump& dump) const;
 
+			Twins<Point> extremaNew(const Sphere& volume) const noexcept;
+
 		private:
 			std::vector<Sphere> m_subvolumes;
 			BoundingBox m_bounding_box;
 			Point m_mid;
 			Twins<Point> m_extrema;
-			float m_volume;
-
-			Twins<Point> extremaNew(const Sphere& volume) const noexcept;
+			double m_volume;
 		};
 
 	bool overlap(const SphereAggregate& a, const SphereAggregate& b);

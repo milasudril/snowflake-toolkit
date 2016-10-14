@@ -22,7 +22,6 @@
 namespace SnowflakeModel
 	{
 	class SphereAggregate;
-	class VolumeConvex;
 
 	class SphereAggregateLoader:public ConfigCommandHandler
 		{

@@ -40,13 +40,11 @@ void print(const Deformation& deformation,FILE* dest)
 namespace Alice
 	{
 	template<>
-	struct MakeType<Stringkey("Deformation rule")>
+	struct MakeType<Stringkey("Deformation rule")>:public MakeTypeBase
 		{
 		typedef Deformation Type;
-		static constexpr const char* descriptionGet() noexcept
-			{
-			return "A deformation rule is written in the form parameter:mean:standard deviation"; 
-			}
+		static constexpr const char* descriptionShortGet() noexcept
+			{return "parameter:mean,standard deviation";}
 		};
 
 	template<class ErrorHandler>
@@ -83,7 +81,7 @@ namespace Alice
 				case 1:
 					switch(x)
 						{
-						case ':':
+						case ',':
 							ret.mean=atof(buffer.c_str());
 							buffer.clear();
 							++fieldcount;
@@ -99,7 +97,7 @@ namespace Alice
 				case 2:
 					switch(x)
 						{
-						case ':':
+						case ',':
 							throw "Too many arguments for deformation rule";
 						case '\0':
 							ret.standard_deviation=atof(buffer.c_str());
