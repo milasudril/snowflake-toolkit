@@ -103,25 +103,46 @@ namespace Alice
 
 		return ParameterValue{};
 		}
-	};
+
+	template<>
+	struct MakeType<Stringkey("number")>:public MakeType<Stringkey("unsigned int")>
+		{};
+	}
 
 ALICE_OPTION_DESCRIPTOR(OptionDescriptor
 	,{"Help","help","Print option summary to stdout, or, if a filename is given, to that file","filename",Alice::Option::Multiplicity::ZERO_OR_ONE}
-	,{"Help","params-show","Print a summary of availible deformation parameters to stdout, or, if a filename is given, to that file","filename",Alice::Option::Multiplicity::ZERO_OR_ONE}
-	,{"Simulation parameters","scale","Determines the size of individual spheres","Parameter value",Alice::Option::Multiplicity::ONE}
-	,{"Simulation parameters","E_0","The maximal initial particle energe. The energy is chosen as U(0, E_0)","double",Alice::Option::Multiplicity::ONE}
-	,{"Simulation parameters","decay-distance","The number of units before the energy has decayed to 1/e","double",Alice::Option::Multiplicity::ONE}
-	,{"Simulation parameters","D_max","Generate a graupel of diameter D_max. D_max is defined as the largest distance between two vertices.","double",Alice::Option::Multiplicity::ONE}
+	
 	,{"Simulation parameters","seed","Random seed mod 2^32","unsigned int",Alice::Option::Multiplicity::ONE}
+	
+	,{"Simulation parameters","scale","Determines the size of individual spheres","Parameter value",Alice::Option::Multiplicity::ONE}
+	
+	,{"Simulation parameters","E_0","The maximal initial particle energe. The energy is chosen as U(0, E_0)","float",Alice::Option::Multiplicity::ONE}
+	
+	,{"Simulation parameters","decay-distance","The number of units before the energy has decayed to 1/e","float",Alice::Option::Multiplicity::ONE}
+	
+	,{"Simulation parameters","merge-offset","The merge offset mearured in, and relative to the radius of "
+		"the particle that is being added to the aggregate. A value of zero corresponds to a perfect alignment. "
+		"A negative value will result in an overlap, while a positive value will result in a gap. Notice that a "
+		"value greater than or equal to zero may still result in one or more overlaps."
+		,"float",Alice::Option::Multiplicity::ONE}
+
+	,{"Simulation parameters","overlap-max","The maximum number of overlaps that is accepted. If merge-offset "
+		"is less than zero, the maximum numer of overlaps has to be non-zero.","number",Alice::Option::Multiplicity::ONE}
+	
+	,{"Simulation parameters","D_max","Generate a graupel of diameter D_max. D_max is defined as the largest distance between two vertices.","float",Alice::Option::Multiplicity::ONE}
+	
 	,{"Simulation parameters","fill-ratio","Set minimum fill ratio of the bounding sphere. This option "
 		"is used when D_max has been reached, to increase the total mass. "
 		"If the fill ratio is non-zero, and D_max is fullfilled, only events that do not increase D_max are accepted.","double"
 		,Alice::Option::Multiplicity::ONE}
 
 	,{"Output options","dump-geometry","Specify output Wavefront file","filename",Alice::Option::Multiplicity::ONE}
+	
 	,{"Output options","dump-geometry-ice","Same as --dump-geometry but write data as a sphere aggregate file, "
 		"so it can processed by sphere_aggregate_rasterize.","filename",Alice::Option::Multiplicity::ONE}
+	
 	,{"Output options","dump-stats","Write statistics to the given file","filename",Alice::Option::Multiplicity::ONE}
+	
 	,{"Other","statefile","Reload state from file","filename",Alice::Option::Multiplicity::ONE}
 	);
 
@@ -285,12 +306,15 @@ struct Simstate
 	ParameterValue scale;
 	std::gamma_distribution<float> G;
 	SnowflakeModel::SphereAggregate solid_out;
-	double D_max;
-	double d_max;
+	float D_max;
+	float d_max;
+	double fill;
 	double fill_ratio;
 	float E_0;
 	float decay_distance;
-	double fill;
+	float merge_offset;
+	unsigned int overlap_max;
+	
 	size_t rejected;
 	size_t pass;
 	std::unique_ptr<SnowflakeModel::FileOut> file_out;
@@ -329,8 +353,26 @@ Simstate::Simstate(const Alice::CommandLine<OptionDescriptor>& cmd_line):
 	fill=0;
 	
 		{
-		randgen.seed(cmd_line.get<Alice::Stringkey("seed")>().valueGet());
+		auto& x=cmd_line.get<Alice::Stringkey("seed")>();
+		if(x)
+			{randgen.seed(x.valueGet());}
 		randgen.discard(65536);
+		}
+
+		{
+		merge_offset=1.0f;
+		auto& x=cmd_line.get<Alice::Stringkey("merge-offset")>();
+		if(x)
+			{merge_offset=x.valueGet() + 1.0f;}
+		}
+
+		{
+		auto& x=cmd_line.get<Alice::Stringkey("overlap-max")>();
+		if(x)
+			{overlap_max=x.valueGet();}
+
+		if(merge_offset<1.0f && overlap_max==0)
+			{throw "A negative merge offset requires at least one overlap section";}
 		}
 
 		{
@@ -363,12 +405,14 @@ Simstate::Simstate(const Alice::CommandLine<OptionDescriptor>& cmd_line
 		.dataRead(SnowflakeModel::get(randgen).state,SnowflakeModel::get(randgen).size());
 	dump.arrayRead<size_t>("randgen_position")
 		.dataRead(&SnowflakeModel::get(randgen).position,1);
-	dump.arrayRead<double>("D_max").dataRead(&D_max,1);
+	dump.arrayRead<float>("D_max").dataRead(&D_max,1);
 	dump.arrayRead<double>("fill_ratio").dataRead(&fill_ratio,1);
 	dump.arrayRead<size_t>("rejected").dataRead(&rejected,1);
 	dump.arrayRead<size_t>("pass").dataRead(&pass,1);
 	dump.arrayRead<float>("E_0").dataRead(&E_0,1);
 	dump.arrayRead<float>("decay_distance").dataRead(&decay_distance,1);
+	dump.arrayRead<float>("merge_offset").dataRead(&merge_offset,1);
+	dump.arrayRead<unsigned int>("overlap_max").dataRead(&overlap_max,1);
 
 	statfile=dump.arrayGet<SnowflakeModel::DataDump::StringHolder>("statfile")[0];
 	objfile=dump.arrayGet<SnowflakeModel::DataDump::StringHolder>("objfile")[0];
@@ -401,6 +445,8 @@ void Simstate::save(const std::string& now) const
 	dump.write("pass",&pass,1);
 	dump.write("E_0",&E_0,1);
 	dump.write("decay_distance",&decay_distance,1);
+	dump.write("merge_offset",&merge_offset,1);
+	dump.write("overlap_max",&overlap_max,1);
 
 		{
 		auto x=statfile.c_str();
@@ -439,11 +485,11 @@ void Simstate::step()
 		}
 
 	auto r_2=G(randgen);
-	SnowflakeModel::Sphere v_2{posnormal.first + 0.8f*r_2*SnowflakeModel::Point(posnormal.second,0.0f),r_2};
+	SnowflakeModel::Sphere v_2{posnormal.first + merge_offset*r_2*SnowflakeModel::Point(posnormal.second,0.0f),r_2};
 
 	double overlap_res;
-	auto n=overlap(solid_out,v_2,3,overlap_res);
-	if(n<=3)
+	auto n=overlap(solid_out,v_2,overlap_max,overlap_res);
+	if(n<=overlap_max)
 		{
 		if(d_max<D_max)
 			{
