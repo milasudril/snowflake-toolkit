@@ -122,12 +122,12 @@ ALICE_OPTION_DESCRIPTOR(OptionDescriptor
 	
 	,{"Simulation parameters","merge-offset","The merge offset mearured in, and relative to the radius of "
 		"the particle that is being added to the aggregate. A value of zero corresponds to a perfect alignment. "
-		"A negative value will result in an overlap, while a positive value will result in a gap. Notice that a "
-		"value greater than or equal to zero may still result in one or more overlaps."
+		"A positive value will result in an overlap, while a negative value will result in a gap. Notice that a "
+		"value less than or equal to zero may still result in one or more overlaps."
 		,"float",Alice::Option::Multiplicity::ONE}
 
 	,{"Simulation parameters","overlap-max","The maximum number of overlaps that is accepted. If merge-offset "
-		"is less than zero, the maximum numer of overlaps has to be non-zero.","number",Alice::Option::Multiplicity::ONE}
+		"is greater than zero, the maximum numer of overlaps has to be non-zero.","number",Alice::Option::Multiplicity::ONE}
 	
 	,{"Simulation parameters","D_max","Generate a graupel of diameter D_max. D_max is defined as the largest distance between two vertices.","float",Alice::Option::Multiplicity::ONE}
 	
@@ -361,7 +361,7 @@ Simstate::Simstate(const Alice::CommandLine<OptionDescriptor>& cmd_line):
 		merge_offset=1.0f;
 		auto& x=cmd_line.get<Alice::Stringkey("merge-offset")>();
 		if(x)
-			{merge_offset=x.valueGet() + 1.0f;}
+			{merge_offset=(-x.valueGet() + 1.0f);}
 		}
 
 		{
@@ -370,7 +370,7 @@ Simstate::Simstate(const Alice::CommandLine<OptionDescriptor>& cmd_line):
 			{overlap_max=x.valueGet();}
 
 		if(merge_offset<1.0f && overlap_max==0)
-			{throw "A negative merge offset requires at least one overlap section";}
+			{throw "A positive merge offset requires at least one overlap section";}
 		}
 
 		{
