@@ -144,6 +144,8 @@ std::pair<Point,Vector> SphereAggregate::shoot(const Point& source
 				}
 			}
 		}
+	if(d==INFINITY)
+		{return std::make_pair(Point{INFINITY,INFINITY,INFINITY,1.0f},Vector{1.0f,0.0f,0.0f});}
 	auto point=source + Point(d*direction,0.0f);
 	auto normal=glm::normalize(Vector(point - obj_min->midpointGet()));
 	return std::make_pair(point,normal);

@@ -22,12 +22,18 @@ namespace SnowflakeModel
 namespace Alice
 	{
 	template<>
-	struct MakeType<Stringkey("grid definition")>
+	struct MakeType<Stringkey("grid definition")>:public MakeTypeBase
 		{
 		typedef SnowflakeModel::GridDefinition Type;
-		static constexpr const char* descriptionGet() noexcept
+
+		static constexpr const char* descriptionShortGet() noexcept
+			{return "Nx,Ny,Nz,filename";}
+
+		static constexpr const char* descriptionLongGet() noexcept
 			{
-			return "";
+			return "Specifies a rasterization grid of size Nx x Ny x Nz, and a target filename. "
+				"A size that has been set to zero is computed from the bounding box of the object "
+				"to rasterize.";
 			}
 		};
 

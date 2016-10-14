@@ -31,6 +31,16 @@ namespace SnowflakeModel
 				m_filename=source;
 				}
 
+			FileIn(FileIn&& f) noexcept:file_in(f.file_in)
+				{std::swap(f.m_filename,m_filename);}
+
+			FileIn& operator=(FileIn&& f) noexcept
+				{
+				std::swap(file_in,f.file_in);
+				std::swap(m_filename,f.m_filename);
+				return *this;
+				}
+				
 
 			explicit FileIn(FILE* source)
 				{

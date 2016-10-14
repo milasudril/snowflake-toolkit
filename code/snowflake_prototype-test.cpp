@@ -20,6 +20,7 @@
 #include "grid_definition.h"
 #include "grid_definition2.h"
 #include "adda.h"
+#include "filename.h"
 #include "alice/commandline.hpp"
 
 struct DeformationRule
@@ -30,17 +31,12 @@ struct DeformationRule
 
 namespace Alice
 	{
-//	Type alias for filenames
 	template<>
-	struct MakeType<Stringkey("filename")>:public MakeType<Stringkey("string")>
-		{};
-
-	template<>
-	struct MakeType<Stringkey("deformation rule")>
+	struct MakeType<Stringkey("deformation rule")>:public MakeTypeBase
 		{
 		typedef DeformationRule Type;
-		static constexpr const char* descriptionGet()
-			{return "";}
+		static constexpr const char* descriptionShortGet()
+			{return "name:value";}
 		};
 
 	template<class ErrorHandler>
@@ -121,15 +117,14 @@ ALICE_OPTION_DESCRIPTOR(OptionDescriptor
 	,"filename",Alice::Option::Multiplicity::ZERO_OR_ONE
 	 }
 	,{
-	 "Output options","sample-geometry","Samples the rendered geometry using a grid of size [N_x,N_y,N_z,filename]. "
-	 "If any of N_x, N_y, or N_z is set to zero, its value is set from one of the two others, such that the aspect "
-	 "ratio of the bounding box is preserved. If Filename is omitted, data is written to stdout."
+	 "Output options","sample-geometry","Samples the rendered geometry to a grid. If Filename is omitted, data is written to stdout. "
+		"See *Common types* for more information."
 	,"grid definition",Alice::Option::Multiplicity::ONE
 	 }
 	,{
-	 "Output options","sample-geometry-2","Samples the rendered geometry using grid [N,r_x:r_y:r_z,filename]. "
-	 "N defines the number of samples, and r_x:r_y:r_z the ratio of each voxel. The step size is derived from "
-	 "the total volume of the rendered geometry. If filename is ommited, the output is written to stdout."
+	 "Output options","sample-geometry-2","Samples the rendered geometry to a grid. "
+		"If filename is ommited, the output is written to stdout. "
+		"See *Common types* for more information."			
 	,"grid definition 2",Alice::Option::Multiplicity::ONE
 	 }
 	);
