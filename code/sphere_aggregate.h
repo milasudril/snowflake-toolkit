@@ -95,14 +95,14 @@ namespace SnowflakeModel
 
 			void write(const char* id,DataDump& dump) const;
 
+			Twins<Point> extremaNew(const Sphere& volume) const noexcept;
+
 		private:
 			std::vector<Sphere> m_subvolumes;
 			BoundingBox m_bounding_box;
 			Point m_mid;
 			Twins<Point> m_extrema;
 			double m_volume;
-
-			Twins<Point> extremaNew(const Sphere& volume) const noexcept;
 		};
 
 	bool overlap(const SphereAggregate& a, const SphereAggregate& b);

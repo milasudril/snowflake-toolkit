@@ -113,11 +113,14 @@ ALICE_OPTION_DESCRIPTOR(OptionDescriptor
 	,{"Simulation parameters","decay-distance","The number of units before the energy has decayed to 1/e","double",Alice::Option::Multiplicity::ONE}
 	,{"Simulation parameters","D_max","Generate a graupel of diameter D_max. D_max is defined as the largest distance between two vertices.","double",Alice::Option::Multiplicity::ONE}
 	,{"Simulation parameters","seed","Random seed mod 2^32","unsigned int",Alice::Option::Multiplicity::ONE}
-	,{"Simulation parameters","fill-ratio","Set minimum fill ratio of the bounding sphere. This option is used when D_max has been reached, to increase the total mass. "
-		 "If the fill ratio is non-zero, and D_max is fullfilled, only events that do not increase D_max are accepted.","double"
+	,{"Simulation parameters","fill-ratio","Set minimum fill ratio of the bounding sphere. This option "
+		"is used when D_max has been reached, to increase the total mass. "
+		"If the fill ratio is non-zero, and D_max is fullfilled, only events that do not increase D_max are accepted.","double"
 		,Alice::Option::Multiplicity::ONE}
+
 	,{"Output options","dump-geometry","Specify output Wavefront file","filename",Alice::Option::Multiplicity::ONE}
-	,{"Output options","dump-geometry-ice","Same as --dump-geometry but write data as Ice crystal prototype files, so they can be used by other tools provided by the toolkit.","filename",Alice::Option::Multiplicity::ONE}
+	,{"Output options","dump-geometry-ice","Same as --dump-geometry but write data as a sphere aggregate file, "
+		"so it can processed by sphere_aggregate_rasterize.","filename",Alice::Option::Multiplicity::ONE}
 	,{"Output options","dump-stats","Write statistics to the given file","filename",Alice::Option::Multiplicity::ONE}
 	,{"Other","statefile","Reload state from file","filename",Alice::Option::Multiplicity::ONE}
 	);
@@ -263,12 +266,9 @@ struct Simstate
 	double progressGet() const noexcept
 		{
 		auto x=d_max/D_max;
-		return x;
-#if 0
 		if(x<1.0 || fill_ratio<1e-2f)
 			{return x;}
 		return fill/fill_ratio;
-#endif
 		}
 
 	void step();
@@ -443,7 +443,7 @@ void Simstate::step()
 
 	double overlap_res;
 	auto n=overlap(solid_out,v_2,3,overlap_res);
-	if(n<4)
+	if(n<=3)
 		{
 		if(d_max<D_max)
 			{
@@ -460,22 +460,22 @@ void Simstate::step()
 				}
 			++iter_count;
 			}
-#if 0
-	/*	else
+		else
 			{
-			auto s_a_temp=solid_out;
-			s_a_temp.merge(std::move(obj),0,0);
-			auto ex=s_a_temp.extremaGet();
+			auto ex=solid_out.extremaNew(v_2);
 			if(length(ex.first - ex.second)>d_max)
 				{return;}
-			solid_out=std::move(s_a_temp);
-			fill=solid_out.volumeGet()/( 4*std::acos(-1.0)*pow(0.5*d_max,3)/3.0 );
-			fprintf(stderr,"\r%.7g %.7g  (Cs: %zu,  Cr: %zu)      "
-				,d_max,fill,solid_out.subvolumesCount(),rejected);
-			fflush(stderr);
-			statsDump(file_out.get(),solid_out);
-			}*/
-#endif
+			solid_out.subvolumeAdd(std::move(v_2),overlap_res);
+			if(iter_count%128==0)
+				{
+				fill=solid_out.volumeGet()/( 4*std::acos(-1.0)*pow(0.5*d_max,3)/3.0 );
+				fprintf(stderr,"\r%.7g %.7g  (Cs: %zu,  Cr: %zu)      "
+					,d_max,fill,solid_out.subvolumesCount(),rejected);
+				fflush(stderr);
+				statsDump(file_out.get(),solid_out);
+				}
+			++iter_count;
+			}
 		}
 	else
 		{++rejected;}
@@ -519,7 +519,9 @@ int main(int argc,char** argv)
 	{
 	try
 		{
+#ifndef NDEBUG
 		feenableexcept(FE_INVALID | FE_OVERFLOW);
+#endif
 
 		Alice::CommandLine<OptionDescriptor> cmd_line(argc,argv);
 		if(printHelp(cmd_line))
