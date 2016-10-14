@@ -21,6 +21,7 @@
 #include "getdate.h"
 #include "solid_writer.h"
 #include "solid.h"
+#include "filename.h"
 #include "alice/commandline.hpp"
 
 #include <fenv.h>
@@ -41,13 +42,11 @@ namespace Alice
 		}
 
 	template<>
-	struct MakeType<Stringkey("Parameter value")>
+	struct MakeType<Stringkey("Parameter value")>:public MakeTypeBase
 		{
 		typedef ParameterValue Type;
-		static constexpr const char* descriptionGet() noexcept
-			{
-			return "A `Parameter value` is written as mean,standard deviation"; 
-			}
+		static constexpr const char* descriptionShortGet() noexcept
+			{return "mean,standard deviation";}
 		};
 
 	template<class ErrorHandler>
@@ -105,19 +104,6 @@ namespace Alice
 		return ParameterValue{};
 		}
 	};
-
-
-
-namespace Alice
-	{
-	template<>
-	struct MakeType<Stringkey("filename")>:public MakeType<Stringkey("string")>
-		{
-		typedef std::string Type;
-		static constexpr const char* descriptionGet() noexcept
-			{return "A valid filename";}
-		};
-	}
 
 ALICE_OPTION_DESCRIPTOR(OptionDescriptor
 	,{"Help","help","Print option summary to stdout, or, if a filename is given, to that file","filename",Alice::Option::Multiplicity::ZERO_OR_ONE}
@@ -277,9 +263,12 @@ struct Simstate
 	double progressGet() const noexcept
 		{
 		auto x=d_max/D_max;
+		return x;
+#if 0
 		if(x<1.0 || fill_ratio<1e-2f)
 			{return x;}
 		return fill/fill_ratio;
+#endif
 		}
 
 	void step();
@@ -471,6 +460,7 @@ void Simstate::step()
 				}
 			++iter_count;
 			}
+#if 0
 	/*	else
 			{
 			auto s_a_temp=solid_out;
@@ -485,6 +475,7 @@ void Simstate::step()
 			fflush(stderr);
 			statsDump(file_out.get(),solid_out);
 			}*/
+#endif
 		}
 	else
 		{++rejected;}
@@ -505,7 +496,7 @@ void Simstate::icefileWrite() const
 	{
 	if(icefile.size())
 		{
-		fprintf(stderr,"# Dumping crystal prototype file\n");
+		fprintf(stderr,"# Dumping spheres\n");
 		SnowflakeModel::FileOut file_out(icefile.c_str());
 		SnowflakeModel::SphereAggregateWriter writer(file_out);
 		writer.write(solid_out);

@@ -41,6 +41,20 @@ namespace SnowflakeModel
 				return m_subvolumes.back();
 				}
 
+			Sphere& subvolumeAddNoDMax(const Sphere& volume,float overlap)
+				{
+				m_subvolumes.push_back(volume);
+				auto V=static_cast<double>( volume.volumeGet() );
+				m_volume+=V - static_cast<double>(overlap);
+				auto bb=volume.boundingBoxGet();
+				m_bounding_box.m_min=glm::min(m_bounding_box.m_min
+					,bb.m_min);
+				m_bounding_box.m_max=glm::max(m_bounding_box.m_max
+					,bb.m_max);
+				m_mid+=volume.midpointGet()*volume.volumeGet();
+				return m_subvolumes.back();
+				}
+
 			const Sphere* subvolumesBegin() const noexcept
 				{return m_subvolumes.data();}
 
