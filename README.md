@@ -12,6 +12,9 @@ The toolkit has been design with so it should not have to many external dependen
 
  * glm - The "OpenGL Mathematics Library"
  * libhdf5-cpp + its dependencies
+ * GLEW - For addaview
+ * GLFW - For addaview
+ * OpenGL 3.3 - For addaview
  
 
 Compiling
