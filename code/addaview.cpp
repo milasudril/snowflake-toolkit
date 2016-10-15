@@ -5,6 +5,10 @@
 
 
 #include "randomgenerator.h"
+#include "file_in.h"
+#include "file_out.h"
+#include "filename.h"
+#include "alice/commandline.hpp"
 #include <GL/glew.h>
 #include <GL/gl.h>
 #include <GLFW/glfw3.h>
@@ -15,6 +19,10 @@
 #include <cstdlib>
 #include <memory>
 #include <vector>
+
+ALICE_OPTION_DESCRIPTOR(OptionDescriptor
+	,{"Help","help","Print option summary to stdout, or, if a filename is given, to that file","filename",Alice::Option::Multiplicity::ZERO_OR_ONE}
+	,{"Input","file","adda file to render","filename",Alice::Option::Multiplicity::ONE});
 
 [[noreturn]] static void glfwErrorRaise(int code,const char* message)
 	{
@@ -67,10 +75,11 @@ static void close(GLFWwindow* handle)
 static const char* g_vertex_shader_src="#version 330\n"
 	"layout(location = 0) in vec3 vertex_pos_modelspace;\n"
 	"uniform mat4 MVP;\n"
+	"uniform mat4 scalepos;\n"
 	"out vec3 pos_worldspace;\n"
 	"void main()\n"
 	"	{\n"
-	"	pos_worldspace=vertex_pos_modelspace;\n"
+	"	pos_worldspace=vec3( scalepos*vec4(vertex_pos_modelspace,1) );\n"
 	"	gl_Position=MVP*vec4(vertex_pos_modelspace,1);\n"
 	"	}\n";
 
@@ -80,8 +89,13 @@ static const char* g_fragment_shader_src="#version 330\n"
 	"in vec3 pos_worldspace;\n"
 	"void main()\n"
 	"	{\n"
-	"	vec3 color_coord=0.5f*( vec3(1,1,1) + pos_worldspace );\n"
-	"	color=fragment_color*color_coord;\n"
+	"	if(dot(pos_worldspace,pos_worldspace)<0.0001)\n"
+	"		{color=vec3(1,0,0.5);}\n"
+	"	else\n"
+	"		{\n"
+	"		vec3 color_coord=0.5f*( vec3(1,1,1) + pos_worldspace );\n"
+	"		color=fragment_color*color_coord;\n"
+	"		}"
 	"	}\n";
 
 namespace
@@ -153,7 +167,13 @@ static GLuint createShaderProgram(const char* vertex_shader_src
 class PointCloud
 	{
 	public:
-		PointCloud(const std::vector<glm::vec3>& points);
+		PointCloud(const PointCloud&)=delete;
+		PointCloud& operator=(const PointCloud&)=delete;
+
+		PointCloud(PointCloud&& b)=default;
+
+		PointCloud(const std::vector<glm::vec3>& points,const glm::vec3& mid
+			,const glm::vec3& radius);
 		void render(float distance,float azimuth,float zenith
 			,const glm::mat4& projection) const noexcept;
 
@@ -163,11 +183,14 @@ class PointCloud
 		GLuint shader;
 		GLuint mvp_location;
 		GLuint fragment_color_location;
-		
+		GLuint scalepos_location;
+		glm::mat4 scalepos;
 		size_t n;
 	};
 
-PointCloud::PointCloud(const std::vector<glm::vec3>& points):n(points.size())
+PointCloud::PointCloud(const std::vector<glm::vec3>& points
+	,const glm::vec3& mid
+	,const glm::vec3& radius):n(points.size())
 	{
 	glGenVertexArrays(1,&vertex_array);
 	glBindVertexArray(vertex_array);
@@ -175,11 +198,20 @@ PointCloud::PointCloud(const std::vector<glm::vec3>& points):n(points.size())
 	glUseProgram(shader);
 	mvp_location=glGetUniformLocation(shader,"MVP");
 	fragment_color_location=glGetUniformLocation(shader,"fragment_color");
+	scalepos_location=glGetUniformLocation(shader,"scalepos");
+
 	glEnable(GL_DEPTH_TEST);
-	glPointSize(1);
+	glPointSize(2);
 	glGenBuffers(1,&vbo);
 	glBindBuffer(GL_ARRAY_BUFFER,vbo);
 	glBufferData(GL_ARRAY_BUFFER,n*sizeof(glm::vec3),points.data(),GL_STATIC_DRAW);
+	fprintf(stderr,"(%.7g %.7g %.7g) (%.7g %.7g %.7g)",mid.x,mid.y,mid.z
+		,radius.x,radius.y,radius.z);
+
+	auto s=std::max(radius.x,std::max(radius.y,radius.z));
+	scalepos=glm::scale(scalepos,glm::vec3(1.0f,1.0f,1.0f)/s);
+	scalepos=glm::translate(scalepos,-mid);
+	glUniformMatrix4fv(scalepos_location, 1, GL_FALSE, &scalepos[0][0]);
 	}
 
 void PointCloud::render(float distance,float azimuth,float zenith,const glm::mat4& projection) const noexcept
@@ -188,6 +220,7 @@ void PointCloud::render(float distance,float azimuth,float zenith,const glm::mat
 	mvp=glm::translate(mvp,glm::vec3(0.0f,0.0f,-distance));
 	mvp=glm::rotate(mvp,zenith,glm::vec3(1,0,0));
 	mvp=glm::rotate(mvp,azimuth,glm::vec3(0,0,1));
+	mvp=mvp*scalepos;
 	mvp=projection*mvp;
 
 	glUniformMatrix4fv(mvp_location, 1, GL_FALSE, &mvp[0][0]);
@@ -242,23 +275,121 @@ static void mouseMove(GLFWwindow* handle,double x,double y)
 	vs->x_0=x;
 	}
 
-static std::vector<glm::vec3> pointsLoad()
+static void helpPrint(const Alice::CommandLine<OptionDescriptor>& options
+	,const std::vector<std::string>& dest)
 	{
-	SnowflakeModel::RandomGenerator rng;
-	std::uniform_real_distribution<float> U(-1,1);
-	std::vector<glm::vec3> ret;
-	for(size_t k=0;k<1000000;++k)
-		{ret.push_back({U(rng),U(rng),U(rng)});}
+	if(dest.size()==0)
+		{options.help(1,stdout);}
+	else
+		{
+		SnowflakeModel::FileOut output(dest[0].c_str());
+		options.help(1,output.handleGet());
+		}
+	}
 
+static std::vector<glm::vec3> pointsLoad(const char* source)
+	{
+	auto f=source==nullptr?
+		SnowflakeModel::FileIn(stdin):SnowflakeModel::FileIn(source);
+	int ch_in=0;
+	std::string buffer;
+	int state=0;
+	int index=0;
+	glm::vec3 point;
+	std::vector<glm::vec3> ret;
+	while((ch_in=f.getc())!=EOF)
+		{
+		switch(state)
+			{
+			case 0:
+				switch(ch_in)
+					{
+					case '#':
+						state=1;
+						if(index!=0)
+							{throw "Uncompleted point";}
+						break;
+					case '\r':
+						break;
+					case'\n':
+						point[index]=atof(buffer.c_str());
+						ret.push_back(point);
+						buffer.clear();
+						index=0;
+						break;
+					case ' ':
+						point[index]=atof(buffer.c_str());
+						buffer.clear();
+						++index;
+						if(index==3)
+							{throw "Too many values";}
+						break;
+					default:
+						buffer+=ch_in;
+					}
+				break;
+			case 1:
+				switch(ch_in)
+					{
+					case '\n':
+					case '\r':
+						state=0;
+						buffer.clear();
+						break;
+					default:
+						break;
+					}
+				break;
+			}
+		}
 	return std::move(ret);
 	}
 
-int main()
+static std::vector<glm::vec3> pointsLoad()
+	{
+	SnowflakeModel::RandomGenerator rng;
+	std::uniform_real_distribution<float> U(0,0.5f);
+	std::vector<glm::vec3> ret;
+	for(size_t k=0;k<10000;++k)
+		{ret.push_back({U(rng),U(rng),U(rng)});}
+	return ret;
+	}
+
+static std::pair<glm::vec3,glm::vec3> boundingBoxGet(const std::vector<glm::vec3>& points)
+	{
+	auto ptr=points.data();
+	auto ptr_end=ptr + points.size();
+	if(ptr==ptr_end)
+		{return std::pair<glm::vec3,glm::vec3>{{-1.0f,-1.0f,-1.0f},{1.0f,1.0f,1.0f}};}
+	++ptr;
+	auto ret=std::pair<glm::vec3,glm::vec3>{*ptr,*ptr};
+	while(ptr!=ptr_end)
+		{
+		ret.first=glm::min(*ptr,ret.first);
+		ret.second=glm::max(*ptr,ret.second);
+		++ptr;
+		}
+
+	return ret;
+	}
+
+
+int main(int argc,char** argv)
 	{
 	try
 		{
+		Alice::CommandLine<OptionDescriptor> cmdline(argc,argv);
+			{
+			auto& x=cmdline.get<Alice::Stringkey("help")>();
+			if(x)
+				{
+				helpPrint(cmdline,x.valueGet());
+				return 0;
+				}
+			}
+
 		GLFWGuard glfw;
-		auto window=windowCreate(640,480,"addaview");
+		auto window=windowCreate(640,480,"adda shape view");
 		glfwMakeContextCurrent(window.get());
 		glewExperimental=1;
 		fprintf(stderr,"Initializing GLEW %s",reinterpret_cast<const char*>(glewGetString(GLEW_VERSION)));
@@ -277,9 +408,18 @@ int main()
 			,reinterpret_cast<const char*>(glGetString(GL_VERSION))
 			,reinterpret_cast<const char*>(glGetString(GL_SHADING_LANGUAGE_VERSION)));
 
+		auto cloud=[&cmdline]()
+			{
+			auto& x=cmdline.get<Alice::Stringkey("file")>();
+			auto points=pointsLoad(x?x.valueGet().c_str():nullptr);
+		//	auto points=pointsLoad();
+			fprintf(stderr,"Loaded %zu points\n",points.size());
+			auto bb=boundingBoxGet(points);
+			auto mid=0.5f*(bb.second + bb.first);
+			auto radius=0.5f*(bb.second - bb.first);
+			return PointCloud(points,mid,radius);
+			}();
 
-
-		PointCloud cloud(pointsLoad());
 		ViewState vs{cloud,6.0f,0,-std::acos(-1.0f)/2.0f};
 		glfwSetWindowUserPointer(window.get(),&vs);
 
