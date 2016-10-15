@@ -89,13 +89,8 @@ static const char* g_fragment_shader_src="#version 330\n"
 	"in vec3 pos_worldspace;\n"
 	"void main()\n"
 	"	{\n"
-	"	if(dot(pos_worldspace,pos_worldspace)<0.0001)\n"
-	"		{color=vec3(1,0,0.5);}\n"
-	"	else\n"
-	"		{\n"
-	"		vec3 color_coord=0.5f*( vec3(1,1,1) + pos_worldspace );\n"
-	"		color=fragment_color*color_coord;\n"
-	"		}"
+	"	vec3 color_coord=0.5f*( vec3(1,1,1) + pos_worldspace );\n"
+	"	color=fragment_color*color_coord;\n"
 	"	}\n";
 
 namespace
@@ -205,8 +200,7 @@ PointCloud::PointCloud(const std::vector<glm::vec3>& points
 	glGenBuffers(1,&vbo);
 	glBindBuffer(GL_ARRAY_BUFFER,vbo);
 	glBufferData(GL_ARRAY_BUFFER,n*sizeof(glm::vec3),points.data(),GL_STATIC_DRAW);
-	fprintf(stderr,"(%.7g %.7g %.7g) (%.7g %.7g %.7g)",mid.x,mid.y,mid.z
-		,radius.x,radius.y,radius.z);
+
 
 	auto s=std::max(radius.x,std::max(radius.y,radius.z));
 	scalepos=glm::scale(scalepos,glm::vec3(1.0f,1.0f,1.0f)/s);
@@ -273,6 +267,23 @@ static void mouseMove(GLFWwindow* handle,double x,double y)
 		}
 	vs->y_0=y;
 	vs->x_0=x;
+	}
+
+static void scroll(GLFWwindow* handle,double x,double y)
+	{
+	auto vs=reinterpret_cast<ViewState*>(glfwGetWindowUserPointer(handle));
+	vs->distance-=y/8.0f;
+	}
+
+static void keyAction(GLFWwindow* handle,int key,int scancode,int action,int mods)
+	{
+	auto vs=reinterpret_cast<ViewState*>(glfwGetWindowUserPointer(handle));
+	if(key==32 && action==GLFW_PRESS)
+		{
+		vs->distance=6.0f;
+		vs->azimuth=0;
+		vs->zenith=-std::acos(-1.0f)/2.0f;
+		}
 	}
 
 static void helpPrint(const Alice::CommandLine<OptionDescriptor>& options
@@ -373,7 +384,6 @@ static std::pair<glm::vec3,glm::vec3> boundingBoxGet(const std::vector<glm::vec3
 	return ret;
 	}
 
-
 int main(int argc,char** argv)
 	{
 	try
@@ -408,7 +418,7 @@ int main(int argc,char** argv)
 			,reinterpret_cast<const char*>(glGetString(GL_VERSION))
 			,reinterpret_cast<const char*>(glGetString(GL_SHADING_LANGUAGE_VERSION)));
 
-		auto cloud=[&cmdline]()
+		auto cloud=[&cmdline,&window]()
 			{
 			auto& x=cmdline.get<Alice::Stringkey("file")>();
 			auto points=pointsLoad(x?x.valueGet().c_str():nullptr);
@@ -417,6 +427,9 @@ int main(int argc,char** argv)
 			auto bb=boundingBoxGet(points);
 			auto mid=0.5f*(bb.second + bb.first);
 			auto radius=0.5f*(bb.second - bb.first);
+			auto wintitle=std::string("adda shape view ") + (x?x.valueGet().c_str():"/dev/stdin") 
+				+ " " + std::to_string(points.size()) + " points";
+			glfwSetWindowTitle(window.get(),wintitle.c_str());
 			return PointCloud(points,mid,radius);
 			}();
 
@@ -426,7 +439,8 @@ int main(int argc,char** argv)
 		glfwSetWindowCloseCallback(window.get(),close);
 		glfwSetWindowRefreshCallback(window.get(),render);
 		glfwSetCursorPosCallback(window.get(),mouseMove);
-		glfwSwapInterval(4);
+		glfwSetScrollCallback(window.get(),scroll);
+		glfwSetKeyCallback(window.get(),keyAction);
 
 		while (!glfwWindowShouldClose(window.get()))
 			{
