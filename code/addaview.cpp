@@ -67,17 +67,21 @@ static void close(GLFWwindow* handle)
 static const char* g_vertex_shader_src="#version 330\n"
 	"layout(location = 0) in vec3 vertex_pos_modelspace;\n"
 	"uniform mat4 MVP;\n"
+	"out vec3 pos_worldspace;\n"
 	"void main()\n"
 	"	{\n"
+	"	pos_worldspace=vertex_pos_modelspace;\n"
 	"	gl_Position=MVP*vec4(vertex_pos_modelspace,1);\n"
 	"	}\n";
 
 static const char* g_fragment_shader_src="#version 330\n"
 	"uniform vec3 fragment_color;\n"
 	"out vec3 color;\n"
+	"in vec3 pos_worldspace;\n"
 	"void main()\n"
 	"	{\n"
-	"	color=fragment_color;\n"
+	"	vec3 color_coord=0.5f*( vec3(1,1,1) + pos_worldspace );\n"
+	"	color=fragment_color*color_coord;\n"
 	"	}\n";
 
 namespace
@@ -150,7 +154,9 @@ class PointCloud
 	{
 	public:
 		PointCloud(const std::vector<glm::vec3>& points);
-		void render() const noexcept;
+		void render(float distance,float azimuth,float zenith
+			,const glm::mat4& projection) const noexcept;
+
 	private:
 		GLuint vertex_array;
 		GLuint vbo;
@@ -170,15 +176,20 @@ PointCloud::PointCloud(const std::vector<glm::vec3>& points):n(points.size())
 	mvp_location=glGetUniformLocation(shader,"MVP");
 	fragment_color_location=glGetUniformLocation(shader,"fragment_color");
 	glEnable(GL_DEPTH_TEST);
-	glPointSize(2);
+	glPointSize(1);
 	glGenBuffers(1,&vbo);
 	glBindBuffer(GL_ARRAY_BUFFER,vbo);
 	glBufferData(GL_ARRAY_BUFFER,n*sizeof(glm::vec3),points.data(),GL_STATIC_DRAW);
 	}
 
-void PointCloud::render() const noexcept
+void PointCloud::render(float distance,float azimuth,float zenith,const glm::mat4& projection) const noexcept
 	{
 	glm::mat4 mvp;
+	mvp=glm::translate(mvp,glm::vec3(0.0f,0.0f,-distance));
+	mvp=glm::rotate(mvp,zenith,glm::vec3(1,0,0));
+	mvp=glm::rotate(mvp,azimuth,glm::vec3(0,0,1));
+	mvp=projection*mvp;
+
 	glUniformMatrix4fv(mvp_location, 1, GL_FALSE, &mvp[0][0]);
 	glUniform3f(fragment_color_location,1,1,1);	
 	
@@ -189,14 +200,46 @@ void PointCloud::render() const noexcept
 	glDisableVertexAttribArray(0);
 	}
 
+struct ViewState
+	{
+	const PointCloud& pc;
+	float distance;
+	float azimuth;
+	float zenith;
+
+	double x_0;
+	double y_0;
+	};
+
 
 static void render(GLFWwindow* handle)
 	{
-	glClearColor(0,0,0,1);
+	int width;
+	int height;
+	glfwGetWindowSize(handle,&width,&height);
+	glViewport(0,0,width,height);
+	glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float) width / (float)height, 0.1f, 100.0f);
+	
 	glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
-	auto pc=reinterpret_cast<const PointCloud*>(glfwGetWindowUserPointer(handle));
-	pc->render();
+	auto vs=reinterpret_cast<const ViewState*>(glfwGetWindowUserPointer(handle));
+	vs->pc.render(vs->distance,vs->azimuth,vs->zenith,projection);
 	glfwSwapBuffers(handle);
+	}
+
+static void mouseMove(GLFWwindow* handle,double x,double y)
+	{
+	int width;
+	int height;
+	glfwGetWindowSize(handle,&width,&height);
+
+	auto vs=reinterpret_cast<ViewState*>(glfwGetWindowUserPointer(handle));
+	if(glfwGetMouseButton(handle,GLFW_MOUSE_BUTTON_1)==GLFW_PRESS)
+		{
+		vs->zenith+=std::acos(-1.0f)*(y - vs->y_0)/600.0f;
+		vs->azimuth+=std::acos(-1.0f)*(x - vs->x_0)/600.0f;
+		}
+	vs->y_0=y;
+	vs->x_0=x;
 	}
 
 static std::vector<glm::vec3> pointsLoad()
@@ -204,14 +247,8 @@ static std::vector<glm::vec3> pointsLoad()
 	SnowflakeModel::RandomGenerator rng;
 	std::uniform_real_distribution<float> U(-1,1);
 	std::vector<glm::vec3> ret;
-	for(size_t k=0;k<1000;++k)
+	for(size_t k=0;k<1000000;++k)
 		{ret.push_back({U(rng),U(rng),U(rng)});}
-
-/*	std::vector<glm::vec3> ret;
-	ret.push_back({-.5f, -.5f, 0.5f});
-	ret.push_back({.5f, -.5f, 0.5f});
-	ret.push_back({0.0f,  .5f, 0.5f});
-	ret.push_back({0.0f,0.0f,0.0f});*/
 
 	return std::move(ret);
 	}
@@ -241,15 +278,20 @@ int main()
 			,reinterpret_cast<const char*>(glGetString(GL_SHADING_LANGUAGE_VERSION)));
 
 
-		glfwSetWindowCloseCallback(window.get(),close);
-		glfwSetWindowRefreshCallback(window.get(),render);
 
 		PointCloud cloud(pointsLoad());
-		glfwSetWindowUserPointer(window.get(),&cloud);
+		ViewState vs{cloud,6.0f,0,-std::acos(-1.0f)/2.0f};
+		glfwSetWindowUserPointer(window.get(),&vs);
+
+		glfwSetWindowCloseCallback(window.get(),close);
+		glfwSetWindowRefreshCallback(window.get(),render);
+		glfwSetCursorPosCallback(window.get(),mouseMove);
+		glfwSwapInterval(4);
 
 		while (!glfwWindowShouldClose(window.get()))
 			{
 			glfwWaitEvents();
+			render(window.get());
 			}
 
 		}
