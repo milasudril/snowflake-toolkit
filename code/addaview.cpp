@@ -3,6 +3,8 @@
 //@ ,"dependencies":[{"ref":"GL","rel":"external"},{"ref":"GLEW","rel":"external"},{"ref":"glfw","rel":"external"}]}]
 //@	}
 
+
+#include "randomgenerator.h"
 #include <GL/glew.h>
 #include <GL/gl.h>
 #include <GLFW/glfw3.h>
@@ -74,20 +76,79 @@ static const char* shader_fragment_src="#version 330\n"
 	"void main()\n"
 	"	{\n"
 	"	color=fragment_color;\n"
-	"	}\n";	
+	"	}\n";
+
+namespace
+	{
+	class GlShader
+		{
+		public:
+			explicit GlShader(GLenum type)
+				{
+				id=glCreateShader(type);
+				}
+
+			GlShader& sourceSet(const char* source) noexcept
+				{
+				glShaderSource(id,1,&source,NULL);
+				return *this;
+				}
+
+			void compile();
+
+			~GlShader()
+				{glDeleteShader(id);}
+
+			GLuint idGet() const noexcept
+				{return id;}
+
+		private:
+			GLuint id;
+		};
+	}
+void GlShader::compile()
+	{
+	glCompileShader(id);
+	GLint result;
+	glGetShaderiv(id,GL_COMPILE_STATUS,&result);
+	if(result==GL_FALSE)
+		{
+		glGetShaderiv(id,GL_INFO_LOG_LENGTH,&result);
+		if(result>0)
+			{
+			char buffer[512];
+			glGetShaderInfoLog(id,512,NULL,buffer);
+			fprintf(stderr,"Could not compile shader: %s",buffer);
+			throw "Shader compilation error";
+			}
+		}
+	}
+
+static GLuint createShaderProgram(const char* vertex_shader_src
+	,const char* fragment_shader_src)
+	{
+	GlShader vertex_shader(GL_VERTEX_SHADER);
+	GlShader fragment_shader(GL_FRAGMENT_SHADER);
+	auto ret=glCreateProgram();
+	glAttachShader(ret,vertex_shader.idGet());
+	glAttachShader(ret,fragment_shader.idGet());
+	}
+
+
 
 class PointCloud
 	{
 	public:
-		PointCloud(const glm::vec3* points,size_t N);
+		PointCloud(const std::vector<glm::vec3>& points);
 		void render() const noexcept;
 	private:
 		GLuint vertex_array;
 		GLuint vbo;
+		
 		size_t n;
 	};
 
-PointCloud::PointCloud(const glm::vec3* points,size_t N):n(N)
+PointCloud::PointCloud(const std::vector<glm::vec3>& points):n(points.size())
 	{
 	glGenVertexArrays(1,&vertex_array);
 	glBindVertexArray(vertex_array);
@@ -97,12 +158,12 @@ PointCloud::PointCloud(const glm::vec3* points,size_t N):n(N)
 	glEnable(GL_DEPTH_TEST);
 	glGenBuffers(1,&vbo);
 	glBindBuffer(GL_ARRAY_BUFFER,vbo);
-	glBufferData(GL_ARRAY_BUFFER,N*sizeof(glm::vec3),points,GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER,n*sizeof(glm::vec3),points.data(),GL_STATIC_DRAW);
 	}
 
 void PointCloud::render() const noexcept
 	{
-	glPointSize(2);
+	glPointSize(1);
 	glDrawArrays(GL_POINTS,0,n);
 	}
 
@@ -113,6 +174,16 @@ static void render(GLFWwindow* handle)
 	auto pc=reinterpret_cast<const PointCloud*>(glfwGetWindowUserPointer(handle));
 	pc->render();
 	glfwSwapBuffers(handle);
+	}
+
+static std::vector<glm::vec3> pointsLoad()
+	{
+	SnowflakeModel::RandomGenerator rng;
+	std::uniform_real_distribution<float> U(-1,-1);
+	std::vector<glm::vec3> ret;
+	for(size_t k=0;k<1000;++k)
+		{ret.push_back({U(rng),U(rng),U(rng)});}
+	return std::move(ret);
 	}
 
 int main()
@@ -143,9 +214,7 @@ int main()
 		glfwSetWindowCloseCallback(window.get(),close);
 		glfwSetWindowRefreshCallback(window.get(),render);
 
-		std::vector<glm::vec3> points;
-		points.push_back({0.0f,0.0f,0.0f});
-		PointCloud cloud(points.data(),points.size());
+		PointCloud cloud(pointsLoad());
 		glfwSetWindowUserPointer(window.get(),&cloud);
 
 		while (!glfwWindowShouldClose(window.get()))
