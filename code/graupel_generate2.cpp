@@ -225,6 +225,7 @@ static void statsDump(SnowflakeModel::FileOut* file_out,const SnowflakeModel::Sp
 			"%.7g\t"
 			"%.7g\t"
 			"%.7g\t"
+			"%.7g\t"
 			"%zu\n"
 		//	"%zu\n"
 			,glm::distance(extrema.first,extrema.second)
