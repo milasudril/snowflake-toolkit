@@ -10,7 +10,7 @@ namespace Alice
 	template<>
 	struct MakeType<Stringkey("filename")>:public MakeType<Stringkey("string")>
 		{
-		static constexpr const char* descriptionGet()
+		static constexpr const char* descriptionLongGet()
 			{return "A valid filename";}
 		};
 	}
