@@ -1,4 +1,4 @@
-//@	{"targets":[{"name":"datadumptestread","type":"application","cxxoptions":{"cflags_extra":["L/usr/lib/x86_64-linux-gnu/hdf5/serial"]}}]}
+//@	{"targets":[{"name":"datadumptestread","type":"application"}]}
 
 #include "datadump.h"
 

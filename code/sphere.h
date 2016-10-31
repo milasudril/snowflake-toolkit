@@ -59,7 +59,9 @@ namespace SnowflakeModel
 
 				auto sqr=a*a-b+r2;
 				if(sqr<0.0f)
-					{return INFINITY;}
+					{
+					return INFINITY;
+					}
 
 				sqr=std::sqrt(sqr);
 				auto distance=std::min(-a+sqr, -a-sqr);

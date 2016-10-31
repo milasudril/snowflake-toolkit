@@ -11,12 +11,13 @@
 #ifndef SNOWFLAKEMODEL_FILEIN_H
 #define SNOWFLAKEMODEL_FILEIN_H
 
+#include "datasource.h"
 #include <cstdio>
 #include <string>
 
 namespace SnowflakeModel
 	{
-	class FileIn
+	class FileIn:public DataSource
 		{
 		public:
 			FileIn(const FileIn&)=delete;
@@ -56,8 +57,14 @@ namespace SnowflakeModel
 					{::fclose(file_in);}
 				}
 
+			size_t read(void* buffer, size_t length)
+				{return fread(buffer,1,length,file_in);}
+
 			int getc()
 				{return ::getc(file_in);}
+
+			const char* nameGet() const noexcept
+				{return m_filename.data();}
 
 		private:
 			FILE* file_in;
