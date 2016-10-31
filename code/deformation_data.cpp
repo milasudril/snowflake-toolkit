@@ -3,6 +3,7 @@
 #include "deformation_data.h"
 #include "datadump.h"
 #include "stride_iterator.h"
+#include "resourceobject.h"
 
 using namespace SnowflakeModel;
 
@@ -18,6 +19,45 @@ static const char* keyFromDrawMethod(DrawMethod name)
 		{return "gamma";}
 
 	return "";
+	}
+
+inline bool hasMean(SnowflakeModel::DrawMethod m)
+	{return m!=custom_distribution;}
+
+DeformationData::DeformationData(const ResourceObject& obj)
+	{
+	if(obj.typeGet()!=ResourceObject::Type::ARRAY)
+		{throw "Expected deformation data as an JSON array";}
+
+	if(obj.objectCountGet()==0)
+		{throw "No information availible about deformation";}
+
+	auto distribution=static_cast<const char*>(obj.objectGet(static_cast<size_t>(0)));
+	drawMethod=drawMethodFromName(distribution);
+	name=distribution;
+	if(drawMethod==custom_distribution)
+		{
+		if(obj.objectCountGet()!=1)
+			{throw "Incorrect number of arguments for custom distribution";}
+		auto src=static_cast<const char*>(obj.objectGet(1u));
+		distribution_data=distributionLoad(src);
+		distribution_src=src;	
+		return;
+		}
+
+	if(hasMean(drawMethod))
+		{
+		if(obj.objectCountGet()<2u)
+			{throw "No mean value given for distribution";}
+		mean=static_cast<double>(obj.objectGet(1u));
+		}
+
+	if(hasStd(drawMethod))
+		{
+		if(obj.objectCountGet()<3u)
+			{throw "No standard deviation given for distribution";}
+		standard_deviation=static_cast<double>(obj.objectGet(2u));
+		}
 	}
 
 void DeformationData::write(const char* key,DataDump& dump) const 

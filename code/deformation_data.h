@@ -18,12 +18,14 @@ namespace SnowflakeModel
 	{
 	struct DeformationData;
 	class DataDump;
+	class ResourceObject;
 
 	typedef float (*DrawMethod)(const DeformationData& obj,RandomGenerator& randgen);
 
 	struct DeformationData
 		{
 		DeformationData()=default;
+		explicit DeformationData(const ResourceObject& obj);
 		explicit DeformationData(const DataDump& dump,const char* name);
 
 		std::string name;
@@ -93,7 +95,7 @@ static SnowflakeModel::DrawMethod drawMethodFromName(const char* name)
 	throw "Unknown distribution";
 	}	
 
-static bool hasStd(SnowflakeModel::DrawMethod m)
+inline bool hasStd(SnowflakeModel::DrawMethod m)
 	{
 	return m==gamma_distribution;
 	}
