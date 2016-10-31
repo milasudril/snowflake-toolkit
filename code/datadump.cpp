@@ -2,6 +2,7 @@
 //@	"targets":
 //@		[{
 //@		"name":"datadump.o","type":"object"
+//	It appears that hdf5_cpp does not have a pkg-config file
 //@		,"dependencies":
 //@			[
 //@			 {"ref":"hdf5_hl_cpp","rel":"external"}

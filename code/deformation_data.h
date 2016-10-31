@@ -10,6 +10,7 @@
 #include "file_in.h"
 #include "xytable.h"
 #include "stride_iterator.h"
+#include <memory>
 #include <string>
 #include <alice/alice.hpp>
 
