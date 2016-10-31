@@ -15,6 +15,7 @@ The toolkit has been design with so it should not have to many external dependen
  * GLEW - For addaview
  * GLFW - For addaview
  * OpenGL 3.3 - For addaview
+ * libjansson
  
 
 Compiling
