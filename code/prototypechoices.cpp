@@ -24,12 +24,46 @@ PrototypeChoices::PrototypeChoices(const ResourceObject& obj)
 	m_dist=std::discrete_distribution<size_t>(probs.data(),probs.data() + n_objs);
 	}
 
+PrototypeChoices::PrototypeChoices(const DataDump& dump,const char* name)
+	{
+	std::string keyname(name);
+	auto probs=dump.arrayGet<double>((keyname + "/dist").c_str());
+		{
+		auto group_name=keyname + "/choices";
+		auto group=dump.groupOpen(group_name.c_str());
+		group_name+='/';
+
+		dump.iterate(*group,[&dump,&group_name,this]
+			(const char* name)
+			{
+			auto group_name_current=group_name + name;
+		//	m_choices.push_back(PrototypeChoice(dump,group_name_current.c_str()));
+			});
+		}
+
+		{
+		auto group_name=keyname + "/solids";
+		auto group=dump.groupOpen(group_name.c_str());
+		group_name+='/';
+
+		dump.iterate(*group,[&dump,&group_name,this]
+			(const char* name)
+			{
+			auto group_name_current=group_name + name;
+			m_solids.insert({std::string(name),Solid(dump,group_name_current.c_str())});
+			});
+		}
+
+	}
+
 void PrototypeChoices::write(const char* key,DataDump& dump) const
 	{
 	auto group=dump.groupCreate(key);
 	std::string keyname(key);
 
-	
+	auto probs=m_dist.probabilities();
+	dump.write((keyname + "/dist").c_str(),probs.data(),probs.size());	
+
 		{
 		size_t k=0;
 		auto choices_begin=m_choices.data();
@@ -46,9 +80,6 @@ void PrototypeChoices::write(const char* key,DataDump& dump) const
 			++k;
 			}
 		}
-
-	auto probs=m_dist.probabilities();
-	dump.write((keyname + "/dist").c_str(),probs.data(),probs.size());
 
 		{
 		size_t k=0;
