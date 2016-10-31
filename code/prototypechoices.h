@@ -10,13 +10,19 @@
 
 namespace SnowflakeModel
 	{
+	class DataDump;
+
 	class PrototypeChoices
 		{
 		public:
+			explicit PrototypeChoices(const DataDump& dump,const char* name);
+
 			explicit PrototypeChoices(const ResourceObject& obj);
 
 			const PrototypeChoice& choose(RandomGenerator& randgen) noexcept
 				{return m_choices[m_dist(randgen)];}
+
+			void write(const char* key,DataDump& dump) const;
 
 		private:
 			std::map<std::string,Solid> m_solids;
