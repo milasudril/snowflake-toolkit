@@ -65,6 +65,21 @@ void PrototypeChoices::write(const char* key,DataDump& dump) const
 	dump.write((keyname + "/dist").c_str(),probs.data(),probs.size());	
 
 		{
+		auto solids_begin=m_solids.begin();
+		auto solids_end=m_solids.end();
+		auto solids=dump.groupCreate((keyname + "/śolids").c_str());
+		auto group_name=keyname + "/solids/";
+		while(solids_begin!=solids_end)
+			{
+			char id[32];
+			sprintf(id,"%p",&solids_begin->second);
+			auto group_name_current=group_name + id;
+			solids_begin->second.write(group_name_current.c_str(),dump);
+			++solids_begin;
+			}
+		}
+
+		{
 		size_t k=0;
 		auto choices_begin=m_choices.data();
 		auto choices_end=choices_begin + m_choices.size();
@@ -75,23 +90,8 @@ void PrototypeChoices::write(const char* key,DataDump& dump) const
 			char id[32];
 			sprintf(id,"%016zx",k);
 			auto group_name_current=group_name + id;
-		//	choices_begin->write(group_name_current.c_str(),dump);
+			choices_begin->deformationGet().write(group_name_current.c_str(),dump);
 			++choices_begin;
-			++k;
-			}
-		}
-
-		{
-		size_t k=0;
-		auto solids_begin=m_solids.begin();
-		auto solids_end=m_solids.end();
-		auto solids=dump.groupCreate((keyname + "/śolids").c_str());
-		auto group_name=keyname + "/solids/";
-		while(solids_begin!=solids_end)
-			{
-			auto group_name_current=group_name + solids_begin->first;
-			solids_begin->second.write(group_name_current.c_str(),dump);
-			++solids_begin;
 			++k;
 			}
 		}
