@@ -19,6 +19,12 @@ namespace SnowflakeModel
 	class PrototypeChoice
 		{
 		public:
+			explicit PrototypeChoice(Solid&& solid,DeformationData&& deformation)=delete;
+
+			explicit PrototypeChoice(const Solid& solid,DeformationData&& deformation):
+				r_solid(&solid),m_deformation(deformation)
+				{}
+
 			explicit PrototypeChoice(std::map<std::string,Solid>& solids_loaded
 				,std::vector<double>& probabilities
 				,const ResourceObject& obj);
@@ -30,7 +36,7 @@ namespace SnowflakeModel
 				{return m_deformation;}
 
 		private:
-			Solid* r_solid;
+			const Solid* r_solid;
 			DeformationData m_deformation;
 		};
 	}

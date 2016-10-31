@@ -33,14 +33,6 @@ PrototypeChoices::PrototypeChoices(const DataDump& dump,const char* name)
 		auto group=dump.groupOpen(group_name.c_str());
 		group_name+='/';
 
-		dump.iterate(*group,[&dump,&group_name,this]
-			(const char* name)
-			{
-			auto group_name_current=group_name + name;
-		//	m_choices.push_back(PrototypeChoice(dump,group_name_current.c_str()));
-			});
-		}
-
 		{
 		auto group_name=keyname + "/solids";
 		auto group=dump.groupOpen(group_name.c_str());
@@ -54,6 +46,22 @@ PrototypeChoices::PrototypeChoices(const DataDump& dump,const char* name)
 			});
 		}
 
+		dump.iterate(*group,[&dump,&group_name,this]
+			(const char* name)
+			{
+			auto group_name_current=group_name + name;
+			auto g=dump.groupOpen(group_name_current.c_str());
+			uintptr_t solid_id;
+			dump.arrayRead<uintptr_t>((group_name_current + "/solid").c_str())
+				.dataRead(&solid_id,1);
+			auto id_str=std::to_string(solid_id);
+			auto i=m_solids.find(id_str);
+			if(i==m_solids.end())
+				{throw "Solid not found";}
+			DeformationData d(dump,(group_name_current + "/deformation").c_str());
+			m_choices.push_back( PrototypeChoice(i->second,std::move(d) ) );
+			});
+		}
 	}
 
 void PrototypeChoices::write(const char* key,DataDump& dump) const
@@ -72,7 +80,7 @@ void PrototypeChoices::write(const char* key,DataDump& dump) const
 		while(solids_begin!=solids_end)
 			{
 			char id[32];
-			sprintf(id,"%p",&solids_begin->second);
+			sprintf(id,"%lu",reinterpret_cast<uintptr_t>(&solids_begin->second));
 			auto group_name_current=group_name + id;
 			solids_begin->second.write(group_name_current.c_str(),dump);
 			++solids_begin;
@@ -90,7 +98,10 @@ void PrototypeChoices::write(const char* key,DataDump& dump) const
 			char id[32];
 			sprintf(id,"%016zx",k);
 			auto group_name_current=group_name + id;
-			choices_begin->deformationGet().write(group_name_current.c_str(),dump);
+			auto g=dump.groupCreate(group_name_current.c_str());
+			choices_begin->deformationGet().write((group_name_current+"/deformation").c_str(),dump);
+			auto id_solid=reinterpret_cast<uintptr_t>(&choices_begin->solidGet());
+			dump.write((group_name_current+"/solid").c_str(),&id_solid,1);
 			++choices_begin;
 			++k;
 			}
