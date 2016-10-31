@@ -58,7 +58,7 @@ namespace SnowflakeModel
 				}
 
 			size_t read(void* buffer, size_t length)
-				{return fread(buffer,length,1,file_in);}
+				{return fread(buffer,1,length,file_in);}
 
 			int getc()
 				{return ::getc(file_in);}

@@ -75,7 +75,7 @@ void PrototypeChoices::write(const char* key,DataDump& dump) const
 		{
 		auto solids_begin=m_solids.begin();
 		auto solids_end=m_solids.end();
-		auto solids=dump.groupCreate((keyname + "/śolids").c_str());
+		auto solids=dump.groupCreate((keyname + "/solids").c_str());
 		auto group_name=keyname + "/solids/";
 		while(solids_begin!=solids_end)
 			{

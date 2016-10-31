@@ -8,6 +8,7 @@
 
 #include <utility>
 #include <cstddef>
+#include <type_traits>
 
 namespace SnowflakeModel
 	{
@@ -62,6 +63,11 @@ namespace SnowflakeModel
 			Type typeGet() const noexcept;
 
 			ResourceObject objectGet(const char* name) const;
+
+			template<class T,typename std::enable_if<std::is_same<T, std::nullptr_t>::value, int>::type = 0>
+			void objectGet(T)=delete;
+
+
 			bool objectExists(const char* name) const noexcept;
 			size_t objectCountGet() const noexcept;
 			ResourceObject objectGet(size_t index) const;

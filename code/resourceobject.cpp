@@ -57,7 +57,12 @@ ResourceObject::ResourceObject(DataSource& readhandler)
 	m_handle=json_load_callback(loadCallback,&readhandler,0,&status);
 	if(m_handle==nullptr)
 		{
-		throw "Could not load JSON data";
+		if(status.position!=0)
+			{
+			fprintf(stderr,"%s:%d: error: %s.\n",readhandler.nameGet(),status.line,status.text);
+			throw "Faild to load JSON data";
+			}
+		m_handle=json_object();
 		}
 	}
 

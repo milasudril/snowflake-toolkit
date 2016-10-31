@@ -29,17 +29,19 @@ DeformationData::DeformationData(const ResourceObject& obj)
 	if(obj.typeGet()!=ResourceObject::Type::ARRAY)
 		{throw "Expected deformation data as an JSON array";}
 
-	if(obj.objectCountGet()==0)
+	if(obj.objectCountGet()<3u)
 		{throw "No information availible about deformation";}
 
-	auto distribution=static_cast<const char*>(obj.objectGet(static_cast<size_t>(0)));
+	name=static_cast<const char*>(obj.objectGet(static_cast<size_t>(0)));
+
+	auto distribution=static_cast<const char*>(obj.objectGet(static_cast<size_t>(1)));
 	drawMethod=drawMethodFromName(distribution);
 	name=distribution;
 	if(drawMethod==custom_distribution)
 		{
-		if(obj.objectCountGet()!=1)
+		if(obj.objectCountGet()!=3)
 			{throw "Incorrect number of arguments for custom distribution";}
-		auto src=static_cast<const char*>(obj.objectGet(1u));
+		auto src=static_cast<const char*>(obj.objectGet(2u));
 		distribution_data=distributionLoad(src);
 		distribution_src=src;	
 		return;
@@ -47,16 +49,16 @@ DeformationData::DeformationData(const ResourceObject& obj)
 
 	if(hasMean(drawMethod))
 		{
-		if(obj.objectCountGet()<2u)
+		if(obj.objectCountGet()<3u)
 			{throw "No mean value given for distribution";}
-		mean=static_cast<double>(obj.objectGet(1u));
+		mean=static_cast<double>(obj.objectGet(2u));
 		}
 
 	if(hasStd(drawMethod))
 		{
-		if(obj.objectCountGet()<3u)
+		if(obj.objectCountGet()<4u)
 			{throw "No standard deviation given for distribution";}
-		standard_deviation=static_cast<double>(obj.objectGet(2u));
+		standard_deviation=static_cast<double>(obj.objectGet(3u));
 		}
 	}
 
