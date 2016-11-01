@@ -26,8 +26,7 @@
 #include "getdate.h"
 #include "filenameesc.h"
 #include "randomgenerator.h"
-#include "xytable.h"
-#include "stride_iterator.h"
+#include "prototypechoices.h"
 #include "alice/commandline.hpp" //Alice will replace getopt later
 
 #include <getopt.h>
@@ -61,6 +60,7 @@ static constexpr char PARAM_STOPCOND='Q';
 static constexpr char PARAM_MERGERETRIES='R';
 static constexpr char PARAM_OVERLAP_MAX='S';
 static constexpr char PARAM_OVERLAP_MIN='T';
+static constexpr char PARAM_PROTOTYPECHOICES='U';
 
 
 static const struct option PROGRAM_OPTIONS[]=
@@ -86,6 +86,7 @@ static const struct option PROGRAM_OPTIONS[]=
 		,{"merge-retries",required_argument,nullptr,PARAM_MERGERETRIES}
 		,{"overlap-max",required_argument,nullptr,PARAM_OVERLAP_MAX}
 		,{"overlap-min",required_argument,nullptr,PARAM_OVERLAP_MIN}
+		,{"prototype-choices",required_argument,nullptr,PARAM_PROTOTYPECHOICES}
 		,{0,0,0,0}
 	};
 
@@ -121,8 +122,7 @@ struct Setup
 		} m_data;
 
 
-	std::string m_crystal;
-	std::vector<SnowflakeModel::DeformationData> m_deformations;
+	SnowflakeModel::PrototypeChoices m_prototypes;
 	std::string m_output_dir;
 	std::string m_statefile;
 	std::string m_stopcond_name;
@@ -283,6 +283,9 @@ Setup::Setup(int argc,char** argv):
 
 			case PARAM_OVERLAP_MIN:
 				m_data.m_overlap_min=atof(optarg);
+				break;
+
+			case PARAM_PROTOTYPECHOICES:
 				break;
 
 			case '?':

@@ -5,23 +5,20 @@
 #include "prototypechoices.h"
 #include "resourceobject.h"
 #include "solid.h"
+#include "file_in.h"
 
 using namespace SnowflakeModel;
 
-PrototypeChoices::PrototypeChoices(const ResourceObject& obj)
+void PrototypeChoices::append(const char* filename)
 	{
+	ResourceObject obj{FileIn(filename)};
 	if(obj.typeGet()!=ResourceObject::Type::ARRAY)
 		{throw "Expected an array of prototype choices";}
 
 	auto n_objs=obj.objectCountGet();
-	std::vector<double> probs;
-	probs.reserve(n_objs);
 	for(decltype(n_objs) k=0;k<n_objs;++k)
-		{
-		m_choices.push_back(PrototypeChoice(m_solids,probs,obj.objectGet(k)));
-		}
-
-	m_dist=std::discrete_distribution<size_t>(probs.data(),probs.data() + n_objs);
+		{m_choices.push_back(PrototypeChoice(m_solids,m_probs,obj.objectGet(k)));}
+	m_dist_dirty=1;
 	}
 
 PrototypeChoices::PrototypeChoices(const DataDump& dump,const char* name)
@@ -62,6 +59,7 @@ PrototypeChoices::PrototypeChoices(const DataDump& dump,const char* name)
 			m_choices.push_back( PrototypeChoice(i->second,std::move(d) ) );
 			});
 		}
+	m_dist_dirty=1;
 	}
 
 void PrototypeChoices::write(const char* key,DataDump& dump) const

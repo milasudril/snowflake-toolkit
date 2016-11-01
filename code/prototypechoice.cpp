@@ -42,3 +42,4 @@ PrototypeChoice::PrototypeChoice(std::map<std::string,Solid>& solids_loaded
 	probabilities.push_back(static_cast<double>(obj.objectGet(1u)));
 
 	}
+
