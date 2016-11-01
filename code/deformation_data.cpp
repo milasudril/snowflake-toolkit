@@ -25,6 +25,7 @@ inline bool hasMean(SnowflakeModel::DrawMethod m)
 	{return m!=custom_distribution;}
 
 DeformationData::DeformationData(const ResourceObject& obj)
+	:mean(1.0f),standard_deviation(1.0f)
 	{
 	if(obj.typeGet()!=ResourceObject::Type::ARRAY)
 		{throw "Expected deformation data as an JSON array";}
@@ -36,7 +37,6 @@ DeformationData::DeformationData(const ResourceObject& obj)
 
 	auto distribution=static_cast<const char*>(obj.objectGet(static_cast<size_t>(1)));
 	drawMethod=drawMethodFromName(distribution);
-	name=distribution;
 	if(drawMethod==custom_distribution)
 		{
 		if(obj.objectCountGet()!=3)
@@ -66,7 +66,7 @@ void DeformationData::write(const char* key,DataDump& dump) const
 	{
 	auto group=dump.groupCreate(key);
 	std::string keyname(key);
-
+	dump.write((keyname + "/name").c_str(),&name,1);
 	dump.write((keyname + "/mean").c_str(),&mean,1);
 	dump.write((keyname + "/standard_deviation").c_str(),&standard_deviation,1);
 	auto draw_method_name=keyFromDrawMethod(drawMethod);
@@ -78,10 +78,11 @@ void DeformationData::write(const char* key,DataDump& dump) const
 	dump.write((keyname + "/distribution_src").c_str(),&distribution_src,1);
 	}
 
-DeformationData::DeformationData(const DataDump& dump,const char* name)
+DeformationData::DeformationData(const DataDump& dump,const char* gname)
 	{
-	auto groupname=std::string(name);
-	
+	auto groupname=std::string(gname);
+	name=std::string( dump.arrayGet<SnowflakeModel::DataDump::StringHolder>
+		(  (groupname + "/name").c_str()).at(0));
 	dump.arrayRead<decltype(mean)>((groupname +"/mean").c_str()).dataRead(&mean,1);
 	dump.arrayRead<decltype(standard_deviation)>((groupname +"/standard_deviation").c_str())
 		.dataRead(&standard_deviation,1);

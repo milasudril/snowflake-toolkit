@@ -24,7 +24,7 @@ namespace SnowflakeModel
 
 	struct DeformationData
 		{
-		DeformationData()=default;
+		DeformationData():mean(1.0f),standard_deviation(1.0f){}
 		explicit DeformationData(const ResourceObject& obj);
 		explicit DeformationData(const DataDump& dump,const char* name);
 
