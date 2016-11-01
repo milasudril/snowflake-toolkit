@@ -1411,21 +1411,24 @@ int main(int argc,char** argv)
 
 		if(setup.m_data.m_actions&Setup::PARAM_SHOW)
 			{
-			auto& params=s_in.deformationTemplatesGet();
-			auto ptr=params.data();
-			auto end=ptr+params.size();
-			printf("Available parameters are:\n");
-			while(ptr!=end)
+			setup.m_prototypes.solidsEnum([](const char* name,const SnowflakeModel::Solid& solid)
 				{
-				auto paramname=ptr->paramnamesBegin();
-				auto paramnames_end=ptr->paramnamesEnd();
-				while(paramname!=paramnames_end)
+				auto& params=solid.deformationTemplatesGet();
+				auto ptr=params.data();
+				auto end=ptr+params.size();
+				printf("Parameters for %s are:\n",name);
+				while(ptr!=end)
 					{
-					printf("    %s\n",paramname->data());
-					++paramname;
+					auto paramname=ptr->paramnamesBegin();
+					auto paramnames_end=ptr->paramnamesEnd();
+					while(paramname!=paramnames_end)
+						{
+						printf("    %s\n",paramname->data());
+						++paramname;
+						}
+					++ptr;
 					}
-				++ptr;
-				}
+				});
 			return 0;
 			}
 
@@ -1444,12 +1447,11 @@ int main(int argc,char** argv)
 		std::unique_ptr<Simstate> state;
 		if(setup.m_statefile.size()==0)
 			{
-			state.reset(new Simstate(setup,s_in,monitor(setup.m_stopcond_arg.c_str())));
+			state.reset(new Simstate(setup,monitor(setup.m_stopcond_arg.c_str())));
 			}
 		else
 			{
-			state.reset(new Simstate(setup,s_in
-				,SnowflakeModel::DataDump(setup.m_statefile.c_str(),SnowflakeModel::DataDump::IOMode::READ)
+			state.reset(new Simstate(setup,SnowflakeModel::DataDump(setup.m_statefile.c_str(),SnowflakeModel::DataDump::IOMode::READ)
 				,monitor(setup.m_stopcond_arg.c_str())));
 			}
 		auto now=SnowflakeModel::getdate();
@@ -1471,7 +1473,6 @@ int main(int argc,char** argv)
 				,SnowflakeModel::DataDump::IOMode::WRITE);
 			setup.write(dump);
 			state->write(dump);
-			s_in.write("solid_in",dump);
 			}
 
 		state->statsDump(1);
