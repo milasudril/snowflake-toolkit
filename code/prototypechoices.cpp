@@ -9,15 +9,32 @@
 
 using namespace SnowflakeModel;
 
+
+namespace
+	{
+	std::string makePath(const std::string& filename)
+		{
+		auto ret=filename;
+		while(ret.size()!=0)
+			{
+			if(ret.back()=='/')
+				{return ret;}
+			ret.pop_back();
+			}
+		return ret;
+		}
+
+	}
+
 void PrototypeChoices::append(const char* filename)
 	{
 	ResourceObject obj{FileIn(filename)};
 	if(obj.typeGet()!=ResourceObject::Type::ARRAY)
 		{throw "Expected an array of prototype choices";}
-
+	auto in_dir=makePath(filename);
 	auto n_objs=obj.objectCountGet();
 	for(decltype(n_objs) k=0;k<n_objs;++k)
-		{m_choices.push_back(PrototypeChoice(m_solids,m_probs,obj.objectGet(k)));}
+		{m_choices.push_back(PrototypeChoice(m_solids,m_probs,in_dir.c_str(),obj.objectGet(k)));}
 	m_dist_dirty=1;
 	}
 

@@ -24,7 +24,7 @@ static const char* keyFromDrawMethod(DrawMethod name)
 inline bool hasMean(SnowflakeModel::DrawMethod m)
 	{return m!=custom_distribution;}
 
-DeformationData::DeformationData(const ResourceObject& obj)
+DeformationData::DeformationData(const char* in_dir,const ResourceObject& obj)
 	:mean(1.0f),standard_deviation(1.0f)
 	{
 	if(obj.typeGet()!=ResourceObject::Type::ARRAY)
@@ -42,7 +42,7 @@ DeformationData::DeformationData(const ResourceObject& obj)
 		if(obj.objectCountGet()!=3)
 			{throw "Incorrect number of arguments for custom distribution";}
 		auto src=static_cast<const char*>(obj.objectGet(2u));
-		distribution_data=distributionLoad(src);
+		distribution_data=distributionLoad((std::string(in_dir) + src).c_str());
 		distribution_src=src;	
 		return;
 		}

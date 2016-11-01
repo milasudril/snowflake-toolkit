@@ -40,13 +40,13 @@ PrototypeChoice::PrototypeChoice(std::map<std::string,Solid>& solids_loaded
 	}
 
 PrototypeChoice::PrototypeChoice(std::map<std::string,Solid>& solids_loaded
-	,std::vector<double>& probabilities
+	,std::vector<double>& probabilities,const char* in_dir
 	,const ResourceObject& obj)
-	{	
-	auto prototype=static_cast<const char*>(obj.objectGet("prototype"));
+	{
+	auto prototype=std::string(in_dir) + static_cast<const char*>(obj.objectGet("prototype"));
 	auto i=solids_loaded.find(prototype);
 	i=i==solids_loaded.end()?
-		solids_loaded.insert({prototype,solid_load(prototype)}).first
+		solids_loaded.insert({prototype,solid_load(prototype.c_str())}).first
 		:i;
 	r_solid=&i->second;
 	
@@ -55,7 +55,7 @@ PrototypeChoice::PrototypeChoice(std::map<std::string,Solid>& solids_loaded
 		{throw "Deformations has to be an array";}
 	auto def_count=deformations.objectCountGet();
 	for(decltype(def_count) k=0;k<def_count;++k)
-		{m_deformations.push_back(DeformationData(deformations.objectGet(k)));}
+		{m_deformations.push_back(DeformationData(in_dir,deformations.objectGet(k)));}
 
 	probabilities.push_back(static_cast<double>(obj.objectGet("probability")));
 	}

@@ -26,6 +26,7 @@ namespace SnowflakeModel
 
 			explicit PrototypeChoice(std::map<std::string,Solid>& solids_loaded
 				,std::vector<double>& probabilities
+				,const char* in_dir
 				,const ResourceObject& obj);
 
 			explicit PrototypeChoice(std::map<std::string,Solid>& solids_loaded
