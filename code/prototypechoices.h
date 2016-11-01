@@ -37,7 +37,17 @@ namespace SnowflakeModel
 
 			void write(const char* key,DataDump& dump) const;
 
-			void append(const char* filename);			
+			void append(const char* filename);
+
+			void append(const char* prototype_name,double probability
+				,Twins<const DeformationData*> deformations)
+				{
+				m_choices.push_back(PrototypeChoice(m_solids,m_probs,prototype_name,probability,deformations));
+				m_dist_dirty=1;
+				}
+
+			size_t choicesCount() const noexcept
+				{return m_choices.size();}
 
 		private:
 			std::map<std::string,Solid> m_solids;

@@ -23,6 +23,12 @@ static Solid solid_load(const char* filename)
 	}
 
 PrototypeChoice::PrototypeChoice(std::map<std::string,Solid>& solids_loaded
+	,std::vector<double>& probabilities,const char* prototype_name,double probability
+	,Twins<const DeformationData*> deformations)
+	{
+	}
+
+PrototypeChoice::PrototypeChoice(std::map<std::string,Solid>& solids_loaded
 	,std::vector<double>& probabilities
 	,const ResourceObject& obj)
 	{	

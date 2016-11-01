@@ -160,7 +160,7 @@ void Setup::validate() const
 			"Try --help for more information.";
 		}
 
-	if(m_deformations.size()==0 && !( (m_data.m_actions&HELP_SHOW) || (m_data.m_actions&PARAM_SHOW)))
+	if(m_prototypes.choicesCount()==0 && !( (m_data.m_actions&HELP_SHOW) || (m_data.m_actions&PARAM_SHOW)))
 		{
 		throw "No deformation is given. "
 			"Try --param-show together with the chosen crystal file for more "
@@ -286,6 +286,7 @@ Setup::Setup(int argc,char** argv):
 				break;
 
 			case PARAM_PROTOTYPECHOICES:
+				m_prototypes.append(optarg);
 				break;
 
 			case '?':
