@@ -154,17 +154,10 @@ void Setup::validate() const
 	if(m_data.m_growthrate<1e-7)
 		{throw "Growthrate must be non-zero";}
 
-	if(m_crystal=="" && !(m_data.m_actions&HELP_SHOW))
+	if(m_prototypes.choicesCount()==0 && !(m_data.m_actions&HELP_SHOW))
 		{
 		throw "Crystal file is not given. "
 			"Try --help for more information.";
-		}
-
-	if(m_prototypes.choicesCount()==0 && !( (m_data.m_actions&HELP_SHOW) || (m_data.m_actions&PARAM_SHOW)))
-		{
-		throw "No deformation is given. "
-			"Try --param-show together with the chosen crystal file for more "
-			"information.";
 		}
 
 	if( m_output_dir==""
@@ -191,6 +184,7 @@ Setup::Setup(int argc,char** argv):
 	m_data.m_overlap_min=0;
 	m_data.m_overlap_max=0;
 	m_data.m_merge_retries=0;
+	std::string prototype;
 
 	while( (c=getopt_long(argc,argv,"",PROGRAM_OPTIONS,&option_index))!=-1)
 		{
@@ -201,7 +195,7 @@ Setup::Setup(int argc,char** argv):
 				break;
 
 			case PARAM_SHAPE:
-				m_crystal=optarg;
+				prototype=optarg;
 				break;
 
 			case PARAM_DEFORMATION:
@@ -339,36 +333,43 @@ Setup::Setup(int argc,char** argv):
 			{m_data.m_size_z=atoi(temp.data());}
 		}
 
+	if(prototype.size())
 		{
+		std::vector<SnowflakeModel::DeformationData> defs;
 		auto ptr=deformations.data();
 		auto ptr_end=ptr+deformations.size();
 		while(ptr!=ptr_end)
 			{
-			m_deformations.push_back(
+			defs.push_back(
 				Alice::make_value<SnowflakeModel::DeformationData,Alice::CmdLineError>(*ptr));
 			++ptr;
 			}
+		m_prototypes.append(prototype.c_str(),1.0,{defs.data(),defs.data() + defs.size()});
 		}
 	}
 
 void Setup::paramsDump()
 	{
 	printf("Parameters:\n\n"
-		"Shape:         %s\n"
-		"Seed:          %u\n"
-		"N:             %zu\n"
-		"droprate:      %.7g\n"
-		"growthrate:    %.7g\n"
-		"meltrate:      %.7g\n"
-		"overlap range: [%.7g, %.7g]\n"
-		"merge retries: %zu\n"
-		,m_crystal.data()
+		"Prototype:         %s\n"
+		"Prototype choices: %s\n"
+		"Seed:              %u\n"
+		"N:                 %zu\n"
+		"droprate:          %.7g\n"
+		"growthrate:        %.7g\n"
+		"meltrate:          %.7g\n"
+		"overlap range:     [%.7g, %.7g]\n"
+		"merge retries:     %zu\n"
+		,m_prototype.c_str(),m_prototype_choices.c_str()
 		,m_data.m_seed,m_data.m_N,m_data.m_droprate,m_data.m_growthrate,m_data.m_meltrate
 		,m_data.m_overlap_min,m_data.m_overlap_max,m_data.m_merge_retries);
-	printf("\nDeformations:\n");
+
+	if(m_prototype.size() && m_prototype_choices.size()==0)
 		{
-		auto ptr=m_deformations.data();
-		auto ptr_end=ptr+m_deformations.size();
+		printf("\nDeformations:\n");
+		auto choice=m_choices.choicesBegin();
+		auto ptr=choice->deformationsBegin();
+		auto ptr_end=choice->deformationsEnd();
 		while(ptr!=ptr_end)
 			{
 			printf("    name=%s, mean=%.7g, standard deviation=%.7g\n"

@@ -49,6 +49,12 @@ namespace SnowflakeModel
 			size_t choicesCount() const noexcept
 				{return m_choices.size();}
 
+			const PrototypeChoice* choicesBegin() const noexcept
+				{return m_choices.data();}
+		
+			const PrototypeChoice* choicesEnd() const noexcept
+				{return m_choices.data() + m_choices.size();}
+
 		private:
 			std::map<std::string,Solid> m_solids;
 			std::vector<PrototypeChoice> m_choices;
