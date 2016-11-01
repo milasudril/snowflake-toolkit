@@ -16,6 +16,10 @@ namespace SnowflakeModel
 	class PrototypeChoices
 		{
 		public:
+			PrototypeChoices(const PrototypeChoices&)=delete;
+			PrototypeChoices& operator=(const PrototypeChoices&)=delete;
+			PrototypeChoices(PrototypeChoices&&)=default;
+			PrototypeChoices& operator=(PrototypeChoices&&)=default;
 			explicit PrototypeChoices(const DataDump& dump,const char* name);
 
 			PrototypeChoices():m_dist_dirty(0){}
