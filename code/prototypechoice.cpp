@@ -26,6 +26,17 @@ PrototypeChoice::PrototypeChoice(std::map<std::string,Solid>& solids_loaded
 	,std::vector<double>& probabilities,const char* prototype_name,double probability
 	,Twins<const DeformationData*> deformations)
 	{
+	auto i=solids_loaded.find(prototype_name);
+	i=i==solids_loaded.end()?
+		solids_loaded.insert({prototype_name,solid_load(prototype_name)}).first
+		:i;
+	r_solid=&i->second;
+	while(deformations.first!=deformations.second)
+		{
+		m_deformations.push_back(*deformations.first);
+		++deformations.first;
+		}
+	probabilities.push_back(probability);
 	}
 
 PrototypeChoice::PrototypeChoice(std::map<std::string,Solid>& solids_loaded
