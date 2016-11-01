@@ -7,6 +7,7 @@
 #define SNOWFLAKEMODEL_PROTOTYPECHOICES_H
 
 #include "prototypechoice.h"
+#include "solid.h"
 #include <cassert>
 
 namespace SnowflakeModel
@@ -59,6 +60,9 @@ namespace SnowflakeModel
 			const PrototypeChoice* choicesEnd() const noexcept
 				{return m_choices.data() + m_choices.size();}
 
+			template<class Callback>
+			void solidsEnum(Callback&& cb) const;
+
 		private:
 			std::map<std::string,Solid> m_solids;
 			std::vector<PrototypeChoice> m_choices;
@@ -67,6 +71,18 @@ namespace SnowflakeModel
 			bool m_dist_dirty;
 
 		};
+
+	template<class Callback>
+	void PrototypeChoices::solidsEnum(Callback&& cb) const
+		{
+		auto ptr=m_solids.begin();
+		auto ptr_end=m_solids.end();
+		while(ptr!=ptr_end)
+			{
+			cb(ptr->first.c_str(),ptr->second);
+			++ptr;
+			}
+		}
 	}
 
 #endif
