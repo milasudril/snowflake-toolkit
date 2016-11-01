@@ -55,8 +55,15 @@ PrototypeChoices::PrototypeChoices(const DataDump& dump,const char* name)
 			auto i=m_solids.find(id_str);
 			if(i==m_solids.end())
 				{throw "Solid not found";}
-			DeformationData d(dump,(group_name_current + "/deformation").c_str());
-			m_choices.push_back( PrototypeChoice(i->second,std::move(d) ) );
+			auto defgroup_name=group_name_current + "/deformations";
+			auto g2=dump.groupOpen(defgroup_name.c_str());
+			defgroup_name+='/';
+			PrototypeChoice choice(i->second);
+			dump.iterate(*g2,[&dump,&choice,&defgroup_name,this](const char* name)
+				{
+				choice.deformationAppend(DeformationData(dump,(defgroup_name + name).c_str()));
+				});
+			m_choices.push_back( std::move(choice) );
 			});
 		}
 	m_dist_dirty=1;
@@ -97,9 +104,22 @@ void PrototypeChoices::write(const char* key,DataDump& dump) const
 			sprintf(id,"%016zx",k);
 			auto group_name_current=group_name + id;
 			auto g=dump.groupCreate(group_name_current.c_str());
-			choices_begin->deformationGet().write((group_name_current+"/deformation").c_str(),dump);
 			auto id_solid=reinterpret_cast<uintptr_t>(&choices_begin->solidGet());
 			dump.write((group_name_current+"/solid").c_str(),&id_solid,1);
+			auto defgroup_name=group_name_current+"/deformations";
+			auto defgroup=dump.groupCreate(defgroup_name.c_str());
+			defgroup_name+='/';
+			auto defs_begin=choices_begin->deformationsBegin();
+			auto defs_end=choices_begin->deformationsEnd();
+			size_t l=0;
+			while(defs_begin!=defs_end)
+				{
+				char id2[32];
+				sprintf(id2,"%016zx",l);
+				defs_begin->write((defgroup_name + id2).c_str(),dump);
+				++defs_begin;
+				++l;
+				}
 			++choices_begin;
 			++k;
 			}

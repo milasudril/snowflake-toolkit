@@ -1,0 +1,4 @@
+[
+ {"prototype":"../crystal-prototypes/suzanne.ice","probability":1,"deformations":[["s_x","delta",1],["s_y","delta",2],["s_y","delta",3]]}
+,{"prototype":"../crystal-prototypes/spheroid-lowpoly.ice","probability":3,"deformations":[["s","exponential",4]]}
+]
