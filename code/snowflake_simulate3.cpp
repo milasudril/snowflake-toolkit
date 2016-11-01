@@ -411,7 +411,7 @@ void helpShow()
 		"    gamma,mean,std   A gamma distribution with mean and standard deviation\n\n"
 		"--prototype-choices=filename\n"
 		"    Load prototypes, and deformations from filename. The file has to contain JSON data in the following format\n"
-		"[{\"prototype\":\"filename\",\"probability\":probability,\"deformations\":[[deformation],...]},...]"
+		"[{\"prototype\":\"filename\",\"probability\":probability,\"deformations\":[[deformation],...]},...]\n\n"
 		"--output-dir=output_directory\n"
 		"    Directory for storing output data\n\n"
 		"--dump-stats=N\n"
