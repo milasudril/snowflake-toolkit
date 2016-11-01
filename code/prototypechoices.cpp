@@ -24,7 +24,7 @@ void PrototypeChoices::append(const char* filename)
 PrototypeChoices::PrototypeChoices(const DataDump& dump,const char* name)
 	{
 	std::string keyname(name);
-	auto probs=dump.arrayGet<double>((keyname + "/dist").c_str());
+	m_probs=dump.arrayGet<double>((keyname + "/dist").c_str());
 		{
 		auto group_name=keyname + "/choices";
 		auto group=dump.groupOpen(group_name.c_str());
@@ -72,10 +72,8 @@ PrototypeChoices::PrototypeChoices(const DataDump& dump,const char* name)
 void PrototypeChoices::write(const char* key,DataDump& dump) const
 	{
 	auto group=dump.groupCreate(key);
-	std::string keyname(key);
-
-	auto probs=m_dist.probabilities();
-	dump.write((keyname + "/dist").c_str(),probs.data(),probs.size());	
+	std::string keyname(key);	
+	dump.write((keyname + "/dist").c_str(),m_probs.data(),m_probs.size());	
 
 		{
 		auto solids_begin=m_solids.begin();
