@@ -330,7 +330,7 @@ Simstate::Simstate(const Alice::CommandLine<OptionDescriptor>& cmd_line):
 		{
 		const auto& x=cmd_line.get<Alice::Stringkey("scale")>();
 		if(!x)
-			{throw "No deformation is given. Use --params-show to list the name of availible parameters";}
+			{throw "No scale parameter is given";}
 		scale=x.valueGet();
 		}
 
