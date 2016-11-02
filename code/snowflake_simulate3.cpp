@@ -26,8 +26,7 @@
 #include "getdate.h"
 #include "filenameesc.h"
 #include "randomgenerator.h"
-#include "xytable.h"
-#include "stride_iterator.h"
+#include "prototypechoices.h"
 #include "alice/commandline.hpp" //Alice will replace getopt later
 
 #include <getopt.h>
@@ -61,6 +60,7 @@ static constexpr char PARAM_STOPCOND='Q';
 static constexpr char PARAM_MERGERETRIES='R';
 static constexpr char PARAM_OVERLAP_MAX='S';
 static constexpr char PARAM_OVERLAP_MIN='T';
+static constexpr char PARAM_PROTOTYPECHOICES='U';
 
 
 static const struct option PROGRAM_OPTIONS[]=
@@ -86,6 +86,7 @@ static const struct option PROGRAM_OPTIONS[]=
 		,{"merge-retries",required_argument,nullptr,PARAM_MERGERETRIES}
 		,{"overlap-max",required_argument,nullptr,PARAM_OVERLAP_MAX}
 		,{"overlap-min",required_argument,nullptr,PARAM_OVERLAP_MIN}
+		,{"prototype-choices",required_argument,nullptr,PARAM_PROTOTYPECHOICES}
 		,{0,0,0,0}
 	};
 
@@ -121,12 +122,13 @@ struct Setup
 		} m_data;
 
 
-	std::string m_crystal;
-	std::vector<SnowflakeModel::DeformationData> m_deformations;
+	SnowflakeModel::PrototypeChoices m_prototypes;
 	std::string m_output_dir;
 	std::string m_statefile;
 	std::string m_stopcond_name;
 	std::string m_stopcond_arg;
+	std::string m_prototype;
+	std::string m_prototype_choices;
 
 	static constexpr size_t N=1023;
 	static constexpr float DROPRATE=100;
@@ -154,17 +156,10 @@ void Setup::validate() const
 	if(m_data.m_growthrate<1e-7)
 		{throw "Growthrate must be non-zero";}
 
-	if(m_crystal=="" && !(m_data.m_actions&HELP_SHOW))
+	if(m_prototypes.choicesCount()==0 && !(m_data.m_actions&HELP_SHOW))
 		{
 		throw "Crystal file is not given. "
 			"Try --help for more information.";
-		}
-
-	if(m_deformations.size()==0 && !( (m_data.m_actions&HELP_SHOW) || (m_data.m_actions&PARAM_SHOW)))
-		{
-		throw "No deformation is given. "
-			"Try --param-show together with the chosen crystal file for more "
-			"information.";
 		}
 
 	if( m_output_dir==""
@@ -201,7 +196,7 @@ Setup::Setup(int argc,char** argv):
 				break;
 
 			case PARAM_SHAPE:
-				m_crystal=optarg;
+				m_prototype=optarg;
 				break;
 
 			case PARAM_DEFORMATION:
@@ -285,6 +280,11 @@ Setup::Setup(int argc,char** argv):
 				m_data.m_overlap_min=atof(optarg);
 				break;
 
+			case PARAM_PROTOTYPECHOICES:
+				m_prototypes.append(optarg);
+				m_prototype_choices=optarg;
+				break;
+
 			case '?':
 				throw "Invalid parameter given";
 
@@ -335,36 +335,43 @@ Setup::Setup(int argc,char** argv):
 			{m_data.m_size_z=atoi(temp.data());}
 		}
 
+	if(m_prototype.size())
 		{
+		std::vector<SnowflakeModel::DeformationData> defs;
 		auto ptr=deformations.data();
 		auto ptr_end=ptr+deformations.size();
 		while(ptr!=ptr_end)
 			{
-			m_deformations.push_back(
+			defs.push_back(
 				Alice::make_value<SnowflakeModel::DeformationData,Alice::CmdLineError>(*ptr));
 			++ptr;
 			}
+		m_prototypes.append(m_prototype.c_str(),1.0,{defs.data(),defs.data() + defs.size()});
 		}
 	}
 
 void Setup::paramsDump()
 	{
 	printf("Parameters:\n\n"
-		"Shape:         %s\n"
-		"Seed:          %u\n"
-		"N:             %zu\n"
-		"droprate:      %.7g\n"
-		"growthrate:    %.7g\n"
-		"meltrate:      %.7g\n"
-		"overlap range: [%.7g, %.7g]\n"
-		"merge retries: %zu\n"
-		,m_crystal.data()
+		"Prototype:         %s\n"
+		"Prototype choices: %s\n"
+		"Seed:              %u\n"
+		"N:                 %zu\n"
+		"droprate:          %.7g\n"
+		"growthrate:        %.7g\n"
+		"meltrate:          %.7g\n"
+		"overlap range:     [%.7g, %.7g]\n"
+		"merge retries:     %zu\n"
+		,m_prototype.c_str(),m_prototype_choices.c_str()
 		,m_data.m_seed,m_data.m_N,m_data.m_droprate,m_data.m_growthrate,m_data.m_meltrate
 		,m_data.m_overlap_min,m_data.m_overlap_max,m_data.m_merge_retries);
-	printf("\nDeformations:\n");
+
+	if(m_prototype.size() && m_prototype_choices.size()==0)
 		{
-		auto ptr=m_deformations.data();
-		auto ptr_end=ptr+m_deformations.size();
+		printf("\nDeformations:\n");
+		auto choice=m_prototypes.choicesBegin();
+		auto ptr=choice->deformationsBegin();
+		auto ptr_end=choice->deformationsEnd();
 		while(ptr!=ptr_end)
 			{
 			printf("    name=%s, mean=%.7g, standard deviation=%.7g\n"
@@ -402,6 +409,9 @@ void helpShow()
 		"    delta,mean  A Dirac delta distribution. This will distribution will always return mean.\n"
 		"    exponential,mean  An exponential distribution with a give mean\n"
 		"    gamma,mean,std   A gamma distribution with mean and standard deviation\n\n"
+		"--prototype-choices=filename\n"
+		"    Load prototypes, and deformations from filename. The file has to contain JSON data in the following format\n"
+		"[{\"prototype\":\"filename\",\"probability\":probability,\"deformations\":[[deformation],...]},...]\n\n"
 		"--output-dir=output_directory\n"
 		"    Directory for storing output data\n\n"
 		"--dump-stats=N\n"
@@ -476,26 +486,11 @@ void Setup::write(SnowflakeModel::DataDump& dump)
 	{
 	auto group=dump.groupCreate("setup");
 	dump.write("setup/output_dir",&m_output_dir,1);
-	dump.write("setup/crystal",&m_crystal,1);
+	dump.write("setup/prototype",&m_prototype,1);
+	dump.write("setup/prototype_choices",&m_prototype_choices,1);
 	dump.write("setup/stopcond_name",&m_stopcond_name,1);
 	dump.write("setup/stopcond_arg",&m_stopcond_arg,1);
-
-		{
-		size_t k=0;
-		auto defs_begin=m_deformations.data();
-		auto defs_end=defs_begin + m_deformations.size();
-		auto defgroup=dump.groupCreate("setup/deformations");
-		auto defgroup_name=std::string("setup/deformations/");
-		while(defs_begin!=defs_end)
-			{
-			char id[32];
-			sprintf(id,"%016zx",k);
-			auto group_name_current=defgroup_name + id;
-			defs_begin->write(group_name_current.c_str(),dump);
-			++defs_begin;
-			++k;
-			}
-		}
+	m_prototypes.write("setup/prototypes",dump);
 	dump.write("setup/data",&m_data,1);
 	}
 
@@ -503,21 +498,11 @@ Setup::Setup(const SnowflakeModel::DataDump& dump)
 	{
 	m_data=dump.arrayGet<Setup::Data>("setup/data").at(0);
 	m_output_dir=dump.arrayGet<SnowflakeModel::DataDump::StringHolder>("setup/output_dir").at(0);
-	m_crystal=dump.arrayGet<SnowflakeModel::DataDump::StringHolder>("setup/crystal").at(0);
+	m_prototype=dump.arrayGet<SnowflakeModel::DataDump::StringHolder>("setup/prototype").at(0);
+	m_prototype_choices=dump.arrayGet<SnowflakeModel::DataDump::StringHolder>("setup/prototype_choices").at(0);
 	m_stopcond_name=dump.arrayGet<SnowflakeModel::DataDump::StringHolder>("setup/stopcond_name").at(0);
 	m_stopcond_arg=dump.arrayGet<SnowflakeModel::DataDump::StringHolder>("setup/stopcond_arg").at(0);
-		
-		{
-		auto defgroup_name=std::string("setup/deformations");
-		auto defgroup=dump.groupOpen(defgroup_name.c_str());
-		defgroup_name+='/';
-		dump.iterate(*defgroup,[&dump,&defgroup_name,this]
-			(const char* group_name)
-			{
-			auto group_name_current=defgroup_name + group_name;
-			m_deformations.push_back(SnowflakeModel::DeformationData(dump,group_name_current.c_str()));
-			});
-		}
+	m_prototypes=SnowflakeModel::PrototypeChoices(dump,"setup/prototypes");
 	}
 
 
@@ -553,16 +538,18 @@ float vTermCompute(const SnowflakeModel::Solid& sol,const Setup& setup)
 	return sqrt(V/A);
 	}
 
-SnowflakeModel::IceParticle ice_particlePrepare(const SnowflakeModel::Solid& s_in
-	,const Setup& setup,SnowflakeModel::RandomGenerator& randgen)
+SnowflakeModel::IceParticle ice_particlePrepare(Setup& setup,SnowflakeModel::RandomGenerator& randgen)
 	{
 	SnowflakeModel::IceParticle ice_particle;
-	ice_particle.solidSet(s_in);
+	auto choice=setup.m_prototypes.choose(randgen);
+
+
+	ice_particle.solidSet(choice.solidGet());
 
 //	Setup parameters
 		{
-		auto deformation=setup.m_deformations.data();
-		auto deformation_end=deformation+setup.m_deformations.size();
+		auto deformation=choice.deformationsBegin();
+		auto deformation_end=choice.deformationsEnd();
 		while(deformation!=deformation_end)
 			{
 			ice_particle.parameterSet(deformation->name.data()
@@ -753,17 +740,11 @@ class Simstate
 			};
 
 		template<class T>
-		Simstate(Setup&& setup,SnowflakeModel::Solid&& s_in,T)=delete;
-		template<class T>
-		Simstate(Setup&& setup,const SnowflakeModel::Solid& s_in,T)=delete;
-		template<class T>
-		Simstate(const Setup& setup,SnowflakeModel::Solid&& s_in,T)=delete;
+		Simstate(Setup&& setup,T)=delete;
 
-		Simstate(const Setup& setup,const SnowflakeModel::Solid& s_in
-			,const SnowflakeModel::DataDump& dump
+		Simstate(Setup& setup,const SnowflakeModel::DataDump& dump
 			,std::unique_ptr<SimstateMonitor>&& monitor);
-		Simstate(const Setup& setup,const SnowflakeModel::Solid& s_in
-			,std::unique_ptr<SimstateMonitor>&& monitor);
+		Simstate(Setup& setup,std::unique_ptr<SimstateMonitor>&& monitor);
 
 		bool step();
 		void statsDump(bool force=0) const;
@@ -791,9 +772,8 @@ class Simstate
 			{return m_data.N_particles_dropped;}
 
 	private:
-		const Setup& r_setup;
+		Setup& r_setup;
 		std::unique_ptr<SimstateMonitor> m_monitor;
-		const SnowflakeModel::Solid& r_s_in;
 		Data m_data;
 		SnowflakeModel::MatrixStorageFastsum C_mat;
 		SnowflakeModel::RandomGenerator randgen;
@@ -826,10 +806,10 @@ namespace SnowflakeModel
 	const size_t DataDump::MetaObject<Simstate::Data>::field_count=9;
 	}
 
-Simstate::Simstate(const Setup& setup,const SnowflakeModel::Solid& s_in
+Simstate::Simstate(Setup& setup
 	,const SnowflakeModel::DataDump& dump
 	,std::unique_ptr<SimstateMonitor>&& monitor):
-	r_setup(setup),m_monitor(std::move(monitor)),r_s_in(s_in),C_mat(setup.m_data.m_N+1,setup.m_data.m_N+1)
+	r_setup(setup),m_monitor(std::move(monitor)),C_mat(setup.m_data.m_N+1,setup.m_data.m_N+1)
 	,U_rot(0,5)
 	{
 	dump.arrayRead<Data>("simstate/data")
@@ -900,9 +880,8 @@ void Simstate::write(SnowflakeModel::DataDump& dump) const
 
 
 
-Simstate::Simstate(const Setup& setup,const SnowflakeModel::Solid& s_in
-	,std::unique_ptr<SimstateMonitor>&& monitor):
-	 r_setup(setup),m_monitor(std::move(monitor)),r_s_in(s_in),m_data{0}
+Simstate::Simstate(Setup& setup,std::unique_ptr<SimstateMonitor>&& monitor):
+	 r_setup(setup),m_monitor(std::move(monitor)),m_data{0}
 	,C_mat(setup.m_data.m_N+1,setup.m_data.m_N+1)
 	,randgen(setup.m_data.m_seed),U_rot(0,5)
 	{
@@ -1116,7 +1095,7 @@ bool Simstate::step()
 			}
 		else
 			{
-			ice_particles[k]=ice_particlePrepare(r_s_in,r_setup,randgen);
+			ice_particles[k]=ice_particlePrepare(r_setup,randgen);
 			++m_data.N_particles;
 			++m_data.frame;
 			++m_data.births;
@@ -1430,38 +1409,26 @@ int main(int argc,char** argv)
 			}
 		setup.validate();
 
-		SnowflakeModel::Solid s_in;
-		if(setup.m_statefile.size()==0)
-			{
-			SnowflakeModel::FileIn file_in(setup.m_crystal.data());
-			SnowflakeModel::ConfigParser parser(file_in);
-			SnowflakeModel::SolidLoader loader(s_in);
-			parser.commandsRead(loader);
-			}
-		else
-			{
-			SnowflakeModel::DataDump dump(setup.m_statefile.c_str()
-				,SnowflakeModel::DataDump::IOMode::READ);
-			s_in=SnowflakeModel::Solid(dump,"solid_in");
-			}
-
 		if(setup.m_data.m_actions&Setup::PARAM_SHOW)
 			{
-			auto& params=s_in.deformationTemplatesGet();
-			auto ptr=params.data();
-			auto end=ptr+params.size();
-			printf("Available parameters are:\n");
-			while(ptr!=end)
+			setup.m_prototypes.solidsEnum([](const char* name,const SnowflakeModel::Solid& solid)
 				{
-				auto paramname=ptr->paramnamesBegin();
-				auto paramnames_end=ptr->paramnamesEnd();
-				while(paramname!=paramnames_end)
+				auto& params=solid.deformationTemplatesGet();
+				auto ptr=params.data();
+				auto end=ptr+params.size();
+				printf("Parameters for %s are:\n",name);
+				while(ptr!=end)
 					{
-					printf("    %s\n",paramname->data());
-					++paramname;
+					auto paramname=ptr->paramnamesBegin();
+					auto paramnames_end=ptr->paramnamesEnd();
+					while(paramname!=paramnames_end)
+						{
+						printf("    %s\n",paramname->data());
+						++paramname;
+						}
+					++ptr;
 					}
-				++ptr;
-				}
+				});
 			return 0;
 			}
 
@@ -1480,12 +1447,11 @@ int main(int argc,char** argv)
 		std::unique_ptr<Simstate> state;
 		if(setup.m_statefile.size()==0)
 			{
-			state.reset(new Simstate(setup,s_in,monitor(setup.m_stopcond_arg.c_str())));
+			state.reset(new Simstate(setup,monitor(setup.m_stopcond_arg.c_str())));
 			}
 		else
 			{
-			state.reset(new Simstate(setup,s_in
-				,SnowflakeModel::DataDump(setup.m_statefile.c_str(),SnowflakeModel::DataDump::IOMode::READ)
+			state.reset(new Simstate(setup,SnowflakeModel::DataDump(setup.m_statefile.c_str(),SnowflakeModel::DataDump::IOMode::READ)
 				,monitor(setup.m_stopcond_arg.c_str())));
 			}
 		auto now=SnowflakeModel::getdate();
@@ -1507,7 +1473,6 @@ int main(int argc,char** argv)
 				,SnowflakeModel::DataDump::IOMode::WRITE);
 			setup.write(dump);
 			state->write(dump);
-			s_in.write("solid_in",dump);
 			}
 
 		state->statsDump(1);

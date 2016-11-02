@@ -19,25 +19,38 @@ namespace SnowflakeModel
 	class PrototypeChoice
 		{
 		public:
-			explicit PrototypeChoice(Solid&& solid,DeformationData&& deformation)=delete;
+			explicit PrototypeChoice(Solid&& solid)=delete;
 
-			explicit PrototypeChoice(const Solid& solid,DeformationData&& deformation):
-				r_solid(&solid),m_deformation(deformation)
+			explicit PrototypeChoice(const Solid& solid):r_solid(&solid)
 				{}
 
 			explicit PrototypeChoice(std::map<std::string,Solid>& solids_loaded
 				,std::vector<double>& probabilities
+				,const char* in_dir
 				,const ResourceObject& obj);
+
+			explicit PrototypeChoice(std::map<std::string,Solid>& solids_loaded
+				,std::vector<double>& probabilities,const char* prototype_name,double probability
+				,Twins<const DeformationData*> deformations);
 			
 			const Solid& solidGet() const noexcept
 				{return *r_solid;}
 
-			const DeformationData& deformationGet() const noexcept
-				{return m_deformation;}
+			const DeformationData* deformationsBegin() const noexcept
+				{return m_deformations.data();}
+
+			const DeformationData* deformationsEnd() const noexcept
+				{return m_deformations.data() + m_deformations.size();}
+
+			size_t deformationsCount() const noexcept
+				{return m_deformations.size();}
+
+			void deformationAppend(DeformationData&& deformation)
+				{m_deformations.push_back(std::move(deformation));}
 
 		private:
 			const Solid* r_solid;
-			DeformationData m_deformation;
+			std::vector<DeformationData> m_deformations;
 		};
 	}
 
