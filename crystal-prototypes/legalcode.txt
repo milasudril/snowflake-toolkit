@@ -1,4 +1,5 @@
-The Suzanne model is licensed under GPL. For the other prototyes, CC0 is used.
+The Suzanne model (suzanne.ice) is licensed under GPL version 2.0 or later.
+For the other prototyes, CC0 is used.
 
 
 Creative Commons Legal Code

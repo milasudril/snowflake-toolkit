@@ -169,8 +169,12 @@ class PointCloud
 
 		PointCloud(const std::vector<glm::vec3>& points,const glm::vec3& mid
 			,const glm::vec3& radius);
+
 		void render(float distance,float azimuth,float zenith
 			,const glm::mat4& projection) const noexcept;
+
+		size_t nPointsGet() const noexcept
+			{return n;}
 
 	private:
 		GLuint vertex_array;
@@ -231,12 +235,34 @@ struct ViewState
 	{
 	const PointCloud& pc;
 	float distance;
+	float view_thickness;
 	float azimuth;
 	float zenith;
 
 	double x_0;
 	double y_0;
+	float thickness_min;
+	bool orth;
+	bool shift;
+	bool ctrl;
 	};
+
+static glm::mat4 make_ortho(float width,float height,float size,float distance
+	,float view_thickness)
+	{
+	auto r=width<height?size/width:size/height;
+
+	width*=r;
+	height*=r;
+
+
+	auto left=-width;
+	auto right=-left;
+	auto bottom=-height;
+	auto top=-bottom;
+
+	return glm::ortho(left,right,bottom,top,-distance,-distance+view_thickness);
+	}
 
 
 static void render(GLFWwindow* handle)
@@ -244,12 +270,14 @@ static void render(GLFWwindow* handle)
 	int width;
 	int height;
 	glfwGetWindowSize(handle,&width,&height);
-	glViewport(0,0,width,height);
-	glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float) width / (float)height, 0.1f, 100.0f);
-	
-	glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
 	auto vs=reinterpret_cast<const ViewState*>(glfwGetWindowUserPointer(handle));
+	
+	glViewport(0,0,width,height);
+	auto projection=vs->orth?make_ortho(width,height,1.25f,vs->distance,vs->view_thickness):
+		glm::perspective(glm::radians(45.0f), (float) width / (float)height, 0.1f, 100.0f);
+	glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
 	vs->pc.render(vs->distance,vs->azimuth,vs->zenith,projection);
+	
 	glfwSwapBuffers(handle);
 	}
 
@@ -272,17 +300,48 @@ static void mouseMove(GLFWwindow* handle,double x,double y)
 static void scroll(GLFWwindow* handle,double x,double y)
 	{
 	auto vs=reinterpret_cast<ViewState*>(glfwGetWindowUserPointer(handle));
-	vs->distance-=y/8.0f;
+	if(vs->orth)
+		{
+		if(vs->ctrl)
+			{
+			auto thickness_new=static_cast<float>(vs->view_thickness + ((!vs->shift)?y/64.0f:y/8.0f));
+			vs->view_thickness=std::max(vs->thickness_min,thickness_new);
+			}
+		else
+			{vs->distance-= (!vs->shift)?y/32.0f:y/8.0f;}
+		}
+	else
+		{vs->distance-=y/8.0f;}
 	}
 
 static void keyAction(GLFWwindow* handle,int key,int scancode,int action,int mods)
 	{
 	auto vs=reinterpret_cast<ViewState*>(glfwGetWindowUserPointer(handle));
-	if(key==32 && action==GLFW_PRESS)
+	if(action==GLFW_PRESS)
 		{
-		vs->distance=6.0f;
-		vs->azimuth=0;
-		vs->zenith=-std::acos(-1.0f)/2.0f;
+		switch(key)
+			{
+			case 32:
+				vs->distance=6.0f;
+				vs->view_thickness=12.0f;
+				vs->azimuth=0;
+				vs->zenith=-std::acos(-1.0f)/2.0f;
+				break;
+			case 'O':
+				vs->orth=!vs->orth;
+				break;
+			}
+		if(scancode==50 || mods&GLFW_MOD_SHIFT)
+			{vs->shift=1;}
+		if(scancode==37 || mods&GLFW_MOD_CONTROL)
+			{vs->ctrl=1;}
+		}
+	else
+		{
+		if(scancode==50)
+			{vs->shift=0;}
+		if(scancode==37)
+			{vs->ctrl=0;}
 		}
 	}
 
@@ -433,7 +492,8 @@ int main(int argc,char** argv)
 			return PointCloud(points,mid,radius);
 			}();
 
-		ViewState vs{cloud,6.0f,0,-std::acos(-1.0f)/2.0f};
+		ViewState vs{cloud,6.0f,12.0f,0,-std::acos(-1.0f)/2.0f,0,0
+			,static_cast<float>(2.0f*std::pow(cloud.nPointsGet(),-1.0/3.0))};
 		glfwSetWindowUserPointer(window.get(),&vs);
 
 		glfwSetWindowCloseCallback(window.get(),close);
@@ -441,6 +501,19 @@ int main(int argc,char** argv)
 		glfwSetCursorPosCallback(window.get(),mouseMove);
 		glfwSetScrollCallback(window.get(),scroll);
 		glfwSetKeyCallback(window.get(),keyAction);
+
+
+		fprintf(stderr,"\n\nNavigation\n"
+			"==========\n"
+			" * Drag to look from different angles [Left mouse + move]\n"
+			" * Use scroll wheel to modify view distance\n"
+			" * Space bar resets camera position\n"
+			" * O toggles orthographic view\n"
+			"\n"
+			"Orthographic view also features the following modes\n"
+			" * Shift icreases distance changes\n"
+			" * Ctrl + Wheel changes the view thickness. This makes it possible "
+			"to create a slice\n");
 
 		while (!glfwWindowShouldClose(window.get()))
 			{

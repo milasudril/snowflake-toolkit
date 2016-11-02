@@ -12,8 +12,7 @@ rm -rf $dir_out/$k-$l-$m
 mkdir $dir_out/$k-$l-$m
 
 __targets_rel/snowflake_simulate3 \
-	--shape=../crystal-prototypes/bullet.ice --deformation=L,gamma,1,0.25 \
-	--deformation=a,delta,0.33 --deformation=t,delta,0.25 \
+	--prototype-choices=prototypeexample.json \
 	--output-dir=$dir_out/$k-$l-$m --dump-stats=256 --N=4999 \
 	--growthrate=$k --meltrate=$l --droprate=$m \
 	--seed=0 --dump-geometry \

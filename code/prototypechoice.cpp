@@ -23,22 +23,40 @@ static Solid solid_load(const char* filename)
 	}
 
 PrototypeChoice::PrototypeChoice(std::map<std::string,Solid>& solids_loaded
-	,std::vector<double>& probabilities
-	,const ResourceObject& obj)
+	,std::vector<double>& probabilities,const char* prototype_name,double probability
+	,Twins<const DeformationData*> deformations)
 	{
-	if(obj.typeGet()!=ResourceObject::Type::ARRAY)
-		{throw "Object is not an array";}
-
-	if(obj.objectCountGet()!=3)
-		{throw "Invalid number of fields in table";}
-	
-	auto name=static_cast<const char*>(obj.objectGet(static_cast<size_t>(0)));
-	auto i=solids_loaded.find(name);
+	auto i=solids_loaded.find(prototype_name);
 	i=i==solids_loaded.end()?
-		solids_loaded.insert({name,solid_load(name)}).first
+		solids_loaded.insert({prototype_name,solid_load(prototype_name)}).first
 		:i;
 	r_solid=&i->second;
-	m_deformation=DeformationData(obj.objectGet(2u));
-	probabilities.push_back(static_cast<double>(obj.objectGet(1u)));
-
+	while(deformations.first!=deformations.second)
+		{
+		m_deformations.push_back(*deformations.first);
+		++deformations.first;
+		}
+	probabilities.push_back(probability);
 	}
+
+PrototypeChoice::PrototypeChoice(std::map<std::string,Solid>& solids_loaded
+	,std::vector<double>& probabilities,const char* in_dir
+	,const ResourceObject& obj)
+	{
+	auto prototype=std::string(in_dir) + static_cast<const char*>(obj.objectGet("prototype"));
+	auto i=solids_loaded.find(prototype);
+	i=i==solids_loaded.end()?
+		solids_loaded.insert({prototype,solid_load(prototype.c_str())}).first
+		:i;
+	r_solid=&i->second;
+	
+	auto deformations=obj.objectGet("deformations");
+	if(deformations.typeGet()!=ResourceObject::Type::ARRAY)
+		{throw "Deformations has to be an array";}
+	auto def_count=deformations.objectCountGet();
+	for(decltype(def_count) k=0;k<def_count;++k)
+		{m_deformations.push_back(DeformationData(in_dir,deformations.objectGet(k)));}
+
+	probabilities.push_back(static_cast<double>(obj.objectGet("probability")));
+	}
+

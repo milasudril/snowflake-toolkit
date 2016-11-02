@@ -5,29 +5,43 @@
 #include "prototypechoices.h"
 #include "resourceobject.h"
 #include "solid.h"
+#include "file_in.h"
 
 using namespace SnowflakeModel;
 
-PrototypeChoices::PrototypeChoices(const ResourceObject& obj)
-	{
-	if(obj.typeGet()!=ResourceObject::Type::ARRAY)
-		{throw "Expected an array of prototype choices";}
 
-	auto n_objs=obj.objectCountGet();
-	std::vector<double> probs;
-	probs.reserve(n_objs);
-	for(decltype(n_objs) k=0;k<n_objs;++k)
+namespace
+	{
+	std::string makePath(const std::string& filename)
 		{
-		m_choices.push_back(PrototypeChoice(m_solids,probs,obj.objectGet(k)));
+		auto ret=filename;
+		while(ret.size()!=0)
+			{
+			if(ret.back()=='/')
+				{return ret;}
+			ret.pop_back();
+			}
+		return ret;
 		}
 
-	m_dist=std::discrete_distribution<size_t>(probs.data(),probs.data() + n_objs);
+	}
+
+void PrototypeChoices::append(const char* filename)
+	{
+	ResourceObject obj{FileIn(filename)};
+	if(obj.typeGet()!=ResourceObject::Type::ARRAY)
+		{throw "Expected an array of prototype choices";}
+	auto in_dir=makePath(filename);
+	auto n_objs=obj.objectCountGet();
+	for(decltype(n_objs) k=0;k<n_objs;++k)
+		{m_choices.push_back(PrototypeChoice(m_solids,m_probs,in_dir.c_str(),obj.objectGet(k)));}
+	m_dist_dirty=1;
 	}
 
 PrototypeChoices::PrototypeChoices(const DataDump& dump,const char* name)
 	{
 	std::string keyname(name);
-	auto probs=dump.arrayGet<double>((keyname + "/dist").c_str());
+	m_probs=dump.arrayGet<double>((keyname + "/dist").c_str());
 		{
 		auto group_name=keyname + "/choices";
 		auto group=dump.groupOpen(group_name.c_str());
@@ -58,19 +72,25 @@ PrototypeChoices::PrototypeChoices(const DataDump& dump,const char* name)
 			auto i=m_solids.find(id_str);
 			if(i==m_solids.end())
 				{throw "Solid not found";}
-			DeformationData d(dump,(group_name_current + "/deformation").c_str());
-			m_choices.push_back( PrototypeChoice(i->second,std::move(d) ) );
+			auto defgroup_name=group_name_current + "/deformations";
+			auto g2=dump.groupOpen(defgroup_name.c_str());
+			defgroup_name+='/';
+			PrototypeChoice choice(i->second);
+			dump.iterate(*g2,[&dump,&choice,&defgroup_name,this](const char* name)
+				{
+				choice.deformationAppend(DeformationData(dump,(defgroup_name + name).c_str()));
+				});
+			m_choices.push_back( std::move(choice) );
 			});
 		}
+	m_dist_dirty=1;
 	}
 
 void PrototypeChoices::write(const char* key,DataDump& dump) const
 	{
 	auto group=dump.groupCreate(key);
-	std::string keyname(key);
-
-	auto probs=m_dist.probabilities();
-	dump.write((keyname + "/dist").c_str(),probs.data(),probs.size());	
+	std::string keyname(key);	
+	dump.write((keyname + "/dist").c_str(),m_probs.data(),m_probs.size());	
 
 		{
 		auto solids_begin=m_solids.begin();
@@ -99,9 +119,22 @@ void PrototypeChoices::write(const char* key,DataDump& dump) const
 			sprintf(id,"%016zx",k);
 			auto group_name_current=group_name + id;
 			auto g=dump.groupCreate(group_name_current.c_str());
-			choices_begin->deformationGet().write((group_name_current+"/deformation").c_str(),dump);
 			auto id_solid=reinterpret_cast<uintptr_t>(&choices_begin->solidGet());
 			dump.write((group_name_current+"/solid").c_str(),&id_solid,1);
+			auto defgroup_name=group_name_current+"/deformations";
+			auto defgroup=dump.groupCreate(defgroup_name.c_str());
+			defgroup_name+='/';
+			auto defs_begin=choices_begin->deformationsBegin();
+			auto defs_end=choices_begin->deformationsEnd();
+			size_t l=0;
+			while(defs_begin!=defs_end)
+				{
+				char id2[32];
+				sprintf(id2,"%016zx",l);
+				defs_begin->write((defgroup_name + id2).c_str(),dump);
+				++defs_begin;
+				++l;
+				}
 			++choices_begin;
 			++k;
 			}

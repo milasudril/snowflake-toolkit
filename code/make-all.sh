@@ -1,6 +1,6 @@
 #!/bin/bash
 
-for config in *.json; do
+for config in {debug,valgrind,profile,release}.json; do
 	maike --configfiles=alice/maikeconfig.json,"$config" $@
 	if [ $? -ne 0 ]; then
 		break;

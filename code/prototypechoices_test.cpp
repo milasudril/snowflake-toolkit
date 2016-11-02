@@ -10,7 +10,7 @@ int main()
 	try
 		{
 			{
-			SnowflakeModel::PrototypeChoices choices(SnowflakeModel::ResourceObject{SnowflakeModel::FileIn("test.tab")});
+			SnowflakeModel::PrototypeChoices choices("prototypeexample.json");
 			SnowflakeModel::DataDump dd("test.h5",SnowflakeModel::DataDump::IOMode::WRITE);
 			choices.write("choices",dd);
 			}
