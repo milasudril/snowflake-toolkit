@@ -1,4 +1,8 @@
-function prototypechoices_write(fid,choices)
+function prototypechoices_write(file,choices)
+	fid=file;
+	if isstr(file)
+		fid=fopen(file,'w');
+	end
 	fprintf(fid,'[\n');
 	for k=1:numel(choices)
 		if k~=1
@@ -10,4 +14,7 @@ function prototypechoices_write(fid,choices)
 			,choices{k}.deformations);
 	end
 	fprintf(fid,']');
+	if isstr(file)
+		fclose(fid);
+	end
 end
