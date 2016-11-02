@@ -1,6 +1,6 @@
 function vols=ice_loader(source)
 	input=fileread(source);
-	vols={{}};
+	vols={};
 	state_current=0;
 	tok_current='';
 	cmd_current='';
@@ -40,7 +40,7 @@ function vols=ice_loader(source)
 							args_current=[args_current,tok_current];
 						end
 						if strcmp(cmd_current,'volume')
-							vols{end}=struct('vertices',[],'faces',[]);
+							vols{end+1}=struct('vertices',[],'faces',[]);
 						elseif strcmp(cmd_current,'vertex')
 							vols{end}.vertices(:,end+1)...
 								=[str2double(args_current{1})...
