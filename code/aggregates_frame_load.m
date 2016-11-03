@@ -1,5 +1,5 @@
-function [data,N_rows]=aggregate_frame_load(basedir,frame_number)
-% Loads statistics about a particular frame. Valid frame numbers can be 
+function [data,N_rows]=aggregates_frame_load(basedir,frame_number)
+% Loads statistics from a particular frame. Valid frame numbers can be 
 % retrieved by loading the file `frame_data.txt` from basedir.
 %
 	filename=sprintf('%s/frame-%d.txt'...
