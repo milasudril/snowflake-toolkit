@@ -44,15 +44,19 @@ function [stats]=graupel_generate(paramstruct,exepath)
 		,@()['--dump-geometry-ice=',paramstruct.dump_geometry_ice]...
 		,@()'');
 
+	dump_stats=ternary(@isfield(paramstruct,'dump_stats')...
+		,@()['--dump-stats=',paramstruct.dump_stats]...
+		,@()'');
+
 	n=nargin();
 	cmd=ternary(@()(n<2),@()'graupel_generate2'...
 		,@()[exepath,'/graupel_generate2'])
 
-	fifo=mkfifo();
 	system_wrapper({cmd,seed,scale,E_0,decay_distance,merge_offset...
 		,overlap_max,D_max,fill_ratio,statefile,dump_geometry,dump_geometry_ice...
-		,['--dump-stats=',fifo]},0);
-	stats=csvread2(fifo,'\t');
-	delete(fifo);
+		,dump_stats},1);
+	if ~isempty(dump_stats)
+		stats=csvread2(dump_stats,'\t');
+	end
 end
 
