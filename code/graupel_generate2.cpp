@@ -492,7 +492,7 @@ void Simstate::step()
 		if(d_max<D_max)
 			{
 			solid_out.subvolumeAdd(std::move(v_2),overlap_res);
-			if(iter_count%128==0)system_wrapper.m
+			if(iter_count%128==0)
 				{
 				auto ex=solid_out.extremaGet();
 				d_max=length(ex.first - ex.second);

@@ -1,4 +1,4 @@
-function graupel_generate(paramstruct,exepath)
+function [stats]=graupel_generate(paramstruct,exepath)
 	seed=ternary(@isfield(paramstruct,'seed')...
 		,@()['--seed=',int2str(paramstruct.seed)]...
 		,@()'');
@@ -35,19 +35,24 @@ function graupel_generate(paramstruct,exepath)
 		,@()['--statefile=',paramstruct.statefile]...
 		,@()'');
 
-	if nargin()<2
-		system_wrapper({'graupel_generate2',seed,E_0,decay_distance,merge_offset...
-			,overlap_max,D_max,fill_ratio});
-	else
-		system_wrapper({[exepath,'/graupel_generate2'],seed,E_0,decay_distance,merge_offset...
-			,overlap_max,D_max,fill_ratio});
-	end
+	dump_geometry=ternary(@isfield(paramstruct,'dump_geometry')...
+		,@()['--dump-geometry=',paramstruct.dump_geometry]...
+		,@()'');
+
+
+	dump_geometry_ice=ternary(@isfield(paramstruct,'dump_geometry_ice')...
+		,@()['--dump-geometry-ice=',paramstruct.dump_geometry_ice]...
+		,@()'');
+
+	n=nargin();
+	cmd=ternary(@()(n<2),@()'graupel_generate2'...
+		,@()[exepath,'/graupel_generate2'])
+
+	fifo=mkfifo();
+	system_wrapper({cmd,seed,scale,E_0,decay_distance,merge_offset...
+		,overlap_max,D_max,fill_ratio,statefile,dump_geometry,dump_geometry_ice...
+		,['--dump-stats=',fifo]},0);
+	stats=csvread2(fifo,'\t');
+	delete(fifo);
 end
 
-function result=ternary(cond,if_true,if_false)
-	if cond()
-		result=if_true();
-	else
-		result=if_false();
-	end
-end
