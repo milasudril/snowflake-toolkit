@@ -54,8 +54,8 @@ function [stats]=graupel_generate(paramstruct,exepath)
 
 	system_wrapper({cmd,seed,scale,E_0,decay_distance,merge_offset...
 		,overlap_max,D_max,fill_ratio,statefile,dump_geometry,dump_geometry_ice...
-		,dump_stats},1);
-	if ~isempty(dump_stats)
+		,dump_stats},nargout()>0);
+	if ~isempty(dump_stats) 
 		stats=csvread2(dump_stats,'\t');
 	end
 end
