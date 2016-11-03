@@ -242,25 +242,25 @@ static void geometryDumpSimple(const SnowflakeModel::Solid& solid
 	auto subvol=solid.subvolumesBegin();
 	auto subvols_end=solid.subvolumesEnd();
 	SNOWFLAKEMODEL_TIMED_SCOPE();
+	size_t volcount=0;
 	while(subvol!=subvols_end)
 		{
-		dest.printf("V\n");
 		auto vert=subvol->verticesBegin();
 		auto verts_end=subvol->verticesEnd();
 		while(vert!=verts_end)
 			{
-			dest.printf("%.8g %.8g %.8g\n",vert->x,vert->y,vert->z);
+			dest.printf("%zu 0 %.8g %.8g %.8g\n",volcount,vert->x,vert->y,vert->z);
 			++vert;
 			}
-		dest.printf("f\n");
 		auto face=subvol->facesBegin();
 		auto faces_end=subvol->facesEnd();
 		while(face!=faces_end)
 			{
-			dest.printf("%d %d %d\n",face->vertexGet(0),face->vertexGet(1),face->vertexGet(2));
+			dest.printf("%zu 1 %d %d %d\n",volcount,face->vertexGet(0),face->vertexGet(1),face->vertexGet(2));
 			++face;
 			}
 		++subvol;
+		++volcount;
 		}
 	}
 
