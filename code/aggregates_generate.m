@@ -105,8 +105,8 @@ function [stats,stats_dropped]=aggregates_generate(paramstruct,exepath)
 		,droprate,meltrate,merge_retries,overlap_min,overlap_max]...
 		,nargout()>0);
 	if ~isempty(output_dir)
-		stats=csvread2(paramstruct.output_dir,'/frame_data.txt','\t');
-		stats_droppend=csvread2(paramstruct.output_dir,'/dropped_stats.txt','\t');
+		stats=csvread2([paramstruct.output_dir,'/frame_data.txt'],'\t');
+		stats_dropped=csvread2([paramstruct.output_dir,'/dropped_stats.txt'],'\t');
 	end
 end
 

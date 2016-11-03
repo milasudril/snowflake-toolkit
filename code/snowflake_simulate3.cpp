@@ -903,8 +903,8 @@ Simstate::Simstate(Setup& setup,std::unique_ptr<SimstateMonitor>&& monitor):
 				(setup.m_output_dir+"/dropped_stats.txt").data()
 			));
 
-		frame_data_file->printf("# Frame\tClock time\tSimulation time\tN_cloud\tN_drop\tCollisions\tCollisions rejected\tBirths\tMelts\tDropouts\n");
-		dropped_stats->printf("# Frame\tClock time\tSimulation time\tR_max\tVolume\tSpeed\tL_x\tr_xy\tr_xz\tNumber of sub-volumes\n");
+		frame_data_file->printf("Frame\tClock time\tSimulation time\tN_cloud\tN_drop\tCollisions\tCollisions rejected\tBirths\tMelts\tDropouts\n");
+		dropped_stats->printf("Frame\tClock time\tSimulation time\tR_max\tVolume\tSpeed\tL_x\tr_xy\tr_xz\tNumber of sub-volumes\n");
 		}
 	}
 
@@ -987,6 +987,7 @@ void Simstate::statsDump(bool force) const
 			"%zu\t"
 			"%zu\t"
 			"%zu\t"
+			"%zu\t"
 			"%zu\n",m_data.frame,now,m_data.tau,m_data.N_particles
 			,m_data.N_particles_dropped
 			,m_data.collisions
@@ -1000,7 +1001,7 @@ void Simstate::statsDump(bool force) const
 			sprintf(countbuff,"/frame-%zu.txt",m_data.frame);
 			SnowflakeModel::FileOut file_out((r_setup.m_output_dir+countbuff).data());
 			auto i=ice_particles.begin();
-			file_out.printf("# R_max\tD_max\tVolume\tSpeed\tL_x\tr_xy\tr_xz\tNumber of sub-volumes\tOverlap count\n");
+			file_out.printf("R_max\tD_max\tVolume\tSpeed\tL_x\tr_xy\tr_xz\tNumber of sub-volumes\tOverlap count\n");
 			while(i!=ice_particles.end())
 				{
 				if(!i->dead())
