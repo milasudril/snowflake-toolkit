@@ -1,4 +1,4 @@
-function [stats,stats_dropped]=aggregates_generate(paramstruct,exepath)
+function aggregates_generate(paramstruct,exepath,sync)
 	[~,nowstring]=system('date --rfc-3339=ns --utc');
 	nowstring=strtrim(nowstring);
 	nowstring=strsplit(nowstring,'+');
@@ -103,10 +103,6 @@ function [stats,stats_dropped]=aggregates_generate(paramstruct,exepath)
 		,prototype_choices,output_dir,dump_stats,dump_geometry...
 		,dump_geometry_ice,sample_geometry,seed,N,growthrate...
 		,droprate,meltrate,merge_retries,overlap_min,overlap_max]...
-		,nargout()>0);
-	if ~isempty(output_dir)
-		stats=csvread2([paramstruct.output_dir,'/frame_data.txt'],'\t');
-		stats_dropped=csvread2([paramstruct.output_dir,'/dropped_stats.txt'],'\t');
-	end
+		,sync);
 end
 
