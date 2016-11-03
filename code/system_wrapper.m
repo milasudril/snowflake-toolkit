@@ -5,6 +5,7 @@ function system_wrapper(argv,block)
 			cmd=[cmd,'''',argv{k},''' '];
 		end
 	end
+	disp(cmd);
 	if block
 		system(cmd);
 	else
