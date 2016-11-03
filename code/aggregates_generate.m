@@ -1,4 +1,6 @@
 function aggregates_generate(paramstruct,exepath,sync)
+% function aggregates_generate(paramstruct,exepath,sync)
+
 	[~,nowstring]=system('date --rfc-3339=ns --utc');
 	nowstring=strtrim(nowstring);
 	nowstring=strsplit(nowstring,'+');

@@ -1,9 +1,11 @@
 function [stats]=graupel_generate(paramstruct,exepath)
+% function [stats]=graupel_generate(paramstruct,exepath)
+%
 % Recognized members of paramstruct
 %
 % seed               seed for the random generator
 % scale              scaling of the spheres. It is given with a struct with the members `mean`,
-%                    and `standard_deviation`
+%                    and `std`
 % E_0                initial energy
 % decay_distance     distance a sphere must travel before its energy has dropped to 1/e
 % merge_offset       merging distance at initial point. A negative value pulls the two 
@@ -21,7 +23,7 @@ function [stats]=graupel_generate(paramstruct,exepath)
 %
 % For a more detailed description, run `exepath/graupel_generate2 --help` from a 
 % terminal.
-
+%
 	seed=ternary(@()isfield(paramstruct,'seed')...
 		,@()['--seed=',int2str(paramstruct.seed)]...
 		,@()'');
@@ -79,7 +81,7 @@ function [stats]=graupel_generate(paramstruct,exepath)
 		,overlap_max,D_max,fill_ratio,statefile,dump_geometry,dump_geometry_ice...
 		,dump_stats},nargout()>0);
 	if ~isempty(dump_stats) 
-		stats=csvread2(dump_stats,'\t');
+		stats=csvread2(paramstruct.dump_stats,'\t');
 	end
 end
 
