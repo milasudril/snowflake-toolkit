@@ -1,4 +1,4 @@
-function [data,N_rows]=aggregates_frame_load_last(basedir,frame_number)
+function [data,N_rows]=aggregates_frame_load_last(basedir)
 % Loads statistics from the last frame.
 %	
 	frame_data=aggregates_framedata_load(basedir);
