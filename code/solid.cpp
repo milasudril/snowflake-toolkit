@@ -102,7 +102,7 @@ void Solid::transform(const Matrix& T,bool mirrored) noexcept
 	m_extrema.first=T*m_extrema.first;
 	m_extrema.second=T*m_extrema.second;
 //TODO (perf) Use determinant of T to compute the new volume
-	m_flags_dirty|=BOUNDINGBOX_DIRTY|MIDPOINT_DIRTY|RMAX_DIRTY|VOLUME_DIRTY|DMAX_DIRTY;
+	m_flags_dirty|=BOUNDINGBOX_DIRTY|MIDPOINT_DIRTY|RMAX_DIRTY|VOLUME_DIRTY;
 	}
 
 void Solid::normalsFlip() noexcept
