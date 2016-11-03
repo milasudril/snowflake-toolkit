@@ -20,6 +20,7 @@
 #include "grid_definition2.h"
 #include "adda.h"
 #include "filename.h"
+#include "profile.h"
 #include "alice/commandline.hpp"
 
 struct DeformationRule
@@ -116,6 +117,10 @@ ALICE_OPTION_DESCRIPTOR(OptionDescriptor
 	,"filename",Alice::Option::Multiplicity::ZERO_OR_ONE
 	 }
 	,{
+	 "Output options","dump-geometry-simple","Dumps the rendenred geometry in a simple line based format that is easy to "
+	 "pasrse in MATLAB or Octave","filename",Alice::Option::Multiplicity::ZERO_OR_ONE
+	 }
+	,{
 	 "Output options","sample-geometry","Samples the rendered geometry to a grid. If Filename is omitted, data is written to stdout. "
 		"See *Common types* for more information."
 	,"grid definition",Alice::Option::Multiplicity::ONE
@@ -147,6 +152,7 @@ static SnowflakeModel::Solid solidLoad(const std::string& prototype)
 
 	SnowflakeModel::Solid solid_in;
 		{
+		SNOWFLAKEMODEL_TIMED_SCOPE();
 		SnowflakeModel::FileIn file_in(prototype.c_str());
 		SnowflakeModel::ConfigParser parser(file_in);
 		SnowflakeModel::SolidLoader loader(solid_in);
@@ -228,6 +234,36 @@ static void geometryDumpIce(const SnowflakeModel::Solid& solid
 	writer.write(solid);
 	}
 
+static void geometryDumpSimple(const SnowflakeModel::Solid& solid
+	,const std::vector<std::string>& filename)
+	{
+	auto dest=filename.size()==0?
+		SnowflakeModel::FileOut(stdout):SnowflakeModel::FileOut(filename[0].c_str());
+	auto subvol=solid.subvolumesBegin();
+	auto subvols_end=solid.subvolumesEnd();
+	SNOWFLAKEMODEL_TIMED_SCOPE();
+	while(subvol!=subvols_end)
+		{
+		dest.printf("V\n");
+		auto vert=subvol->verticesBegin();
+		auto verts_end=subvol->verticesEnd();
+		while(vert!=verts_end)
+			{
+			dest.printf("%.8g %.8g %.8g\n",vert->x,vert->y,vert->z);
+			++vert;
+			}
+		dest.printf("f\n");
+		auto face=subvol->facesBegin();
+		auto faces_end=subvol->facesEnd();
+		while(face!=faces_end)
+			{
+			dest.printf("%d %d %d\n",face->vertexGet(0),face->vertexGet(1),face->vertexGet(2));
+			++face;
+			}
+		++subvol;
+		}
+	}
+
 static void geometrySample(const SnowflakeModel::Solid& solid
 	,const SnowflakeModel::GridDefinition& grid)
 	{
@@ -298,6 +334,12 @@ int main(int argc,char** argv)
 			auto& x=cmdline.get<Alice::Stringkey("dump-geometry-ice")>();
 			if(x)
 				{geometryDumpIce(particle_out.solidGet(),x.valueGet());}
+			}
+
+			{
+			auto& x=cmdline.get<Alice::Stringkey("dump-geometry-simple")>();
+			if(x)
+				{geometryDumpSimple(particle_out.solidGet(),x.valueGet());}
 			}
 
 			{

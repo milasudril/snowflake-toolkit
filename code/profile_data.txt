@@ -1,1 +1,2 @@
-fieldsumtest.cpp	36	0.0454208850860596
+snowflake_prototype-test.cpp	155	0.00389599800109863
+snowflake_prototype-test.cpp	244	0.00161290168762207
