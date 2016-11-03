@@ -2,7 +2,8 @@ function [stats]=graupel_generate(paramstruct,exepath)
 % Recognized members of paramstruct
 %
 % seed               seed for the random generator
-% scale              scaling of the spheres
+% scale              scaling of the spheres. It is given with a struct with the members `mean`,
+%                    and `standard_deviation`
 % E_0                initial energy
 % decay_distance     distance a sphere must travel before its energy has dropped to 1/e
 % merge_offset       merging distance at initial point. A negative value pulls the two 
