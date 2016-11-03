@@ -1,4 +1,26 @@
 function [stats]=graupel_generate(paramstruct,exepath)
+% Recognized members of paramstruct
+%
+% seed               seed for the random generator
+% scale              scaling of the spheres
+% E_0                initial energy
+% decay_distance     distance a sphere must travel before its energy has dropped to 1/e
+% merge_offset       merging distance at initial point. A negative value pulls the two 
+%                    particles together
+% overlap_max        the maximum number of overlaps to accept, including the reference 
+%                    particle
+% D_max              sets a desired D_max
+% fill_ratio         sets a desired fill ratio. If fill ratio is not fullfilled when the
+%                    graupel reaches the size D_max, continue, but only accept events that
+%                    would not increase D_max
+% dump_geometry      generate a Wavefront file from the given geometry
+% dump_geometry_ice  save ball radius and positions to a file, so it can be processed by
+%                    sphere_aggreagte_rasterize
+% dump_stats         write statistics to the given file
+%
+% For a more detailed description, run `exepath/graupel_generate2 --help` from a 
+% terminal.
+
 	seed=ternary(@()isfield(paramstruct,'seed')...
 		,@()['--seed=',int2str(paramstruct.seed)]...
 		,@()'');
