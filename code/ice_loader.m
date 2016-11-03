@@ -1,72 +1,40 @@
-function vols=ice_loader(source)
-	input=fileread(source);
+function vols=ice_loader(source,exepath)
 	vols={};
-	state_current=0;
-	tok_current='';
-	cmd_current='';
-	args_current={};
-	for k=1:numel(input)
-		ch_in=input(k);
-		switch(state_current)
-			case 0
-				if ~(ch_in>=char(0) && ch_in<=char(32))
-					switch(ch_in)
-						case '#'
-							state_current=1;
-						otherwise
-							state_current=2;
-							tok_current=[tok_current,ch_in];
-					end
-				end
-			case 1
-				switch(ch_in)
-					case char(10)
-						state_current=0;
-					case char(13)
-						state_current=0;
-				end
-			case 2
-				switch(ch_in)
-					case '#'
-						state_current=1;
-					case '('
-						cmd_current=tok_current;
-						tok_current='';
-					case ','
-						args_current=[args_current,{tok_current}];
-						tok_current='';
-					case ')'
-						if ~isempty(tok_current)
-							args_current=[args_current,tok_current];
-						end
-						if strcmp(cmd_current,'volume')
-							vols{end+1}=struct('vertices',[],'faces',[]);
-						elseif strcmp(cmd_current,'vertex')
-							vols{end}.vertices(:,end+1)...
-								=[str2double(args_current{1})...
-								,str2double(args_current{2})...
-								,str2double(args_current{3})];
-						elseif strcmp(cmd_current,'face')
-							vols{end}.faces(:,end+1)...
-								=[uint16(str2double(args_current{1}))...
-								,uint16(str2double(args_current{2}))...
-								,uint16(str2double(args_current{3}))];
-						end
-							
-						args_current={};
-						tok_current='';
-					case '\'
-						state_current=3;
-					case char(10)
-						state_current=0;
-					case char(13)
-						state_current=0;
-					otherwise
-						tok_current=[tok_current,ch_in];
-				end
-			case 3
-				tok_current=[tok_current,ch_in];
-				state_current=2;
+	n=nargin();
+	cmd=ternary(@()(n<2),@()'snowflake_prototype-test'...
+		,@()[exepath,'/snowflake_prototype-test']);
+	f='test.txt';   %mkfifo();
+	system_wrapper({cmd,['--dump-geometry-simple=',f],['--prototype=',source]},1);
+	fid=fopen(f,'r');
+	line=fgetl(fid);
+	if line(1)~='V'
+		fclose(fid);
+		delete(f);
+		return
+	end
+
+	vols{end+1}=struct('vertices',[],'faces',[]);
+	while ischar(line)
+		line=fgetl(fid);
+		while ischar(line)
+			if line(1)=='f'
+				line=fgetl(fid);
+				break
+			end
+			strings=strsplit(line);
+			vols{end}.vertices(:,end+1)=[str2num(strings{1});str2num(strings{2});str2num(strings{3})];
+			line=fgetl(fid);
+		end
+		while ischar(line)
+			if line(1)=='V'
+				vols{end+1}=struct('vertices',[],'faces',[]);
+				break
+			end
+			strings=strsplit(line);
+			vols{end}.faces(:,end+1)=[str2num(strings{1});str2num(strings{2});str2num(strings{3})];
+			line=fgetl(fid);
 		end
 	end
+	fclose(fid);
+%	delete(f);
 end
