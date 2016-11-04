@@ -12,7 +12,7 @@
 #include "stride_iterator.h"
 #include <memory>
 #include <string>
-#include <alice/alice.hpp>
+#include "alice/alice.hpp"
 
 namespace SnowflakeModel
 	{

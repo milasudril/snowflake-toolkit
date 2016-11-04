@@ -386,7 +386,7 @@ Simstate::Simstate(const Alice::CommandLine<OptionDescriptor>& cmd_line):
 	if(statfile.size())
 		{
 		file_out=std::make_unique<SnowflakeModel::FileOut>(statfile.c_str());
-		file_out->printf("D_max\tVolume\tL_x\tr_xy\tr_xz\tNumber of sub-volumes\n"
+		file_out->printf("D_max\tVolume\tL_x\tr_xy\tr_xz\tNumber_of_subvolumes\n"
 		//	"Overlap count\n"
 			);
 		}

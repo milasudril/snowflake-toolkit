@@ -1,4 +1,58 @@
-function [stats,stats_dropped]=aggregates_generate(paramstruct,exepath)
+function aggregates_generate(paramstruct,sync,exepath,exefile)
+% function aggregates_generate(paramstruct,sync,exepath,exefile)
+%
+% Recognized members of paramstruct
+% 
+% statefile          restarts a simuation stored in a state
+%
+% stop_cond          defines a stop condition
+%
+% shape              selects a crystal prototype for use during the simulation
+%
+% deformations       adds deformations to the crystal prototype given by `shape`.
+%                    `deformations` is given as cell array, containing all 
+%                    deformation rules. For more information, see 
+%                    prototypechoice_create.
+%
+% prototype_choices  choose prototypes from a set. This member may either be a
+%                    string refering to a file stored on disk, or it may be a
+%                    cell array of objectcs created by prototypechoice_create.
+% 
+% output_dir         sets the directory for output data
+%
+% dump_stats         writes particle measurements every N iteration
+% 
+% dump_geometry      exports the output geometry as Wavefront files
+% 
+% dump_geometry_ice  same as dump_geometry but write data as Ice crystal prototype
+%                    files
+% 
+% sample_geometry    samples the output geometry to a grid. This member is expected
+%                    to be an array with the the elements Nx, Ny, Nz.
+% 
+% seed               sets the random number genererator seed
+% 
+% N                  defines the maximum number of crystals
+% 
+% droprate           Model parameter
+% 
+% growthrate         Model parameter
+% 
+% meltrate           Model parameter
+% 
+% merge_retries      If the first try to merge two aggregates failed to satisfy
+%                    the overlap constraint, try again N times without skipping
+%                    the current event.
+% 
+% overlap_min        When merging particles, only accept events where the ratio
+%                    of overlapping subvolumes is greater than ratio.
+% 
+% overlap_max        When merging particles, only accept events where the ratio
+%                    of overlapping subvolumes is less than ratio.
+%
+% For a more detailed description, run `exepath/exefile --help` from a 
+% terminal. If exefile is ommited, the function will start snowflake_simulate3
+
 	[~,nowstring]=system('date --rfc-3339=ns --utc');
 	nowstring=strtrim(nowstring);
 	nowstring=strsplit(nowstring,'+');
@@ -96,17 +150,22 @@ function [stats,stats_dropped]=aggregates_generate(paramstruct,exepath)
 		,@()'');
 
 	n=nargin();
-	cmd=ternary(@()(n<2),@()'snowflake_simulate3'...
-		,@()[exepath,'/snowflake_simulate3'])
+	cmd='';
+	switch nargin()
+		case 1
+			cmd='snowflake_simulate3';
+		case 2
+			cmd='snowflake_simulate3';
+		case 3
+			cmd=[exepath,'/snowflake_simulate3'];
+		otherwise
+			cmd=[exepath,'/',exefile];
+	end
 
 	system_wrapper([cmd,statefile,stop_cond,shape,deformations...
 		,prototype_choices,output_dir,dump_stats,dump_geometry...
 		,dump_geometry_ice,sample_geometry,seed,N,growthrate...
 		,droprate,meltrate,merge_retries,overlap_min,overlap_max]...
-		,nargout()>0);
-	if ~isempty(output_dir)
-		stats=csvread2([paramstruct.output_dir,'/frame_data.txt'],'\t');
-		stats_dropped=csvread2([paramstruct.output_dir,'/dropped_stats.txt'],'\t');
-	end
+		,sync);
 end
 
