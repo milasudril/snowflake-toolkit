@@ -1,8 +1,12 @@
 function vols=ice_load(source,exepath)
 	n=nargin();
 	vols={};
-	cmd=ternary(@()(n<2),@()'snowflake_prototype-test'...
-		,@()[exepath,'/snowflake_prototype-test']);
+	cmd='';
+	if n<2
+		cmd='snowflake_prototype-test';
+	else
+		cmd=[exepath,'/snowflake_prototype-test'];
+	end
 	f=mkfifo();
 	system_wrapper({cmd,['--dump-geometry-simple=',f],['--prototype=',source]},0);
 	data=dlmread(f,' ');
