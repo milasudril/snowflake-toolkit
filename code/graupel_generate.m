@@ -8,7 +8,7 @@ function [stats]=graupel_generate(paramstruct,exepath,exefile)
 %                    and `std`
 % E_0                initial energy
 % decay_distance     distance a sphere must travel before its energy has dropped to 1/e
-% merge_offset       merging distance at initial point. A negative value pulls the two 
+% merge_offset       merging distance at initial point. A positive value pulls the two 
 %                    particles together
 % overlap_max        the maximum number of overlaps to accept, including the reference 
 %                    particle
@@ -16,6 +16,7 @@ function [stats]=graupel_generate(paramstruct,exepath,exefile)
 % fill_ratio         sets a desired fill ratio. If fill ratio is not fullfilled when the
 %                    graupel reaches the size D_max, continue, but only accept events that
 %                    would not increase D_max
+% statefile          restarts a simuation stored in a statefile
 % dump_geometry      generate a Wavefront file from the given geometry
 % dump_geometry_ice  save ball radius and positions to a file, so it can be processed by
 %                    sphere_aggreagte_rasterize
@@ -87,7 +88,7 @@ function [stats]=graupel_generate(paramstruct,exepath,exefile)
 	system_wrapper({cmd,seed,scale,E_0,decay_distance,merge_offset...
 		,overlap_max,D_max,fill_ratio,statefile,dump_geometry,dump_geometry_ice...
 		,dump_stats},nargout()>0);
-	if ~isempty(dump_stats) 
+	if ~isempty(dump_stats) && nargout()>0
 		stats=csvread2(paramstruct.dump_stats,'\t');
 	end
 end

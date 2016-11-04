@@ -2,7 +2,7 @@ function addaview(points,exedir)
 % addaview(points)
 %
 % This function passes points to addaview for visualization. This program
-% may have better performance than a regualr plot3 command, since it uses
+% may have better performance than a regular plot3 command, since it uses
 % bare-bone OpenGL.
 
 	file=mkfifo();
