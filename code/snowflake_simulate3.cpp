@@ -55,12 +55,13 @@ static constexpr char PARAM_GROWTHRATE='K';
 static constexpr char PARAM_MELTRATE='L';
 static constexpr char PARAM_PARAMSHOW='N';
 static constexpr char PARAM_GEOMETRY_DUMP_ICE='O';
-static constexpr char PARAM_STATEFILE='P';
-static constexpr char PARAM_STOPCOND='Q';
-static constexpr char PARAM_MERGERETRIES='R';
-static constexpr char PARAM_OVERLAP_MAX='S';
-static constexpr char PARAM_OVERLAP_MIN='T';
-static constexpr char PARAM_PROTOTYPECHOICES='U';
+static constexpr char PARAM_STATEFILE_IN='P';
+static constexpr char PARAM_STATEFILE_OUT='Q';
+static constexpr char PARAM_STOPCOND='R';
+static constexpr char PARAM_MERGERETRIES='S';
+static constexpr char PARAM_OVERLAP_MAX='T';
+static constexpr char PARAM_OVERLAP_MIN='U';
+static constexpr char PARAM_PROTOTYPECHOICES='V';
 
 
 static const struct option PROGRAM_OPTIONS[]=
@@ -81,7 +82,8 @@ static const struct option PROGRAM_OPTIONS[]=
 		,{"growthrate",required_argument,nullptr,PARAM_GROWTHRATE}
 		,{"meltrate",required_argument,nullptr,PARAM_MELTRATE}
 		,{"param-show",no_argument,nullptr,PARAM_PARAMSHOW}
-		,{"statefile",required_argument,nullptr,PARAM_STATEFILE}
+		,{"statefile-in",required_argument,nullptr,PARAM_STATEFILE_IN}
+		,{"statefile-out",required_argument,nullptr,PARAM_STATEFILE_OUT}
 		,{"stop-cond",required_argument,nullptr,PARAM_STOPCOND}
 		,{"merge-retries",required_argument,nullptr,PARAM_MERGERETRIES}
 		,{"overlap-max",required_argument,nullptr,PARAM_OVERLAP_MAX}
@@ -124,7 +126,8 @@ struct Setup
 
 	SnowflakeModel::PrototypeChoices m_prototypes;
 	std::string m_output_dir;
-	std::string m_statefile;
+	std::string m_statefile_in;
+	std::string m_statefile_out;
 	std::string m_stopcond_name;
 	std::string m_stopcond_arg;
 	std::string m_prototype;
@@ -255,8 +258,12 @@ Setup::Setup(int argc,char** argv):
 				m_data.m_actions|=PARAM_SHOW;
 				break;
 
-			case PARAM_STATEFILE:
-				m_statefile=optarg;
+			case PARAM_STATEFILE_IN:
+				m_statefile_in=optarg;
+				break;
+
+			case PARAM_STATEFILE_OUT:
+				m_statefile_out=optarg;
 				break;
 
 			case PARAM_STOPCOND:
@@ -290,7 +297,7 @@ Setup::Setup(int argc,char** argv):
 
 			}
 		}
-	if(m_stopcond_name.size()==0 && m_statefile.size()==0
+	if(m_stopcond_name.size()==0 && m_statefile_in.size()==0
 		&& !(m_data.m_actions&HELP_SHOW || m_data.m_actions&PARAM_SHOW) )
 		{
 		throw "No stop condition is given";
@@ -386,9 +393,11 @@ void helpShow()
 	printf("Options:\n\n"
 		"--help\n"
 		"    Print this text and exit.\n\n"
-		"--statefile=file\n"
+		"--statefile-in=file\n"
 		"    Continue a started simulation whose state is stored in `file`. The simulation setup "
 		"stored in `file` overrides any other command line argument.\n\n"
+		"--statefile-out=file\n"
+		"    Save current state to `file` when exiting.\n\n"
 		"--stop-cond=condition\n"
 		"    Defines a stop condition. Possible options are\n"
 		"     iterations=iteration_count   Run a fixed number of iterations\n"
@@ -1212,23 +1221,6 @@ bool Simstate::step()
 	return 0;
 	}
 
-static std::string statefileName(const std::string& name_init,const std::string& name_new)
-	{
-	if(name_init.size()==0)
-		{
-		return SnowflakeModel::filenameEscape(name_new.c_str()) + "-0000000000000000.h5";
-		}
-//TODO (perf) This can be done much easier by looping through name_init backwards
-	auto pos_counter=name_init.find_last_of('-');
-	auto ret=name_init.substr(0,pos_counter);
-	auto pos_extension=name_init.find_last_of('.');
-	auto val=name_init.substr(pos_counter + 1,pos_extension - pos_counter-1);
-	size_t counter=strtol(val.c_str(),nullptr,16) + 1;
-	sprintf(const_cast<char*>( val.data() ),"%016zx",counter);
-	auto extension=name_init.substr(pos_extension);	
-	return ret+"-"+val+extension;
-	}
-
 class MonitorIterations:public SimstateMonitor
 	{
 	public:
@@ -1400,13 +1392,13 @@ int main(int argc,char** argv)
 			return 0;
 			}
 
-		if(setup.m_statefile.size())
+		if(setup.m_statefile_in.size())
 			{
-			SnowflakeModel::DataDump dump(setup.m_statefile.c_str()
+			SnowflakeModel::DataDump dump(setup.m_statefile_in.c_str()
 				,SnowflakeModel::DataDump::IOMode::READ);
-			auto statefile=setup.m_statefile;
+			auto statefile=setup.m_statefile_in;
 			setup=Setup(dump);
-			setup.m_statefile=statefile;
+			setup.m_statefile_in=statefile;
 			}
 		setup.validate();
 
@@ -1446,13 +1438,13 @@ int main(int argc,char** argv)
 		auto monitor=monitor_selector[setup.m_stopcond_name];
 		monitor=(monitor==nullptr)?bad_condition:monitor;
 		std::unique_ptr<Simstate> state;
-		if(setup.m_statefile.size()==0)
+		if(setup.m_statefile_in.size()==0)
 			{
 			state.reset(new Simstate(setup,monitor(setup.m_stopcond_arg.c_str())));
 			}
 		else
 			{
-			state.reset(new Simstate(setup,SnowflakeModel::DataDump(setup.m_statefile.c_str(),SnowflakeModel::DataDump::IOMode::READ)
+			state.reset(new Simstate(setup,SnowflakeModel::DataDump(setup.m_statefile_in.c_str(),SnowflakeModel::DataDump::IOMode::READ)
 				,monitor(setup.m_stopcond_arg.c_str())));
 			}
 		auto now=SnowflakeModel::getdate();
@@ -1467,8 +1459,10 @@ int main(int argc,char** argv)
 				{state->statsDump();}
 			}
 		fprintf(stderr,"\n# Exiting\n");
+
+		if(setup.m_statefile_out.size()!=0)
 			{
-			auto filename_dump=statefileName(setup.m_statefile,now);
+			auto filename_dump=setup.m_statefile_out;
 			fprintf(stderr,"# Dumping simulation state to %s\n",filename_dump.c_str());
 			SnowflakeModel::DataDump dump(filename_dump.c_str()
 				,SnowflakeModel::DataDump::IOMode::WRITE);
