@@ -4,7 +4,7 @@ function prototypechoices_write(file,choices)
 % prototypechoice_create.
 %
 	fid=file;
-	if isstr(file)
+	if ischar(file)
 		fid=fopen(file,'w');
 	end
 	fprintf(fid,'[\n');
@@ -18,7 +18,7 @@ function prototypechoices_write(file,choices)
 			,choices{k}.deformations);
 	end
 	fprintf(fid,']');
-	if isstr(file)
+	if ischar(file)
 		fclose(fid);
 	end
 end
