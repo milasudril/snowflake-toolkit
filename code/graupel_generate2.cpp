@@ -237,25 +237,6 @@ static void statsDump(SnowflakeModel::FileOut* file_out,const SnowflakeModel::Sp
 		}
 	}
 
-static std::string statefileName(const std::string& name_init,const std::string& name_new)
-	{
-	if(name_init.size()==0)
-		{
-		return std::string("graupel-") 
-			+ SnowflakeModel::filenameEscape(name_new.c_str())
-			+ "-0000000000000000.h5";
-		}
-//TODO (perf) This can be done much easier by looping through name_init backwards
-	auto pos_counter=name_init.find_last_of('-');
-	auto ret=name_init.substr(0,pos_counter);
-	auto pos_extension=name_init.find_last_of('.');
-	auto val=name_init.substr(pos_counter + 1,pos_extension - pos_counter-1);
-	size_t counter=strtol(val.c_str(),nullptr,16) + 1;
-	sprintf(const_cast<char*>( val.data() ),"%016zx",counter);
-	auto extension=name_init.substr(pos_extension);	
-	return ret+"-"+val+extension;
-	}
-
 static std::gamma_distribution<float> generateGamma(float E,float sigma)
 	{
 //	Parameter setup from Wikipedia article.
