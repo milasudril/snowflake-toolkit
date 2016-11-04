@@ -3,7 +3,9 @@ function aggregates_generate(paramstruct,sync,exepath,exefile)
 %
 % Recognized members of paramstruct
 % 
-% statefile          restarts a simuation stored in a state
+% statefile_in       restarts a simuation stored in a statefile
+%
+% statefile_out      when exiting, save simuation state to statefile
 %
 % stop_cond          defines a stop condition
 %
@@ -60,8 +62,12 @@ function aggregates_generate(paramstruct,sync,exepath,exefile)
 	nowstring=regexprep(nowstring,'\s','_');
 	nowstring=regexprep(nowstring,'[:+.]','-');
 
-	statefile=ternary(@()isfield(paramstruct,'statefile')...
-		,@()['--statefile=',paramstruct.statefile]...
+	statefile_in=ternary(@()isfield(paramstruct,'statefile_in')...
+		,@()['--statefile-in=',paramstruct.statefile_in]...
+		,@()'');
+
+	statefile_out=ternary(@()isfield(paramstruct,'statefile_out')...
+		,@()['--statefile-out=',paramstruct.statefile_out]...
 		,@()'');
 
 	stop_cond=ternary(@()isfield(paramstruct,'stop_cond')...
