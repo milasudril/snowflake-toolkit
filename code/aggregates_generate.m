@@ -97,7 +97,7 @@ function aggregates_generate(paramstruct,sync,exepath,exefile)
 		else
 			choices_file=['choices_',nowstring,'.json'];
 			prototypechoices_write(choices_file,paramstruct.prototype_choices);
-			prorotype_choices=['--prototype-choises=',choices_file];
+			prototype_choices=['--prototype-choices=',choices_file];
 		end
 	end
 
@@ -168,10 +168,10 @@ function aggregates_generate(paramstruct,sync,exepath,exefile)
 			cmd=[exepath,'/',exefile];
 	end
 
-	system_wrapper({cmd,statefile_in,statefile_out,stop_cond,shape,deformations...
+	system_wrapper([cmd,statefile_in,statefile_out,stop_cond,shape,deformations...
 		,prototype_choices,output_dir,dump_stats,dump_geometry...
 		,dump_geometry_ice,sample_geometry,seed,N,growthrate...
-		,droprate,meltrate,merge_retries,overlap_min,overlap_max}...
+		,droprate,meltrate,merge_retries,overlap_min,overlap_max]...
 		,sync);
 end
 

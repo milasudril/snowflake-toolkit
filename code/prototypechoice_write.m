@@ -11,5 +11,5 @@ function prototypechoice_write(fid,prototype_name,probability,deformations)
 		end
 		fprintf(fid,']');
 	end
-	fprintf(fid,'}\n');
+	fprintf(fid,']}\n');
 end
