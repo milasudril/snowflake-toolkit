@@ -142,7 +142,9 @@ ALICE_OPTION_DESCRIPTOR(OptionDescriptor
 	
 	,{"Output options","dump-stats","Write statistics to the given file","filename",Alice::Option::Multiplicity::ONE}
 	
-	,{"Other","statefile","Reload state from file","filename",Alice::Option::Multiplicity::ONE}
+	,{"Other","statefile-in","Reload state from file","filename",Alice::Option::Multiplicity::ONE}
+
+	,{"Other","statefile-out","Save state to file when exiting","filename",Alice::Option::Multiplicity::ONE}
 	);
 
 
@@ -206,7 +208,7 @@ static auto shootRandom(const T& object,RandomGenerator& randgen
 
 
 //	Set the source on the sphere
-	auto source=bb_mid - SnowflakeModel::Point(r*direction,1.0);
+	auto source=bb_mid - SnowflakeModel::Point(r*direction,0.0f);
 
 	return object.shoot(source,direction,E_0,decay_distance);
 	}
@@ -233,25 +235,6 @@ static void statsDump(SnowflakeModel::FileOut* file_out,const SnowflakeModel::Sp
 		//	,solid.overlapCount()
 			);
 		}
-	}
-
-static std::string statefileName(const std::string& name_init,const std::string& name_new)
-	{
-	if(name_init.size()==0)
-		{
-		return std::string("graupel-") 
-			+ SnowflakeModel::filenameEscape(name_new.c_str())
-			+ "-0000000000000000.h5";
-		}
-//TODO (perf) This can be done much easier by looping through name_init backwards
-	auto pos_counter=name_init.find_last_of('-');
-	auto ret=name_init.substr(0,pos_counter);
-	auto pos_extension=name_init.find_last_of('.');
-	auto val=name_init.substr(pos_counter + 1,pos_extension - pos_counter-1);
-	size_t counter=strtol(val.c_str(),nullptr,16) + 1;
-	sprintf(const_cast<char*>( val.data() ),"%016zx",counter);
-	auto extension=name_init.substr(pos_extension);	
-	return ret+"-"+val+extension;
 	}
 
 static std::gamma_distribution<float> generateGamma(float E,float sigma)
@@ -370,7 +353,7 @@ Simstate::Simstate(const Alice::CommandLine<OptionDescriptor>& cmd_line):
 			{overlap_max=x.valueGet();}
 
 		if(merge_offset<1.0f && overlap_max==0)
-			{throw "A negative merge offset requires at least one overlap section";}
+			{throw "A positive merge offset requires at least one overlap section";}
 		}
 
 		{
@@ -428,8 +411,11 @@ Simstate::Simstate(const Alice::CommandLine<OptionDescriptor>& cmd_line
 
 void Simstate::save(const std::string& now) const
 	{
-	auto statefile=r_cmd_line.get<Alice::Stringkey("statefile")>().valueGet();
-	auto filename_dump=statefileName(statefile,now);
+	auto& statefile=r_cmd_line.get<Alice::Stringkey("statefile-out")>();
+	if(!statefile)
+		{return;}
+
+	auto& filename_dump=statefile.valueGet();
 	fprintf(stderr,"# Dumping simulation state to %s\n",filename_dump.c_str());
 	SnowflakeModel::DataDump dump(filename_dump.c_str()
 		,SnowflakeModel::DataDump::IOMode::WRITE);
@@ -549,7 +535,7 @@ void Simstate::icefileWrite() const
 
 static Simstate simstateCreate(const Alice::CommandLine<OptionDescriptor>& cmd_line)
 	{
-	auto& statefile=cmd_line.get<Alice::Stringkey("statefile")>();
+	auto& statefile=cmd_line.get<Alice::Stringkey("statefile-in")>();
 	if(statefile)
 		{
 		return Simstate(cmd_line,statefile.valueGet());
