@@ -1,5 +1,5 @@
-function [stats]=graupel_generate(paramstruct,exepath)
-% function [stats]=graupel_generate(paramstruct,exepath)
+function [stats]=graupel_generate(paramstruct,exepath,exefile)
+% function [stats]=graupel_generate(paramstruct,exepath,exefile)
 %
 % Recognized members of paramstruct
 %
@@ -21,8 +21,8 @@ function [stats]=graupel_generate(paramstruct,exepath)
 %                    sphere_aggreagte_rasterize
 % dump_stats         write statistics to the given file
 %
-% For a more detailed description, run `exepath/graupel_generate2 --help` from a 
-% terminal.
+% For a more detailed description, run `exepath/exefile --help` from a 
+% terminal. If exefile is ommited, the function will start graupel_generate2
 %
 	seed=ternary(@()isfield(paramstruct,'seed')...
 		,@()['--seed=',int2str(paramstruct.seed)]...
@@ -74,8 +74,15 @@ function [stats]=graupel_generate(paramstruct,exepath)
 		,@()'');
 
 	n=nargin();
-	cmd=ternary(@()(n<2),@()'graupel_generate2'...
-		,@()[exepath,'/graupel_generate2'])
+	cmd='';
+	switch nargin()
+		case 1
+			cmd='graupel_generate2';
+		case 2
+			cmd=[exepath,'/graupel_generate2'];
+		otherwise
+			cmd=[exepath,'/',exefile];
+	end
 
 	system_wrapper({cmd,seed,scale,E_0,decay_distance,merge_offset...
 		,overlap_max,D_max,fill_ratio,statefile,dump_geometry,dump_geometry_ice...
@@ -84,4 +91,3 @@ function [stats]=graupel_generate(paramstruct,exepath)
 		stats=csvread2(paramstruct.dump_stats,'\t');
 	end
 end
-

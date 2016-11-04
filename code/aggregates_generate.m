@@ -1,5 +1,8 @@
-function aggregates_generate(paramstruct,exepath,sync)
-% function aggregates_generate(paramstruct,exepath,sync)
+function aggregates_generate(paramstruct,sync,exepath,exefile)
+% function aggregates_generate(paramstruct,sync,exepath,exefile)
+%
+% For a more detailed description, run `exepath/exefile --help` from a 
+% terminal. If exefile is ommited, the function will start snowflake_simulate3
 
 	[~,nowstring]=system('date --rfc-3339=ns --utc');
 	nowstring=strtrim(nowstring);
@@ -98,8 +101,17 @@ function aggregates_generate(paramstruct,exepath,sync)
 		,@()'');
 
 	n=nargin();
-	cmd=ternary(@()(n<2),@()'snowflake_simulate3'...
-		,@()[exepath,'/snowflake_simulate3'])
+	cmd='';
+	switch nargin()
+		case 1
+			cmd='snowflake_simulate3';
+		case 2
+			cmd='snowflake_simulate3';
+		case 3
+			cmd=[exepath,'/snowflake_simulate3'];
+		otherwise
+			cmd=[exepath,'/',exefile];
+	end
 
 	system_wrapper([cmd,statefile,stop_cond,shape,deformations...
 		,prototype_choices,output_dir,dump_stats,dump_geometry...
