@@ -27,6 +27,7 @@ function coords=sphere_aggregate_rasterize(aggregate,grid,output_file,exepath,ex
 
 	system_wrapper({cmd,prototype,sample_geometry},nargout()>0);
 	if nargout()>0
-		coords=load(output_file);
+		tmp=importdata(output_file,' ');
+		coords=tmp.data;
 	end
 end

@@ -27,6 +27,7 @@ function coords=mesh_rasterize(ice_file,grid,output_file,exepath,exename)
 
 	system_wrapper({cmd,prototype,sample_geometry},nargout()>0);
 	if nargout()>0
-		coords=load(output_file);
+		tmp=importdata(output_file,' ');
+		coords=tmp.data;
 	end
 end

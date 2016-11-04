@@ -30,6 +30,7 @@ function coords=mesh_rasterize_2(ice_file,n_points,ratio,output_file,exepath,exe
 
 	system_wrapper({cmd,prototype,sample_geometry},nargout()>0);
 	if nargout()>0
-		coords=load(output_file);
+		tmp=importdata(output_file,' ');
+		coords=tmp.data;
 	end
 end

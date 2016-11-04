@@ -30,6 +30,7 @@ function coords=sphere_aggregate_rasterize_2(aggregate,n_points,ratio,output_fil
 
 	system_wrapper({cmd,prototype,sample_geometry},nargout()>0);
 	if nargout()>0
-		coords=load(output_file);
+		tmp=importdata(output_file,' ');
+		coords=tmp.data;
 	end
 end

@@ -7,7 +7,7 @@ function addaview(points,exedir)
 
 	file=mkfifo();
 	n=nargin();
-	cmd=ternary(@()n<2,@()'addaview',@()[exedir,'/addaview']);
+	cmd=ternary(@()(n<2),@()('addaview'),@()([exedir,'/addaview']));
 	file_param=['--file=',file];
 	system_wrapper({cmd,file_param},0);
 	dlmwrite(file,points,' ');
