@@ -200,10 +200,10 @@ Twins<glm::vec4> SphereAggregate::extremaNew(const Sphere& volume) const noexcep
 
 		for(int k=0;k<6;++k)
 			{
-			auto point_this=midpoint_this + Point(offsets_this[k],1.0f);
+			auto point_this=midpoint_this + Point(offsets_this[k],0.0f);
 			for(int l=0;l<k;++l)
 				{
-				auto point_vol=midpoint_vol + Point(offsets_vol[l],1.0f);
+				auto point_vol=midpoint_vol + Point(offsets_vol[l],0.0f);
 				auto d=glm::distance(point_this,point_vol);
 				if(d>d_max)
 					{
