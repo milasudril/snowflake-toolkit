@@ -142,7 +142,9 @@ ALICE_OPTION_DESCRIPTOR(OptionDescriptor
 	
 	,{"Output options","dump-stats","Write statistics to the given file","filename",Alice::Option::Multiplicity::ONE}
 	
-	,{"Other","statefile","Reload state from file","filename",Alice::Option::Multiplicity::ONE}
+	,{"Other","statefile-in","Reload state from file","filename",Alice::Option::Multiplicity::ONE}
+
+	,{"Other","statefile-out","Save state to file when exiting","filename",Alice::Option::Multiplicity::ONE}
 	);
 
 
@@ -206,7 +208,7 @@ static auto shootRandom(const T& object,RandomGenerator& randgen
 
 
 //	Set the source on the sphere
-	auto source=bb_mid - SnowflakeModel::Point(r*direction,1.0);
+	auto source=bb_mid - SnowflakeModel::Point(r*direction,0.0f);
 
 	return object.shoot(source,direction,E_0,decay_distance);
 	}
@@ -428,8 +430,11 @@ Simstate::Simstate(const Alice::CommandLine<OptionDescriptor>& cmd_line
 
 void Simstate::save(const std::string& now) const
 	{
-	auto statefile=r_cmd_line.get<Alice::Stringkey("statefile")>().valueGet();
-	auto filename_dump=statefileName(statefile,now);
+	auto& statefile=r_cmd_line.get<Alice::Stringkey("statefile-out")>();
+	if(!statefile)
+		{return;}
+
+	auto& filename_dump=statefile.valueGet();
 	fprintf(stderr,"# Dumping simulation state to %s\n",filename_dump.c_str());
 	SnowflakeModel::DataDump dump(filename_dump.c_str()
 		,SnowflakeModel::DataDump::IOMode::WRITE);
@@ -549,7 +554,7 @@ void Simstate::icefileWrite() const
 
 static Simstate simstateCreate(const Alice::CommandLine<OptionDescriptor>& cmd_line)
 	{
-	auto& statefile=cmd_line.get<Alice::Stringkey("statefile")>();
+	auto& statefile=cmd_line.get<Alice::Stringkey("statefile-in")>();
 	if(statefile)
 		{
 		return Simstate(cmd_line,statefile.valueGet());

@@ -224,6 +224,10 @@ void SphereAggregate::write(const char* id,DataDump& dump) const
 	dump.write((group_name + "/volume").c_str(),&m_volume,1);
 	dump.write((group_name + "/subvolumes").c_str(),subvolumesBegin()
 		,subvolumesCount());
+	auto bb=reinterpret_cast<const Point*>(&boundingBoxGet());
+	dump.write((group_name + "/bounding_box").c_str(),bb,2);
+	auto extrema=reinterpret_cast<const Point*>(&m_extrema);
+	dump.write((group_name + "/extrema").c_str(),extrema,2);
 	}
 
 
@@ -233,4 +237,10 @@ SphereAggregate::SphereAggregate(const DataDump& dump,const char* name):SphereAg
 	m_subvolumes=dump.arrayGet<Sphere>((group_name+"/subvolumes").c_str());
 	m_volume=dump.arrayGet<decltype(m_volume)>
 		((group_name+"/volume").c_str()).at(0);
+
+	auto bb=reinterpret_cast<Point*>(&m_bounding_box);
+	dump.arrayRead<Point>((group_name + "/bounding_box").c_str()).dataRead(bb,2);
+
+	auto extrema=reinterpret_cast<Point*>(&m_extrema);
+	dump.arrayRead<Point>((group_name + "/extrema").c_str()).dataRead(extrema,2);
 	}
