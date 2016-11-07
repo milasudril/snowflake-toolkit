@@ -12,8 +12,7 @@ function [data,N_rows]=aggregates_frame_load(basedir,frame_number)
 % OUT
 %	data	A struct containing 1 x N_rows matrices with the contents of each column
 %	N_rows	The number of rows in the frame file 
-%%
-
+%
 	filename=sprintf('%s/frame-%d.txt'...
 		,basedir,prefix,frame_number);
 	try

@@ -1,7 +1,7 @@
 function coords=mesh_rasterize_2(ice_file,N,ratio,output_file,exepath,exename)
 % function coords=mesh_rasterize_2(ice_file,N,ratio,output_file,exepath,exename)
 %
-% Rasterizes ice_file, using N points, with ratio [Rx,Ry,Rz]. For rasterizing a
+% Rasterizes ice_file, using N points, with ratio [Rx,Ry,Rz]. For rasterizing of a
 % sphere aggregate in a similar way, use sphere_aggregate_rasterize_2 instead.
 %
 % IN
