@@ -1,11 +1,30 @@
-function vols=ice_load(source,exepath)
+function vols=ice_load(source,exepath,exename)
+% function vols=ice_load(source,exepath,)
+%
+% Loads mesh geometry
+%
+% IN
+%	source	Ice file to load
+%	exepath	Directory to the executable that performs data conversion
+%	exename	The name of the executable that perfoms data conversion
+%
+% OUT
+%	A cell array of structs containing vertices, and faces with vertex indices.
+%	The faces are oriented counter-clock wise.
+%
+% EXAMPLE USAGE
+%	data=ice_load('../crystal-prototypes/suzanne.ice','__targets_rel');
+%	trisurf(data{1}.faces,data{1}.vertices(:,1),data{1}.vertices(:,2),data{1}.vertices(:,3));
+
 	n=nargin();
 	vols={};
 	cmd='';
 	if n<2
 		cmd='snowflake_prototype-test';
-	else
+	elseif n<3
 		cmd=[exepath,'/snowflake_prototype-test'];
+	else
+		cmd=[exepath,'/',exename];
 	end
 	data=pipe_read({cmd,'--dump-geometry-simple',['--prototype=',source]}...
 		,@(filename)(dlmread(filename,' ',1,0)));

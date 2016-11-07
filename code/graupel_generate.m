@@ -1,6 +1,17 @@
 function [stats]=graupel_generate(paramstruct,exepath,exefile)
 % function [stats]=graupel_generate(paramstruct,exepath,exefile)
 %
+% Generates a graupel
+%
+% IN
+%	paramstruct	A struct with simulation parameters
+%	exedir	exepath the directory containing the executable for running
+%		the simulation
+%	exefile	the name of the executable file
+%
+% OUT
+%	stats	Growth history of the generated graupel
+%
 % Recognized members of paramstruct
 %
 % seed               seed for the random generator
