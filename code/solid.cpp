@@ -130,10 +130,10 @@ void Solid::midpointCompute() const noexcept
 	auto vol_end=subvolumesEnd();
 	while(subvolume!=vol_end)
 		{
-		mid+=subvolume->midpointGet();
+		mid+=subvolume->midpointGet()*subvolume->volumeGet();
 		++subvolume;
 		}
-	mid/=subvolumesCount();
+	mid/=volumeGet();
 	m_mid=Point{Vector(mid),1};
 	m_flags_dirty&=~MIDPOINT_DIRTY;
 	}
