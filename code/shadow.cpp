@@ -1,6 +1,15 @@
 //@	{
-//@	 "targets":[{"name":"shadow","type":"application"
-//@ ,"dependencies":[{"ref":"GL","rel":"external"},{"ref":"GLEW","rel":"external"},{"ref":"glfw","rel":"external"}]}]
+//@	 "targets":
+//@		[{
+//@		 "name":"shadow","type":"application"
+//@ 	,"dependencies":
+//@			[
+//@			 {"ref":"png","rel":"external"}
+//@			,{"ref":"GL","rel":"external"}
+//@			,{"ref":"GLEW","rel":"external"}
+//@			,{"ref":"glfw","rel":"external"}
+//@			]
+//@		}]
 //@	}
 
 #include "solid.h"
@@ -20,6 +29,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <memory>
+#include <png.h>
 
 ALICE_OPTION_DESCRIPTOR(OptionDescriptor
 	,{"Help","help","Print option summary to stdout, or, if a filename is given, to that file","filename",Alice::Option::Multiplicity::ZERO_OR_ONE}
@@ -168,8 +178,6 @@ class ShadowMask
 		void render(float distance,float azimuth,float zenith
 			,const glm::mat4& projection) const noexcept;
 
-		std::vector<uint8_t> pixelsGet() const noexcept;
-
 	private:
 		GLuint vertex_array;
 		GLuint vbo;
@@ -278,19 +286,32 @@ void ShadowMask::render(float distance,float azimuth,float zenith,const glm::mat
 	glDisableVertexAttribArray(0);
 	}
 
+static void pixelsDump(const char* filename)
+	{
+	std::vector<uint8_t> ret(512*512);
+	glReadPixels(0,0,512,512,GL_GREEN,GL_UNSIGNED_BYTE,ret.data());
+	SnowflakeModel::FileOut dump(filename);
+	auto pngptr=png_create_write_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
+	auto pnginfo=png_create_info_struct(pngptr);
+	png_init_io(pngptr, dump.handleGet());
+	png_set_IHDR(pngptr,pnginfo,512,512,8,PNG_COLOR_TYPE_GRAY,PNG_INTERLACE_NONE
+		,PNG_COMPRESSION_TYPE_DEFAULT,PNG_FILTER_TYPE_DEFAULT);
+	png_write_info(pngptr,pnginfo);
+	for(size_t k=0;k<512;++k)
+		{png_write_row(pngptr, ret.data() + 512*k);}
+	png_write_end(pngptr, pnginfo);
+	png_destroy_write_struct(&pngptr,&pnginfo);
+	}
+
+
 struct ViewState
 	{
 	const ShadowMask& pc;
-	float distance;
-	float view_thickness;
 	float azimuth;
 	float zenith;
 
 	double x_0;
 	double y_0;
-	bool orth;
-	bool shift;
-	bool ctrl;
 	};
 
 static glm::mat4 make_ortho(float width,float height,float size,float distance
@@ -319,10 +340,9 @@ static void render(GLFWwindow* handle)
 	auto vs=reinterpret_cast<const ViewState*>(glfwGetWindowUserPointer(handle));
 	
 	glViewport(0,0,width,height);
-	auto projection=vs->orth?make_ortho(width,height,1.25f,vs->distance,vs->view_thickness):
-		glm::perspective(glm::radians(45.0f), (float) width / (float)height, 0.1f, 100.0f);
+	auto projection=make_ortho(width,height,1.25f,10,20);
 	glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
-	vs->pc.render(vs->distance,vs->azimuth,vs->zenith,projection);
+	vs->pc.render(6,vs->azimuth,vs->zenith,projection);
 	
 	glfwSwapBuffers(handle);
 	}
@@ -343,17 +363,6 @@ static void mouseMove(GLFWwindow* handle,double x,double y)
 	vs->x_0=x;
 	}
 
-static void scroll(GLFWwindow* handle,double x,double y)
-	{
-	auto vs=reinterpret_cast<ViewState*>(glfwGetWindowUserPointer(handle));
-	if(vs->orth)
-		{
-		vs->distance-= (!vs->shift)?y/32.0f:y/8.0f;
-		}
-	else
-		{vs->distance-=y/8.0f;}
-	}
-
 static void keyAction(GLFWwindow* handle,int key,int scancode,int action,int mods)
 	{
 	auto vs=reinterpret_cast<ViewState*>(glfwGetWindowUserPointer(handle));
@@ -362,25 +371,15 @@ static void keyAction(GLFWwindow* handle,int key,int scancode,int action,int mod
 		switch(key)
 			{
 			case 32:
-				vs->distance=6.0f;
 				vs->azimuth=0;
 				vs->zenith=-std::acos(-1.0f)/2.0f;
 				break;
-			case 'O':
-				vs->orth=!vs->orth;
+			case 'P':
+				{
+				pixelsDump("test.png");
+				}
 				break;
 			}
-		if(scancode==50 || mods&GLFW_MOD_SHIFT)
-			{vs->shift=1;}
-		if(scancode==37 || mods&GLFW_MOD_CONTROL)
-			{vs->ctrl=1;}
-		}
-	else
-		{
-		if(scancode==50)
-			{vs->shift=0;}
-		if(scancode==37)
-			{vs->ctrl=0;}
 		}
 	}
 
@@ -456,13 +455,12 @@ int main(int argc,char** argv)
 			return ShadowMask(particle_out.solidGet());
 			}();
 
-		ViewState vs{mask,6.0f,12.0f,0,-std::acos(-1.0f)/2.0f,0,0};
+		ViewState vs{mask,0.0f,-std::acos(-1.0f)/2.0f,0,0};
 		glfwSetWindowUserPointer(window.get(),&vs);
 
 		glfwSetWindowCloseCallback(window.get(),close);
 		glfwSetWindowRefreshCallback(window.get(),render);
 		glfwSetCursorPosCallback(window.get(),mouseMove);
-		glfwSetScrollCallback(window.get(),scroll);
 		glfwSetKeyCallback(window.get(),keyAction);
 
 
