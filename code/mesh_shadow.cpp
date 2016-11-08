@@ -1,7 +1,7 @@
 //@	{
 //@	 "targets":
 //@		[{
-//@		 "name":"shadow","type":"application"
+//@		 "name":"mesh_shadow","type":"application"
 //@ 	,"dependencies":
 //@			[
 //@			 {"ref":"png","rel":"external"}
@@ -31,9 +31,28 @@
 #include <memory>
 #include <png.h>
 
+namespace Alice
+	{
+	template<>
+	struct MakeType<Stringkey("angle")>:public MakeType<Stringkey("float")>
+		{
+		static constexpr const char* descriptionShortGet() noexcept
+			{return "A value within [0, 1]";}
+		static constexpr const char* descriptionLongGet() noexcept
+			{return "Angles are normalized. This means that 1 corresponds to a full turn, or 2 pi";}
+		};
+	}
+
 ALICE_OPTION_DESCRIPTOR(OptionDescriptor
 	,{"Help","help","Print option summary to stdout, or, if a filename is given, to that file","filename",Alice::Option::Multiplicity::ZERO_OR_ONE}
-	,{"Input","prototype","Mesh to render","filename",Alice::Option::Multiplicity::ONE});
+	,{"Input","prototype","Mesh to render. If this option is not given, the data is read from stdin.","filename",Alice::Option::Multiplicity::ONE}
+	,{"Input","alpha","First Euler angle","angle",Alice::Option::Multiplicity::ONE}
+	,{"Input","beta","Second Euler angle","angle",Alice::Option::Multiplicity::ONE}
+	,{"Input","gamma","Third Euler angle","angle",Alice::Option::Multiplicity::ONE}
+	,{"Output","image","Destination file. If this option is not given, "
+		"the output is written to stdout","filename",Alice::Option::Multiplicity::ONE}
+	,);
+
 
 [[noreturn]] static void glfwErrorRaise(int code,const char* message)
 	{
@@ -74,7 +93,7 @@ struct GLFWDeleter
 
 static std::unique_ptr<GLFWwindow,GLFWDeleter> windowCreate(unsigned int width,unsigned int height,const char* title)
 	{
-	return std::unique_ptr<GLFWwindow,GLFWDeleter>(glfwCreateWindow(width+1,height,title,NULL,NULL),GLFWDeleter());
+	return std::unique_ptr<GLFWwindow,GLFWDeleter>(glfwCreateWindow(width,height,title,NULL,NULL),GLFWDeleter());
 	}
 
 static void close(GLFWwindow* handle)
@@ -175,7 +194,7 @@ class ShadowMask
 
 		ShadowMask(const SnowflakeModel::Solid& s);
 
-		void render(float distance,float azimuth,float zenith
+		void render(float distance,float alpha,float beta,float gamma
 			,const glm::mat4& projection) const noexcept;
 
 	private:
@@ -264,41 +283,45 @@ ShadowMask::ShadowMask(const SnowflakeModel::Solid& solid)
 	scalepos=glm::translate(scalepos,SnowflakeModel::Vector(-mid));
 	}
 
-void ShadowMask::render(float distance,float azimuth,float zenith,const glm::mat4& projection) const noexcept
+void ShadowMask::render(float distance,float alpha,float beta,float gamma
+	,const glm::mat4& projection) const noexcept
 	{
 	glm::mat4 mvp;
 	mvp=glm::translate(mvp,glm::vec3(0.0f,0.0f,-distance));
-	mvp=glm::rotate(mvp,zenith,glm::vec3(1,0,0));
-	mvp=glm::rotate(mvp,azimuth,glm::vec3(0,0,1));
+	mvp=glm::rotate(mvp,alpha,glm::vec3(0,0,1));
+	mvp=glm::rotate(mvp,beta,glm::vec3(0,1,0));
+	mvp=glm::rotate(mvp,gamma,glm::vec3(0,0,1));
 	mvp=mvp*scalepos;
 	mvp=projection*mvp;
 
 	glUniformMatrix4fv(mvp_location, 1, GL_FALSE, &mvp[0][0]);
+	glUniform3f(fragment_color_location,1,1,1);	
 	
 	glBindBuffer(GL_ARRAY_BUFFER, vbo);
 	glEnableVertexAttribArray(0);
 	glVertexAttribPointer(0,3,GL_FLOAT,GL_FALSE,0,(void*)0);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,element_buffer);
-	glUniform3f(fragment_color_location,1,1,1);	
 	glDrawElements(GL_TRIANGLES,n_faces,GL_UNSIGNED_INT,nullptr);
-	glUniform3f(fragment_color_location,1,0,0);	
-	glDrawArrays(GL_POINTS,0,n);
 	glDisableVertexAttribArray(0);
 	}
 
-static void pixelsDump(const char* filename)
+static void pixelsDump(GLFWwindow* window,SnowflakeModel::FileOut&& dump)
 	{
-	std::vector<uint8_t> ret(512*512);
-	glReadPixels(0,0,512,512,GL_GREEN,GL_UNSIGNED_BYTE,ret.data());
-	SnowflakeModel::FileOut dump(filename);
+	int width;
+	int height;
+	glfwGetWindowSize(window,&width,&height);
+
+	std::vector<uint8_t> ret(width*height);
+	glPixelStorei(GL_PACK_ALIGNMENT,1);
+	glReadPixels(0,0,width,height,GL_GREEN,GL_UNSIGNED_BYTE,ret.data());
 	auto pngptr=png_create_write_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
 	auto pnginfo=png_create_info_struct(pngptr);
 	png_init_io(pngptr, dump.handleGet());
-	png_set_IHDR(pngptr,pnginfo,512,512,8,PNG_COLOR_TYPE_GRAY,PNG_INTERLACE_NONE
+	png_set_IHDR(pngptr,pnginfo,width,height,8,PNG_COLOR_TYPE_GRAY,PNG_INTERLACE_NONE
 		,PNG_COMPRESSION_TYPE_DEFAULT,PNG_FILTER_TYPE_DEFAULT);
 	png_write_info(pngptr,pnginfo);
-	for(size_t k=0;k<512;++k)
-		{png_write_row(pngptr, ret.data() + 512*k);}
+	for(int k=height-1;k>=0;--k)
+		{png_write_row(pngptr, ret.data() + width*k);}
 	png_write_end(pngptr, pnginfo);
 	png_destroy_write_struct(&pngptr,&pnginfo);
 	}
@@ -307,11 +330,9 @@ static void pixelsDump(const char* filename)
 struct ViewState
 	{
 	const ShadowMask& pc;
-	float azimuth;
-	float zenith;
-
-	double x_0;
-	double y_0;
+	float alpha;
+	float beta;
+	float gamma;
 	};
 
 static glm::mat4 make_ortho(float width,float height,float size,float distance
@@ -321,7 +342,6 @@ static glm::mat4 make_ortho(float width,float height,float size,float distance
 
 	width*=r;
 	height*=r;
-
 
 	auto left=-width;
 	auto right=-left;
@@ -342,45 +362,9 @@ static void render(GLFWwindow* handle)
 	glViewport(0,0,width,height);
 	auto projection=make_ortho(width,height,1.25f,10,20);
 	glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
-	vs->pc.render(6,vs->azimuth,vs->zenith,projection);
+	vs->pc.render(6,vs->alpha,vs->beta,vs->gamma,projection);
 	
 	glfwSwapBuffers(handle);
-	}
-
-static void mouseMove(GLFWwindow* handle,double x,double y)
-	{
-	int width;
-	int height;
-	glfwGetWindowSize(handle,&width,&height);
-
-	auto vs=reinterpret_cast<ViewState*>(glfwGetWindowUserPointer(handle));
-	if(glfwGetMouseButton(handle,GLFW_MOUSE_BUTTON_1)==GLFW_PRESS)
-		{
-		vs->zenith+=std::acos(-1.0f)*(y - vs->y_0)/600.0f;
-		vs->azimuth+=std::acos(-1.0f)*(x - vs->x_0)/600.0f;
-		}
-	vs->y_0=y;
-	vs->x_0=x;
-	}
-
-static void keyAction(GLFWwindow* handle,int key,int scancode,int action,int mods)
-	{
-	auto vs=reinterpret_cast<ViewState*>(glfwGetWindowUserPointer(handle));
-	if(action==GLFW_PRESS)
-		{
-		switch(key)
-			{
-			case 32:
-				vs->azimuth=0;
-				vs->zenith=-std::acos(-1.0f)/2.0f;
-				break;
-			case 'P':
-				{
-				pixelsDump("test.png");
-				}
-				break;
-			}
-		}
 	}
 
 static void helpPrint(const Alice::CommandLine<OptionDescriptor>& options
@@ -427,7 +411,7 @@ int main(int argc,char** argv)
 			}
 
 		GLFWGuard glfw;
-		auto window=windowCreate(640,480,"adda shape view");
+		auto window=windowCreate(1024,1024,"mesh shadow");
 		glfwMakeContextCurrent(window.get());
 		glewExperimental=1;
 		fprintf(stderr,"Initializing GLEW %s",reinterpret_cast<const char*>(glewGetString(GLEW_VERSION)));
@@ -449,39 +433,37 @@ int main(int argc,char** argv)
 		auto mask=[&cmdline,&window]()
 			{
 			auto solid_in=solidLoad(cmdline.get<Alice::Stringkey("prototype")>().valueGet());
-			glfwSetWindowTitle(window.get(),"Hello, World");
+			glfwSetWindowTitle(window.get(),"Mesh shadow");
 			SnowflakeModel::IceParticle particle_out;
 			particle_out.solidSet(solid_in);
 			return ShadowMask(particle_out.solidGet());
 			}();
 
-		ViewState vs{mask,0.0f,-std::acos(-1.0f)/2.0f,0,0};
+		ViewState vs
+			{
+			 mask
+			,2.0f*std::acos(-1.0f)*cmdline.get<Alice::Stringkey("alpha")>().valueGet()
+			,2.0f*std::acos(-1.0f)*cmdline.get<Alice::Stringkey("beta")>().valueGet()
+			,2.0f*std::acos(-1.0f)*cmdline.get<Alice::Stringkey("gamma")>().valueGet()
+			};
 		glfwSetWindowUserPointer(window.get(),&vs);
 
 		glfwSetWindowCloseCallback(window.get(),close);
 		glfwSetWindowRefreshCallback(window.get(),render);
-		glfwSetCursorPosCallback(window.get(),mouseMove);
-		glfwSetKeyCallback(window.get(),keyAction);
+		glfwSetWindowPos(window.get(), 100, 100);
+		glfwSetWindowSize(window.get(),1024,1024);
 
-
-		fprintf(stderr,"\n\nNavigation\n"
-			"==========\n"
-			" * Drag to look from different angles [Left mouse + move]\n"
-			" * Use scroll wheel to modify view distance\n"
-			" * Space bar resets camera position\n"
-			" * O toggles orthographic view\n"
-			"\n"
-			"Orthographic view also features the following modes\n"
-			" * Shift icreases distance changes\n"
-			" * Ctrl + Wheel changes the view thickness. This makes it possible "
-			"to create a slice\n");
-
-		while (!glfwWindowShouldClose(window.get()))
-			{
-			glfwWaitEvents();
-			render(window.get());
-			}
-
+		glfwWaitEvents();
+		render(window.get());
+		pixelsDump(window.get()
+			,cmdline.get<Alice::Stringkey("image")>()?
+				 SnowflakeModel::FileOut(cmdline.get<Alice::Stringkey("image")>().valueGet().c_str())
+				:SnowflakeModel::FileOut(stdout)
+			);
+		}
+	catch(const Alice::ErrorMessage& message)
+		{
+		fprintf(stderr,"Command line error: %s\n",message.data);return -1;
 		}
 	catch(const char* message)
 		{
