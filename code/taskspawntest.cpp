@@ -2,7 +2,7 @@
 //@	"targets":
 //@		[{
 //@		 "name":"taskspawntest","type":"application"
-//@		,"description":"Application for measuring the overhead of spawning a thread, and wait for it to finnish"
+//@		,"description":"Application for measuring the overhead of spawning a thread, and wait for it to finish"
 //@		}]
 //@	}
 

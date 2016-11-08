@@ -1,12 +1,10 @@
 //@	{
-//@	    "dependencies_extra":[],
-//@	    "targets":[
-//@	        {
-//@	            "dependencies":[],
-//@	            "name":"snowflake_prototype-test",
-//@	            "type":"application"
-//@	        }
-//@	    ]
+//@	"targets":
+//@		[{
+//@		 "name":"snowflake_prototype-test"
+//@		,"type":"application"
+//@		,"description":"Swiss army knife for manipulating ice files"
+//@		}]
 //@	}
 #include "config_parser.h"
 #include "solid_loader.h"

@@ -1,13 +1,9 @@
 //@	{
-//@	    "dependencies_extra":[],
-//@	    "targets":[
-//@	        {
-//@	            "dependencies":[],
-//@	            "name":"snowflake_simulate",
-//@	            "type":"application"
-//@			,"cxxoptions":{"cflags_extra":["L/usr/lib/x86_64-linux-gnu/hdf5/serial"]}
-//@	        }
-//@	    ]
+//@	"targets":
+//@		[{
+//@		 "name":"snowflake_simulate","type":"application"
+//@		,"description":"Aggregate generator first version (historical?)"
+//@		}]
 //@	}
 #include "config_parser.h"
 #include "solid_loader.h"

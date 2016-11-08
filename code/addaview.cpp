@@ -1,6 +1,15 @@
 //@	{
-//@	 "targets":[{"name":"addaview","type":"application"
-//@ ,"dependencies":[{"ref":"GL","rel":"external"},{"ref":"GLEW","rel":"external"},{"ref":"glfw","rel":"external"}]}]
+//@	 "targets":
+//@		[{
+//@		 "name":"addaview","type":"application"
+//@ 	,"dependencies":
+//@			[
+//@			 {"ref":"GL","rel":"external"}
+//@			,{"ref":"GLEW","rel":"external"}
+//@			,{"ref":"glfw","rel":"external"}
+//@			]
+//@		,"description":"ADDA point cloud visualizer"
+//@		}]
 //@	}
 
 

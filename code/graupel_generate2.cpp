@@ -1,12 +1,10 @@
 //@	{
-//@	    "dependencies_extra":[],
-//@	    "targets":[
-//@	        {
-//@	            "dependencies":[],
-//@	            "name":"graupel_generate2",
-//@	            "type":"application"
-//@	        }
-//@	    ]
+//@	"targets":
+//@		[{
+//@		 "name":"graupel_generate2"
+//@		,"type":"application"
+//@		,"description":"Graupel generator"
+//@		}]
 //@	}
 
 #include "file_in.h"
