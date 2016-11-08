@@ -1,7 +1,7 @@
 function [data,N_rows]=aggregates_frame_load_last(basedir)
 % function [data,N_rows]=aggregates_frame_load_last(basedir)
 %
-% Loads statistics from the last frame.
+% Loads statistics from the last frame
 %
 % IN
 %	basedir	the directory for the frame files

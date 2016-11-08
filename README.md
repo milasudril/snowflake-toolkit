@@ -3,7 +3,7 @@ SnowflakeToolkit--A toolkit for generating ice particles
 
 Documentation
 -------------
-The documentation can be found within the thesis "A software toolkit for generating ice and snow particle sharp data", availible from http://studentarbeten.chalmers.se/publication/234473-a-software-toolkit-for-generating-ice-and-snow-particle-sharp-data
+The documentation can be found within the thesis "A software toolkit for generating ice and snow particle sharp data", availible from http://studentarbeten.chalmers.se/publication/234473-a-software-toolkit-for-generating-ice-and-snow-particle-sharp-data. Additional documentation can be found on the GitHub wiki https://github.com/milasudril/snowflake-toolkit/wiki as well as in the changelog directory.
 
 
 Dependencies
@@ -12,10 +12,10 @@ The toolkit has been design with so it should not have to many external dependen
 
  * glm - The "OpenGL Mathematics Library"
  * libhdf5-cpp + its dependencies
+ * libjansson (libjansson-dev on Ubuntu)
  * GLEW (libglew-dev on Ubuntu) - For addaview
  * GLFW (libglfw3-dev on Ubuntu)- For addaview 
  * OpenGL 3.3 (appropriate graphics driver) - For addaview 
- * libjansson (libjansson-dev on Ubuntu)
  
 
 Compiling
@@ -24,20 +24,20 @@ This is a shell script that can be used to compile the toolkit. The toolkit requ
 
     #!/bin/bash
 
-    # Download Maike [Any version newer than 0.7.2 should work]
-    wget https://github.com/milasudril/maike/archive/0.7.2.tar.gz
+    # Download Maike [Any version newer than 0.8.4 should work]
+    wget https://github.com/milasudril/maike/archive/0.8.4.tar.gz
 
     # Rename the compressed tarball
-    mv "0.7.2.tar.gz" "maike-0.7.2.tar.gz"
+    mv "0.8.4.tar.gz" "maike-0.8.4.tar.gz"
 
     # Decompress the tarball
-    gzip -d "maike-0.7.2.tar.gz"
+    gzip -d "maike-0.8.4.tar.gz"
 
     # Extract its contents
-    tar -xf "maike-0.7.2.tar.gz"
+    tar -xf "maike-0.8.4.tar.gz"
 
     # Cd into the Maike source directory
-    cd maike-0.7.2
+    cd maike-0.8.4
 
     # Compile Maike
     chmod u+x build.sh
@@ -50,7 +50,7 @@ This is a shell script that can be used to compile the toolkit. The toolkit requ
     # Leave the Gabi source directory
     cd ".."
 
-    # Everything above this line can be skipped if the correct version
+    # Everything above this line can be skipped if an appropriate version
     # of Maike is already installed
     ##################################################################
 

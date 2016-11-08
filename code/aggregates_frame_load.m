@@ -1,9 +1,11 @@
 function [data,N_rows]=aggregates_frame_load(basedir,frame_number)
 % function [data,N_rows]=aggregates_frame_load(basedir,frame_number)
 %
-% Loads statistics from a particular frame. Valid frame numbers can be 
+% Loads statistics from a particular frame
+%
+% This function loads statistics from a particular frame. Valid frame numbers can be 
 % retrieved by loading the file `frame_data.txt` from basedir.
-
+%
 % IN
 %	basedir	the directory for the frame files
 %	frame_number	The frame number to load. Valid frame numbers can be 
