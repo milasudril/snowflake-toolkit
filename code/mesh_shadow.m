@@ -16,7 +16,7 @@ function img=mesh_shadow(ice_file,alpha,beta,gamma,exepath,exename)
 %	exename The name of the rasterizer executable
 %
 % OUT
-%	A matrix containing the shadow map. Use imshow, image, or imagesc 
+%	img	A matrix containing the shadow map. Use imshow, image, or imagesc 
 %	to show the result.
 %
 

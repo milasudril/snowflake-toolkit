@@ -49,8 +49,7 @@ ALICE_OPTION_DESCRIPTOR(OptionDescriptor
 	,{"Input","alpha","First Euler angle","angle",Alice::Option::Multiplicity::ONE}
 	,{"Input","beta","Second Euler angle","angle",Alice::Option::Multiplicity::ONE}
 	,{"Input","gamma","Third Euler angle","angle",Alice::Option::Multiplicity::ONE}
-	,{"Output","image","Destination file. If this option is not given, "
-		"the output is written to stdout","filename",Alice::Option::Multiplicity::ONE}
+	,{"Output","image","Destination file","filename",Alice::Option::Multiplicity::ONE}
 	,);
 
 
@@ -197,6 +196,9 @@ class ShadowMask
 		void render(float distance,float alpha,float beta,float gamma
 			,const glm::mat4& projection) const noexcept;
 
+		float scaleGet() const noexcept
+			{return m_s;}
+
 	private:
 		GLuint vertex_array;
 		GLuint vbo;
@@ -205,6 +207,7 @@ class ShadowMask
 		GLuint mvp_location;
 		GLuint fragment_color_location;
 		glm::mat4 scalepos;
+		float m_s;
 		size_t n;
 		size_t n_faces;
 	};
@@ -280,6 +283,7 @@ ShadowMask::ShadowMask(const SnowflakeModel::Solid& solid)
 	auto s=0.5f*glm::length(bb.m_max - bb.m_min);
 	scalepos=glm::scale(scalepos,SnowflakeModel::Vector(1.0f,1.0f,1.0f)/s);
 	scalepos=glm::translate(scalepos,SnowflakeModel::Vector(-mid));
+	m_s=s;
 	}
 
 void ShadowMask::render(float distance,float alpha,float beta,float gamma
@@ -413,7 +417,7 @@ int main(int argc,char** argv)
 		auto window=windowCreate(1024,1024,"mesh shadow");
 		glfwMakeContextCurrent(window.get());
 		glewExperimental=1;
-		fprintf(stderr,"Initializing GLEW %s",reinterpret_cast<const char*>(glewGetString(GLEW_VERSION)));
+		fprintf(stderr,"Initializing GLEW %s\n",reinterpret_cast<const char*>(glewGetString(GLEW_VERSION)));
 		auto glew_result=glewInit();
 		if(glew_result != GLEW_OK)
 			{throw "Faield to initialize GLEW";	}
@@ -455,10 +459,9 @@ int main(int argc,char** argv)
 		glfwWaitEvents();
 		render(window.get());
 		pixelsDump(window.get()
-			,cmdline.get<Alice::Stringkey("image")>()?
-				 SnowflakeModel::FileOut(cmdline.get<Alice::Stringkey("image")>().valueGet().c_str())
-				:SnowflakeModel::FileOut(stdout)
-			);
+			,SnowflakeModel::FileOut(cmdline.get<Alice::Stringkey("image")>().valueGet().c_str()));
+
+		printf("%.8g\n",sqrt(0.5f*1024.0f)/mask.scaleGet());
 		}
 	catch(const Alice::ErrorMessage& message)
 		{
