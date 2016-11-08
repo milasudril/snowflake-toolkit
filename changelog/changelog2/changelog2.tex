@@ -44,6 +44,21 @@ The mixture file refers to other files, prototypes, and optionally custom probab
 \section{MATLAB and Octave frontend}
 To make it easier to integrate the toolkit into the workflow, a set of wrapper functions for MATLAB and Octave has been written. These functions makes it easier to start a simulation, and when it is done, analyse its output. Other features include mixture file generation, and a function to start \texttt{addaview}. It is also possible to import the mesh contents of an \texttt{ice} file.
 
+\section{External libraries required by the snowflake toolkit}
+This is a list of all external libraries used by the toolkit, as reported by \prgname{maike}.
+
+\begin{itemize}
+\item \texttt{GL}
+ \item \texttt{hdf5}
+ \item \texttt{hdf5\_cpp}
+ \item \texttt{png}
+ \item \texttt{pthread}
+ \item \texttt{hdf5\_hl\_cpp}
+ \item \texttt{glfw}
+ \item \texttt{GLEW}
+ \item \item{jansson}
+ \end{itemize}
+
 \begin{thebibliography}{9}
  \bibitem{graupelgen}
  \url{https://github.com/milasudril/snowflake-toolkit/blob/master/changelog/graupelgen/graupelgen.pdf}
