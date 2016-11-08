@@ -6,7 +6,6 @@ function [output]=pipe_read(argv,read_callback)
 		end
 	end
 	filename=mkfifo();
-%	system(['cat ',filename,' | ',cmd,' &']);
 	system([cmd,' | ','cat',' > ',filename,' & ']);
 	output=read_callback(filename);
 	delete(filename);

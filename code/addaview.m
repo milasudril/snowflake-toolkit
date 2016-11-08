@@ -1,5 +1,7 @@
 function addaview(points,exedir)
-% addaview(points,exedir)'
+% function addaview(points,exedir)
+%
+% Visualize a point cloud
 %
 % This function passes points to addaview for visualization. This program
 % may have better performance than a regular plot3 command, since it uses

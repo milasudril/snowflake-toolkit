@@ -1,6 +1,8 @@
 function coords=sphere_aggregate_rasterize_2(aggregate,N,ratio,output_file,exepath,exename)
 % function coords=sphere_aggregate_rasterize_2(aggregate,N,ratio,output_file,exepath,exename)
 %
+% Alternative sphere aggregate rasterizer
+%
 % Rasterizes ice_file, using N points, with ratio [Rx,Ry,Rz]. For rasterizing a
 % mesh aggregate in a similar way, use sphere_aggregate_rasterize_2 instead.
 %

@@ -1,4 +1,10 @@
-//@	{"targets":[{"name":"xytabtest","type":"application"}]}
+//@	{
+//@	 "targets":
+//@		[{
+//@		 "name":"xytabtest","type":"application"
+//@		,"description":"Test application demonstrating how to load a two-column table into a probability distribution"
+//@		}]
+//@	}
 
 #include "xytable.h"
 #include "file_in.h"

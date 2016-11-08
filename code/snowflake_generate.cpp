@@ -2,9 +2,10 @@
 //@	    "dependencies_extra":[],
 //@	    "targets":[
 //@	        {
-//@	            "dependencies":[],
-//@	            "name":"snowflake_generate",
-//@	            "type":"application"
+//@	            "dependencies":[]
+//@	            ,"name":"snowflake_generate"
+//@	            ,"type":"application"
+//@				,"description":"Snowflake grahp assembler"
 //@	        }
 //@	    ]
 //@	}

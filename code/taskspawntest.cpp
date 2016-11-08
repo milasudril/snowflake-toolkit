@@ -1,4 +1,10 @@
-//@ {"targets":[{"name":"taskspawntest","type":"application"}]}
+//@ {
+//@	"targets":
+//@		[{
+//@		 "name":"taskspawntest","type":"application"
+//@		,"description":"Application for measuring the overhead of spawning a thread, and wait for it to finnish"
+//@		}]
+//@	}
 
 #include "thread.h"
 #include "task.h"

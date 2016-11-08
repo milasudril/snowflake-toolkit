@@ -1,4 +1,11 @@
-//@	{"targets":[{"name":"randgentest","type":"application"}]}
+//@	{
+//@	"targets":
+//@		[{
+//@		 "name":"randgentest"
+//@		,"type":"application"
+//@		,"descriptoion":"Test application for recovery of random number generator state"
+//@		}]
+//@	}
 
 #include "randomgenerator.h"
 #include <cstdio>

@@ -1,8 +1,18 @@
 function prototypechoices_write(file,choices)
-% Stores the prototype choices to file, assuming choices is a cell array of 
-% prototype choices. A prototype choice can be created by using the function
-% prototypechoice_create.
+% function prototypechoices_write(file,choices)
 %
+% Stores the prototype choices to file
+%
+% Thia function stores the prototype choices to file, assuming choices is a
+% cell array of  prototype choices. A prototype choice can be created by 
+% using the function prototypechoice_create.
+%
+% IN
+%	file	a valid filename or file id
+%	choices	a cell array of prototype choices. A prototype choice can be created by 
+%		using the function prototypechoice_create.
+%
+
 	fid=file;
 	if ischar(file)
 		fid=fopen(file,'w');

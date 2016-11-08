@@ -1,5 +1,5 @@
 function vols=ice_load(source,exepath,exename)
-% function vols=ice_load(source,exepath,)
+% function vols=ice_load(source,exepath,exename)
 %
 % Loads mesh geometry
 %

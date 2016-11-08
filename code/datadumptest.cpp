@@ -1,4 +1,10 @@
-//@	{"targets":[{"name":"datadumptest","type":"application"}]}
+//@	{
+//@	"targets":
+//@		[{
+//@		 "name":"datadumptest","type":"application"
+//@		,"description":"Test application for DataDump (Write)"
+//@		}]
+//@	}
 
 #include "datadump.h"
 

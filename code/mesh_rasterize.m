@@ -1,7 +1,9 @@
 function coords=mesh_rasterize(ice_file,grid,output_file,exepath,exename)
 % function coords=mesh_rasterize(ice_file,grid,output_file,exepath,exename)
 %
-% Rasterizes ice_file, using defined grid [Nx,Ny,Nz]. For rasterizing of a
+% Mesh rasterizer
+%
+% This function rasterizes ice_file, using defined grid [Nx,Ny,Nz]. For rasterizing of a
 % sphere aggregate in a similar way, use sphere_aggregate_rasterize instead.
 %
 % IN

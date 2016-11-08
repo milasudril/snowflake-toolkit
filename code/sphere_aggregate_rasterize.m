@@ -1,6 +1,8 @@
 function coords=sphere_aggregate_rasterize(aggregate,grid,output_file,exepath,exename)
 % function coords=mesh_rasterize(aggregate,grid,output_file,exepath,exename)
 %
+% Sphere aggregate rasterizer
+%
 % Rasterizes aggregate, using defined grid [Nx,Ny,Nz] For rasterizing of a
 % mesh aggregate in a similar way, use mesh_rasterize instead.
 %

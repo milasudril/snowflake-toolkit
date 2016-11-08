@@ -2,6 +2,7 @@
 //@	"targets":
 //@		[{
 //@		 "name":"sphere_aggregate_rasterize","type":"application"
+//@		,"description":"Rasterizer for sphere aggregates"
 //@		}]
 //@	}
 
