@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.14159265-2.6-1.40.16 (TeX Live 2015/Debian) (preloaded format=pdflatex 2016.9.19)  8 NOV 2016 11:34
+This is pdfTeX, Version 3.14159265-2.6-1.40.16 (TeX Live 2015/Debian) (preloaded format=pdflatex 2016.9.19)  8 NOV 2016 11:46
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -761,20 +761,20 @@ LaTeX Font Info:    External font `lmex10' loaded for size
 
 
 {/var/lib/texmf/fonts/map/pdftex/updmap/pdftex.map}]
-Underfull \hbox (badness 10000) in paragraph at lines 47--48
+Underfull \hbox (badness 10000) in paragraph at lines 49--50
 [][]$\T1/lmtt/m/n/10 https : / / github . com / milasudril / snowflake-[]toolki
 t / blob / master /
  []
 
-Package atveryend Info: Empty hook `BeforeClearDocument' on input line 51.
+Package atveryend Info: Empty hook `BeforeClearDocument' on input line 53.
 [2]
-Package atveryend Info: Empty hook `AfterLastShipout' on input line 51.
+Package atveryend Info: Empty hook `AfterLastShipout' on input line 53.
  (./changelog2.aux)
-Package atveryend Info: Executing hook `AtVeryEndDocument' on input line 51.
-Package atveryend Info: Executing hook `AtEndAfterFileList' on input line 51.
+Package atveryend Info: Executing hook `AtVeryEndDocument' on input line 53.
+Package atveryend Info: Executing hook `AtEndAfterFileList' on input line 53.
 Package rerunfilecheck Info: File `changelog2.out' has not changed.
 (rerunfilecheck)             Checksum: 9E8500F3391A0D81D291549047B58015;346.
-Package atveryend Info: Empty hook `AtVeryVeryEnd' on input line 51.
+Package atveryend Info: Empty hook `AtVeryVeryEnd' on input line 53.
  ) 
 Here is how much of TeX's memory you used:
  8910 strings out of 494333
@@ -790,7 +790,7 @@ hare/texmf/fonts/type1/public/lm/lmr10.pfb></usr/share/texmf/fonts/type1/public
 /lm/lmr12.pfb></usr/share/texmf/fonts/type1/public/lm/lmr7.pfb></usr/share/texm
 f/fonts/type1/public/lm/lmri10.pfb></usr/share/texmf/fonts/type1/public/lm/lmss
 bx10.pfb></usr/share/texmf/fonts/type1/public/lm/lmtt10.pfb>
-Output written on changelog2.pdf (2 pages, 148561 bytes).
+Output written on changelog2.pdf (2 pages, 148855 bytes).
 PDF statistics:
  81 PDF objects out of 1000 (max. 8388607)
  69 compressed objects within 1 object stream

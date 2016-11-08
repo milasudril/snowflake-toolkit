@@ -39,6 +39,8 @@ Due to the large number of vertices resulting from generating icospheres from a 
 \section{Support for mixture of prototypes in aggregate generator}
 The aggregate generator has been extended to support custom mixture of prototypes, and probability distribution. A mixture is a set of deformation rules, each with an associated crystal prototype and probability. Mixtures are stored in JSON format. The outer object is an array where each object has the properties \texttt{prototype}, \texttt{probability}, and \texttt{deformations}. The latter property is an array of deformation rules, which has the same properties as they had before. Each rule is encoded as an array, with the ordered elements \textit{parameter}, \textit{distribution}, and \textit{distribution parameters}.
 
+The mixture file refers to other files, prototypes, and optionally custom probability distributions. The paths of these files are assumed to be relative to the loaction of the mixture file. This design choice is motivated by the assumption that mixture files, and the files they refer to, together forms a database, and that database should be usable regardless of current working directory.
+
 \section{MATLAB and Octave frontend}
 To make it easier to integrate the toolkit into the workflow, a set of wrapper functions for MATLAB and Octave has been written. These functions makes it easier to start a simulation, and when it is done, analyse its output. Other features include mixture file generation, and a function to start \texttt{addaview}. It is also possible to import the mesh contents of an \texttt{ice} file.
 
