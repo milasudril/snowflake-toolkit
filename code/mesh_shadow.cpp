@@ -277,8 +277,7 @@ ShadowMask::ShadowMask(const SnowflakeModel::Solid& solid)
 
 	auto bb=solid.boundingBoxGet();
 	auto mid=0.5f*(bb.m_min + bb.m_max);
-	auto radius=0.5f*(bb.m_max - bb.m_min);
-	auto s=std::max(radius.x,std::max(radius.y,radius.z));
+	auto s=0.5f*glm::length(bb.m_max - bb.m_min);
 	scalepos=glm::scale(scalepos,SnowflakeModel::Vector(1.0f,1.0f,1.0f)/s);
 	scalepos=glm::translate(scalepos,SnowflakeModel::Vector(-mid));
 	}
