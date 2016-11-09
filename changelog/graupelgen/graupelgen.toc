@@ -1,0 +1,6 @@
+\contentsline {section}{\numberline {1}Data representation}{1}{section.1}
+\contentsline {section}{\numberline {2}Generating a collision event}{1}{section.2}
+\contentsline {section}{\numberline {3}Accepting collision events, and merging}{2}{section.3}
+\contentsline {section}{\numberline {4}Formal description of the algorithm}{2}{section.4}
+\contentsline {section}{\numberline {5}Algorithmic complexity}{3}{section.5}
+\contentsline {section}{\numberline {6}Improvements}{3}{section.6}

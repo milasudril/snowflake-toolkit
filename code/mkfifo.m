@@ -1,5 +1,8 @@
 function name=mkfifo()
-% hack to generate a fifo with unique name
+
+	% hack to generate a fifo with unique name. We cannot use
+	% uuid(1), since that would require a pipe, but for creating
+	% a pipe, we need this function...
 	rng=fopen('/dev/urandom','r');
 	x=fread(rng,1,'uint32');
 	y=fread(rng,3,'uint16');

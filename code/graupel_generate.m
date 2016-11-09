@@ -1,6 +1,17 @@
 function [stats]=graupel_generate(paramstruct,exepath,exefile)
 % function [stats]=graupel_generate(paramstruct,exepath,exefile)
 %
+% Generates a graupel
+%
+% IN
+%	paramstruct	A struct with simulation parameters
+%	exedir	exepath the directory containing the executable for running
+%		the simulation
+%	exefile	the name of the executable file
+%
+% OUT
+%	stats	Growth history of the generated graupel
+%
 % Recognized members of paramstruct
 %
 % seed               seed for the random generator
@@ -59,11 +70,11 @@ function [stats]=graupel_generate(paramstruct,exepath,exefile)
 		,@()'');
 
 	statefile_in=ternary(@()isfield(paramstruct,'statefile_in')...
-		,@()['--statefile-in=',paramstruct.statefile]...
+		,@()['--statefile-in=',paramstruct.statefile_in]...
 		,@()'');
 
 	statefile_out=ternary(@()isfield(paramstruct,'statefile_out')...
-		,@()['--statefile-out=',paramstruct.statefile]...
+		,@()['--statefile-out=',paramstruct.statefile_in]...
 		,@()'');
 
 	dump_geometry=ternary(@()isfield(paramstruct,'dump_geometry')...

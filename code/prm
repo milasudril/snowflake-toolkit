@@ -1,0 +1,385 @@
+# Created by Octave 4.0.2, Fri Nov 04 17:01:55 2016 CET <torbjorr@darkmatter>
+# name: ans
+# type: sq_string
+# elements: 1
+# length: 3
+baz
+
+
+# name: choices
+# type: scalar struct
+# ndims: 2
+ 1 1
+# length: 3
+# name: prototype
+# type: sq_string
+# elements: 1
+# length: 32
+../crystal-prototypes/bullet.ice
+
+
+# name: probability
+# type: scalar
+1
+
+
+# name: deformations
+# type: cell
+# rows: 1
+# columns: 3
+# name: <cell-element>
+# type: cell
+# rows: 1
+# columns: 4
+# name: <cell-element>
+# type: sq_string
+# elements: 1
+# length: 1
+L
+
+
+
+# name: <cell-element>
+# type: sq_string
+# elements: 1
+# length: 5
+gamma
+
+
+
+# name: <cell-element>
+# type: scalar
+1
+
+
+
+# name: <cell-element>
+# type: scalar
+0.25
+
+
+
+
+
+
+# name: <cell-element>
+# type: cell
+# rows: 1
+# columns: 4
+# name: <cell-element>
+# type: sq_string
+# elements: 1
+# length: 1
+a
+
+
+
+# name: <cell-element>
+# type: sq_string
+# elements: 1
+# length: 5
+gamma
+
+
+
+# name: <cell-element>
+# type: scalar
+1
+
+
+
+# name: <cell-element>
+# type: scalar
+0.25
+
+
+
+
+
+
+# name: <cell-element>
+# type: cell
+# rows: 1
+# columns: 4
+# name: <cell-element>
+# type: sq_string
+# elements: 1
+# length: 1
+t
+
+
+
+# name: <cell-element>
+# type: sq_string
+# elements: 1
+# length: 5
+gamma
+
+
+
+# name: <cell-element>
+# type: scalar
+1
+
+
+
+# name: <cell-element>
+# type: scalar
+0
+
+
+
+
+
+
+
+
+
+
+# name: prm
+# type: scalar struct
+# ndims: 2
+ 1 1
+# length: 10
+# name: N
+# type: scalar
+4999
+
+
+# name: droprate
+# type: scalar
+10000
+
+
+# name: growthrate
+# type: scalar
+22000000
+
+
+# name: meltrate
+# type: scalar
+1000
+
+
+# name: dump_stats
+# type: scalar
+1
+
+
+# name: dump_geometry_ice
+# type: scalar
+1
+
+
+# name: prototype_choices
+# type: cell
+# rows: 1
+# columns: 1
+# name: <cell-element>
+# type: scalar struct
+# ndims: 2
+ 1 1
+# length: 3
+# name: prototype
+# type: sq_string
+# elements: 1
+# length: 32
+../crystal-prototypes/bullet.ice
+
+
+# name: probability
+# type: scalar
+1
+
+
+# name: deformations
+# type: cell
+# rows: 1
+# columns: 3
+# name: <cell-element>
+# type: cell
+# rows: 1
+# columns: 4
+# name: <cell-element>
+# type: sq_string
+# elements: 1
+# length: 1
+L
+
+
+
+# name: <cell-element>
+# type: sq_string
+# elements: 1
+# length: 5
+gamma
+
+
+
+# name: <cell-element>
+# type: scalar
+1
+
+
+
+# name: <cell-element>
+# type: scalar
+0.25
+
+
+
+
+
+
+# name: <cell-element>
+# type: cell
+# rows: 1
+# columns: 4
+# name: <cell-element>
+# type: sq_string
+# elements: 1
+# length: 1
+a
+
+
+
+# name: <cell-element>
+# type: sq_string
+# elements: 1
+# length: 5
+gamma
+
+
+
+# name: <cell-element>
+# type: scalar
+1
+
+
+
+# name: <cell-element>
+# type: scalar
+0.25
+
+
+
+
+
+
+# name: <cell-element>
+# type: cell
+# rows: 1
+# columns: 4
+# name: <cell-element>
+# type: sq_string
+# elements: 1
+# length: 1
+t
+
+
+
+# name: <cell-element>
+# type: sq_string
+# elements: 1
+# length: 5
+delta
+
+
+
+# name: <cell-element>
+# type: scalar
+1
+
+
+
+# name: <cell-element>
+# type: scalar
+0
+
+
+
+
+
+
+
+
+
+
+
+
+
+# name: stop_cont
+# type: sq_string
+# elements: 1
+# length: 14
+iterations=100
+
+
+# name: stop_cond
+# type: sq_string
+# elements: 1
+# length: 16
+iterations=10000
+
+
+# name: output_dir
+# type: sq_string
+# elements: 1
+# length: 29
+/home/torbjorr/snowflake-test
+
+
+
+
+# name: x
+# type: cell
+# rows: 1
+# columns: 2
+# name: <cell-element>
+# type: sq_string
+# elements: 1
+# length: 3
+Foo
+
+
+
+# name: <cell-element>
+# type: sq_string
+# elements: 1
+# length: 3
+Bar
+
+
+
+
+
+# name: y
+# type: cell
+# rows: 1
+# columns: 3
+# name: <cell-element>
+# type: sq_string
+# elements: 1
+# length: 3
+Foo
+
+
+
+# name: <cell-element>
+# type: sq_string
+# elements: 1
+# length: 3
+Bar
+
+
+
+# name: <cell-element>
+# type: sq_string
+# elements: 1
+# length: 3
+baz
+
+
+
+
+

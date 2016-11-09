@@ -1,0 +1,46 @@
+\documentclass[a4paper,10pt]{scrartcl}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{varioref}
+\usepackage{hyperref}
+\usepackage{cleveref}
+\usepackage[intlimits]{amsmath}
+\usepackage{amssymb}
+
+
+\newcommand{\prgname}[1]{\texttt{#1}}
+\newcommand{\dd}{\mathrm{d}}
+
+%opening
+\title{The Snowflake-Toolkit Updates}
+\author{Torbjörn Rathsman}
+
+\begin{document}
+
+\maketitle
+\begin{abstract}
+The Snowflake-Toolkit is a software toolkit intended to generate shape data for simulating microwave scattering from snow and ice particles. This paper briefly describes changes since the October 2016 
+\end{abstract}
+
+
+
+\tableofcontents
+
+\section{Graupel generator and sphere aggregates}
+The toolkit now contains a graupel generator described in \cite{graupelgen}. This required an additional geometry representation, since it was too inefficient to use polygon meshes when building large aggregates of spheres. The new representation takes advantage of the fact that the sub-volumes are all spheres. This makes the data structures simpler, and reduces the amount of work needed for hit-testing, overlap detection, and ray-casting. Also, overlapping volumes are trivial to compute. This means that all computed volumes should be exact. A drawback is that $D_\text{max}$ requires more effort to compute exactly. Thus, it is approximated by comparing the 6 axis-aligned points on each sphere.
+
+\section{Visualisation of point clouds}
+Due to the large number of vertices resulting from generating icospheres from a sphere aggregate, visualisation becomes demanding. To overcome this problem a very bare-metal tool for visualising a point cloud has been written. The tool uses nothing more than OpenGL 3.3+ to render a set of points. It features some primitive mouse and keyboard navigation for switching between perspective and orthographic view, rotate the cloud, and render slices.
+
+
+\section{Support for mixture of prototypes in aggregate generator}
+The aggregate generator has been extended to support custom mixture of prototypes, and probability distribution. A mixture is a set of deformation rules, each with an associated crystal prototype and probability. Mixtures are stored in JSON format. The outer object is an array where each object has the properties \texttt{prototype}, \texttt{probability}, and \texttt{deformations}. The latter property is an array of deformation rules, which has the same properties as they had before. Each rule is encoded as an array, with the ordered elements \textit{parameter}, \textit{distribution}, and \textit{distribution parameters}.
+
+\begin{thebibliography}{9}
+ \bibitem{graupelgen}
+ \url{https://github.com/milasudril/snowflake-toolkit/blob/master/changelog/graupelgen/graupelgen.pdf}
+\end{thebibliography}
+\vfill
+
+\end{document}

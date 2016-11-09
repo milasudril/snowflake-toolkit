@@ -1,12 +1,12 @@
 //@	{
-//@	    "dependencies_extra":[],
-//@	    "targets":[
-//@	        {
-//@	            "dependencies":[],
-//@	            "name":"mergetest",
-//@	            "type":"application"
-//@	        }
-//@	    ]
+//@	"dependencies_extra":[],
+//@	"targets":
+//@		[{
+//@		"dependencies":[]
+//@		,"name":"mergetest"
+//@		,"type":"application"
+//@		,"description":"Test application demonstrating how to merge particles"
+//@		}]
 //@	}
 #include "solid_loader.h"
 #include "file_in.h"

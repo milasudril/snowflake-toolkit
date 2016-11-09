@@ -1,12 +1,10 @@
 //@	{
-//@	    "dependencies_extra":[],
-//@	    "targets":[
-//@	        {
-//@	            "dependencies":[],
-//@	            "name":"snowflake_generate",
-//@	            "type":"application"
-//@	        }
-//@	    ]
+//@	"targets":
+//@		[{
+//@		 "name":"snowflake_generate"
+//@		,"type":"application"
+//@		,"description":"Snowflake graph assembler"
+//@		}]
 //@	}
 #include "aggregate_graph.h"
 #include "aggregate_graph_loader.h"

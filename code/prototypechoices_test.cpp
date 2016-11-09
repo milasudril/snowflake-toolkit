@@ -1,4 +1,10 @@
-//@	{"targets":[{"name":"prototypechoices_test","type":"application"}]}
+//@	{
+//@	"targets":
+//@		[{
+//@		 "name":"prototypechoices_test","type":"application"
+//@		,"description":"Test application demonstrating how to load, and store PrototypeChoices"
+//@		}]
+//@	}
 
 #include "prototypechoices.h"
 #include "resourceobject.h"

@@ -1,4 +1,10 @@
-//@	{"targets":[{"name":"ctrlctest","type":"application"}]}
+//@	{
+//@	"targets":
+//@		[{
+//@		 "name":"ctrlctest","type":"application"
+//@		,"description":"Test application for CtrlCHandler or SIGINT capture"
+//@		}]
+//@	}
 
 #include "ctrlchandler.h"
 

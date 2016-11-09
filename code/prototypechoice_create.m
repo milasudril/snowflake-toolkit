@@ -1,5 +1,6 @@
 function choice=prototypechoice_create(prototype,probability,deformations)
 % function choice=prototypechoice_create(prototype,probability,deformations)
+%
 % Creates a prototype choice record
 %
 % A `prototype` (refered to by a filename) is chosen with `probability`.
