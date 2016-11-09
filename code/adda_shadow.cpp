@@ -1,22 +1,21 @@
-//@	{
-//@	 "targets":
-//@		[{
-//@		 "name":"addaview","type":"application"
-//@ 	,"dependencies":
-//@			[
-//@			 {"ref":"GL","rel":"external"}
-//@			,{"ref":"GLEW","rel":"external"}
-//@			,{"ref":"glfw","rel":"external"}
-//@			]
-//@		,"description":"ADDA point cloud visualizer"
-//@		}]
-//@	}
+//	{
+//	 "targets":
+//		[{
+//		 "name":"adda_shadow","type":"application"
+//		,"description":"Adda file shadow renderer"		
+//		,"dependencies":
+//			[
+//			 {"ref":"png","rel":"external"}
+//			,{"ref":"GL","rel":"external"}
+//			,{"ref":"GLEW","rel":"external"}
+//			,{"ref":"glfw","rel":"external"}
+//			]
+//		}]
+//	}
 
-
-#include "randomgenerator.h"
 #include "file_in.h"
 #include "file_out.h"
-#include "adda.h"
+#include "ice_particle.h"
 #include "filename.h"
 #include "alice/commandline.hpp"
 #include <GL/glew.h>
@@ -28,11 +27,42 @@
 #include <cstdio>
 #include <cstdlib>
 #include <memory>
-#include <vector>
+#include <png.h>
+
+namespace Alice
+	{
+	template<>
+	struct MakeType<Stringkey("angle")>:public MakeType<Stringkey("float")>
+		{
+		static constexpr const char* descriptionShortGet() noexcept
+			{return "A value within [0, 1]";}
+		static constexpr const char* descriptionLongGet() noexcept
+			{return "Angles are normalized. This means that 1 corresponds to a full turn, or 2 pi";}
+		};
+
+	template<>
+	struct MakeType<Stringkey("shadow map file")>:public MakeType<Stringkey("filename")>
+		{
+		static constexpr const char* descriptionShortGet() noexcept
+			{return "filename";}
+		static constexpr const char* descriptionLongGet() noexcept
+			{
+			return "A filename that refers to a file that contains a shadow map. "
+				"A shadow map is encoded as a PNG. The image resolution is the "
+				"number of pixels per length unit, multiplied by 1024.";
+			}
+		};
+	}
 
 ALICE_OPTION_DESCRIPTOR(OptionDescriptor
 	,{"Help","help","Print option summary to stdout, or, if a filename is given, to that file","filename",Alice::Option::Multiplicity::ZERO_OR_ONE}
-	,{"Input","file","adda file to render","filename",Alice::Option::Multiplicity::ONE});
+	,{"Input","file","Adda file to render. If this option is not given, the data is read from stdin.","filename",Alice::Option::Multiplicity::ONE}
+	,{"Input","alpha","First Euler angle","angle",Alice::Option::Multiplicity::ONE}
+	,{"Input","beta","Second Euler angle","angle",Alice::Option::Multiplicity::ONE}
+	,{"Input","gamma","Third Euler angle","angle",Alice::Option::Multiplicity::ONE}
+	,{"Output","image","Destination file. If this option is not given, the image is written to stdout","shadow map file",Alice::Option::Multiplicity::ONE}
+	,);
+
 
 [[noreturn]] static void glfwErrorRaise(int code,const char* message)
 	{
@@ -51,6 +81,7 @@ static void init()
 	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 	glfwWindowHint(GLFW_DOUBLEBUFFER,GL_TRUE);
+	glfwWindowHint(GLFW_VISIBLE,0);
 	}
 
 static void deinit()
@@ -73,7 +104,7 @@ struct GLFWDeleter
 
 static std::unique_ptr<GLFWwindow,GLFWDeleter> windowCreate(unsigned int width,unsigned int height,const char* title)
 	{
-	return std::unique_ptr<GLFWwindow,GLFWDeleter>(glfwCreateWindow(width+1,height,title,NULL,NULL),GLFWDeleter());
+	return std::unique_ptr<GLFWwindow,GLFWDeleter>(glfwCreateWindow(width,height,title,NULL,NULL),GLFWDeleter());
 	}
 
 static void close(GLFWwindow* handle)
@@ -85,22 +116,17 @@ static void close(GLFWwindow* handle)
 static const char* g_vertex_shader_src="#version 330\n"
 	"layout(location = 0) in vec3 vertex_pos_modelspace;\n"
 	"uniform mat4 MVP;\n"
-	"uniform mat4 scalepos;\n"
-	"out vec3 pos_worldspace;\n"
 	"void main()\n"
 	"	{\n"
-	"	pos_worldspace=vec3( scalepos*vec4(vertex_pos_modelspace,1) );\n"
 	"	gl_Position=MVP*vec4(vertex_pos_modelspace,1);\n"
 	"	}\n";
 
 static const char* g_fragment_shader_src="#version 330\n"
 	"uniform vec3 fragment_color;\n"
 	"out vec3 color;\n"
-	"in vec3 pos_worldspace;\n"
 	"void main()\n"
 	"	{\n"
-	"	vec3 color_coord=0.5f*( vec3(1,1,1) + pos_worldspace );\n"
-	"	color=fragment_color*color_coord;\n"
+	"	color=fragment_color;\n"
 	"	}\n";
 
 namespace
@@ -169,22 +195,21 @@ static GLuint createShaderProgram(const char* vertex_shader_src
 
 
 
-class PointCloud
+class ShadowMask
 	{
 	public:
-		PointCloud(const PointCloud&)=delete;
-		PointCloud& operator=(const PointCloud&)=delete;
+		ShadowMask(const ShadowMask&)=delete;
+		ShadowMask& operator=(const ShadowMask&)=delete;
 
-		PointCloud(PointCloud&& b)=default;
+		ShadowMask(ShadowMask&& b)=default;
 
-		PointCloud(const std::vector<glm::vec3>& points,const glm::vec3& mid
-			,const glm::vec3& radius);
+		ShadowMask(const std::vector<glm::vec3>& points);
 
-		void render(float distance,float azimuth,float zenith
+		void render(float distance,float alpha,float beta,float gamma
 			,const glm::mat4& projection) const noexcept;
 
-		size_t nPointsGet() const noexcept
-			{return n;}
+		float scaleGet() const noexcept
+			{return m_s;}
 
 	private:
 		GLuint vertex_array;
@@ -192,14 +217,13 @@ class PointCloud
 		GLuint shader;
 		GLuint mvp_location;
 		GLuint fragment_color_location;
-		GLuint scalepos_location;
 		glm::mat4 scalepos;
+		float m_s;
 		size_t n;
+		size_t n_faces;
 	};
 
-PointCloud::PointCloud(const std::vector<glm::vec3>& points
-	,const glm::vec3& mid
-	,const glm::vec3& radius):n(points.size())
+ShadowMask::ShadowMask(const std::vector<glm::vec3>& points)
 	{
 	glGenVertexArrays(1,&vertex_array);
 	glBindVertexArray(vertex_array);
@@ -207,27 +231,31 @@ PointCloud::PointCloud(const std::vector<glm::vec3>& points
 	glUseProgram(shader);
 	mvp_location=glGetUniformLocation(shader,"MVP");
 	fragment_color_location=glGetUniformLocation(shader,"fragment_color");
-	scalepos_location=glGetUniformLocation(shader,"scalepos");
 
 	glEnable(GL_DEPTH_TEST);
-	glPointSize(2);
 	glGenBuffers(1,&vbo);
+	glGenBuffers(1,&element_buffer);
 	glBindBuffer(GL_ARRAY_BUFFER,vbo);
+	n=points.size();
+	glPointSize(1);
 	glBufferData(GL_ARRAY_BUFFER,n*sizeof(glm::vec3),points.data(),GL_STATIC_DRAW);
 
-
-	auto s=std::max(radius.x,std::max(radius.y,radius.z));
-	scalepos=glm::scale(scalepos,glm::vec3(1.0f,1.0f,1.0f)/s);
-	scalepos=glm::translate(scalepos,-mid);
-	glUniformMatrix4fv(scalepos_location, 1, GL_FALSE, &scalepos[0][0]);
+	auto bb=solid.boundingBoxGet();
+	auto mid=0.5f*(bb.m_min + bb.m_max);
+	auto s=0.5f*glm::length(bb.m_max - bb.m_min);
+	scalepos=glm::scale(scalepos,SnowflakeModel::Vector(1.0f,1.0f,1.0f)/s);
+	scalepos=glm::translate(scalepos,SnowflakeModel::Vector(-mid));
+	m_s=0.5f/s;
 	}
 
-void PointCloud::render(float distance,float azimuth,float zenith,const glm::mat4& projection) const noexcept
+void ShadowMask::render(float distance,float alpha,float beta,float gamma
+	,const glm::mat4& projection) const noexcept
 	{
 	glm::mat4 mvp;
 	mvp=glm::translate(mvp,glm::vec3(0.0f,0.0f,-distance));
-	mvp=glm::rotate(mvp,zenith,glm::vec3(1,0,0));
-	mvp=glm::rotate(mvp,azimuth,glm::vec3(0,0,1));
+	mvp=glm::rotate(mvp,alpha,glm::vec3(0,0,1));
+	mvp=glm::rotate(mvp,beta,glm::vec3(0,1,0));
+	mvp=glm::rotate(mvp,gamma,glm::vec3(0,0,1));
 	mvp=mvp*scalepos;
 	mvp=projection*mvp;
 
@@ -237,24 +265,43 @@ void PointCloud::render(float distance,float azimuth,float zenith,const glm::mat
 	glBindBuffer(GL_ARRAY_BUFFER, vbo);
 	glEnableVertexAttribArray(0);
 	glVertexAttribPointer(0,3,GL_FLOAT,GL_FALSE,0,(void*)0);
-	glDrawArrays(GL_POINTS,0,n);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,element_buffer);
+	glDrawElements(GL_TRIANGLES,n_faces,GL_UNSIGNED_INT,nullptr);
 	glDisableVertexAttribArray(0);
 	}
 
+static void pixelsDump(GLFWwindow* window,float scale
+	,SnowflakeModel::FileOut&& dump)
+	{
+	int width;
+	int height;
+	glfwGetWindowSize(window,&width,&height);
+
+	std::vector<uint8_t> ret(width*height);
+	glPixelStorei(GL_PACK_ALIGNMENT,1);
+	glReadPixels(0,0,width,height,GL_GREEN,GL_UNSIGNED_BYTE,ret.data());
+	auto pngptr=png_create_write_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
+	auto pnginfo=png_create_info_struct(pngptr);
+	png_init_io(pngptr, dump.handleGet());
+	png_set_IHDR(pngptr,pnginfo,width,height,8,PNG_COLOR_TYPE_GRAY,PNG_INTERLACE_NONE
+		,PNG_COMPRESSION_TYPE_DEFAULT,PNG_FILTER_TYPE_DEFAULT);
+	png_set_pHYs(pngptr,pnginfo,1024.0f*width*scale + 0.5f,1024.0f*width*scale + 0.5f
+		,PNG_RESOLUTION_UNKNOWN);
+	png_set_sCAL(pngptr,pnginfo,1,1/(width*scale),1/(width*scale));
+	png_write_info(pngptr,pnginfo);
+	for(int k=height-1;k>=0;--k)
+		{png_write_row(pngptr, ret.data() + width*k);}
+	png_write_end(pngptr, pnginfo);
+	png_destroy_write_struct(&pngptr,&pnginfo);
+	}
+
+
 struct ViewState
 	{
-	const PointCloud& pc;
-	float distance;
-	float view_thickness;
-	float azimuth;
-	float zenith;
-
-	double x_0;
-	double y_0;
-	float thickness_min;
-	bool orth;
-	bool shift;
-	bool ctrl;
+	const ShadowMask& pc;
+	float alpha;
+	float beta;
+	float gamma;
 	};
 
 static glm::mat4 make_ortho(float width,float height,float size,float distance
@@ -264,7 +311,6 @@ static glm::mat4 make_ortho(float width,float height,float size,float distance
 
 	width*=r;
 	height*=r;
-
 
 	auto left=-width;
 	auto right=-left;
@@ -283,76 +329,11 @@ static void render(GLFWwindow* handle)
 	auto vs=reinterpret_cast<const ViewState*>(glfwGetWindowUserPointer(handle));
 	
 	glViewport(0,0,width,height);
-	auto projection=vs->orth?make_ortho(width,height,1.25f,vs->distance,vs->view_thickness):
-		glm::perspective(glm::radians(45.0f), (float) width / (float)height, 0.1f, 100.0f);
+	auto projection=make_ortho(width,height,1.0f,10,20);
 	glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
-	vs->pc.render(vs->distance,vs->azimuth,vs->zenith,projection);
+	vs->pc.render(10,vs->alpha,vs->beta,vs->gamma,projection);
 	
 	glfwSwapBuffers(handle);
-	}
-
-static void mouseMove(GLFWwindow* handle,double x,double y)
-	{
-	int width;
-	int height;
-	glfwGetWindowSize(handle,&width,&height);
-
-	auto vs=reinterpret_cast<ViewState*>(glfwGetWindowUserPointer(handle));
-	if(glfwGetMouseButton(handle,GLFW_MOUSE_BUTTON_1)==GLFW_PRESS)
-		{
-		vs->zenith+=std::acos(-1.0f)*(y - vs->y_0)/600.0f;
-		vs->azimuth+=std::acos(-1.0f)*(x - vs->x_0)/600.0f;
-		}
-	vs->y_0=y;
-	vs->x_0=x;
-	}
-
-static void scroll(GLFWwindow* handle,double x,double y)
-	{
-	auto vs=reinterpret_cast<ViewState*>(glfwGetWindowUserPointer(handle));
-	if(vs->orth)
-		{
-		if(vs->ctrl)
-			{
-			auto thickness_new=static_cast<float>(vs->view_thickness + ((!vs->shift)?y/64.0f:y/8.0f));
-			vs->view_thickness=std::max(vs->thickness_min,thickness_new);
-			}
-		else
-			{vs->distance-= (!vs->shift)?y/32.0f:y/8.0f;}
-		}
-	else
-		{vs->distance-=y/8.0f;}
-	}
-
-static void keyAction(GLFWwindow* handle,int key,int scancode,int action,int mods)
-	{
-	auto vs=reinterpret_cast<ViewState*>(glfwGetWindowUserPointer(handle));
-	if(action==GLFW_PRESS)
-		{
-		switch(key)
-			{
-			case 32:
-				vs->distance=6.0f;
-				vs->view_thickness=12.0f;
-				vs->azimuth=0;
-				vs->zenith=-std::acos(-1.0f)/2.0f;
-				break;
-			case 'O':
-				vs->orth=!vs->orth;
-				break;
-			}
-		if(scancode==50 || mods&GLFW_MOD_SHIFT)
-			{vs->shift=1;}
-		if(scancode==37 || mods&GLFW_MOD_CONTROL)
-			{vs->ctrl=1;}
-		}
-	else
-		{
-		if(scancode==50)
-			{vs->shift=0;}
-		if(scancode==37)
-			{vs->ctrl=0;}
-		}
 	}
 
 static void helpPrint(const Alice::CommandLine<OptionDescriptor>& options
@@ -367,14 +348,21 @@ static void helpPrint(const Alice::CommandLine<OptionDescriptor>& options
 		}
 	}
 
-static std::vector<glm::vec3> pointsLoad()
+
+static SnowflakeModel::Solid solidLoad(const std::string& prototype)
 	{
-	SnowflakeModel::RandomGenerator rng;
-	std::uniform_real_distribution<float> U(0,0.5f);
-	std::vector<glm::vec3> ret;
-	for(size_t k=0;k<10000;++k)
-		{ret.push_back({U(rng),U(rng),U(rng)});}
-	return ret;
+	if(prototype.size()==0)
+		{throw "No crystal prototype is given";}
+
+	SnowflakeModel::Solid solid_in;
+		{
+		SnowflakeModel::FileIn file_in(prototype.c_str());
+		SnowflakeModel::ConfigParser parser(file_in);
+		SnowflakeModel::SolidLoader loader(solid_in);
+		parser.commandsRead(loader);
+		}
+
+	return std::move(solid_in);
 	}
 
 int main(int argc,char** argv)
@@ -392,10 +380,10 @@ int main(int argc,char** argv)
 			}
 
 		GLFWGuard glfw;
-		auto window=windowCreate(640,480,"adda shape view");
+		auto window=windowCreate(1024,1024,"mesh shadow");
 		glfwMakeContextCurrent(window.get());
 		glewExperimental=1;
-		fprintf(stderr,"Initializing GLEW %s",reinterpret_cast<const char*>(glewGetString(GLEW_VERSION)));
+		fprintf(stderr,"Initializing GLEW %s\n",reinterpret_cast<const char*>(glewGetString(GLEW_VERSION)));
 		auto glew_result=glewInit();
 		if(glew_result != GLEW_OK)
 			{throw "Faield to initialize GLEW";	}
@@ -411,51 +399,42 @@ int main(int argc,char** argv)
 			,reinterpret_cast<const char*>(glGetString(GL_VERSION))
 			,reinterpret_cast<const char*>(glGetString(GL_SHADING_LANGUAGE_VERSION)));
 
-		auto cloud=[&cmdline,&window]()
+		auto mask=[&cmdline,&window]()
 			{
-			auto& x=cmdline.get<Alice::Stringkey("file")>();
-			auto points=pointsLoad(x?SnowflakeModel::FileIn(x.valueGet().c_str())
-				:SnowflakeModel::FileIn(stdin));
-		//	auto points=pointsLoad();
-			fprintf(stderr,"Loaded %zu points\n",points.size());
-			auto bb=SnowflakeModel::boundingBoxGet(points);
-			auto mid=0.5f*glm::vec3(bb.m_max + bb.m_min);
-			auto radius=0.5f*glm::vec3(bb.m_max - bb.m_min);
-			auto wintitle=std::string("adda shape view ") + (x?x.valueGet().c_str():"/dev/stdin") 
-				+ " " + std::to_string(points.size()) + " points";
-			glfwSetWindowTitle(window.get(),wintitle.c_str());
-			return PointCloud(points,mid,radius);
+			auto solid_in=solidLoad(cmdline.get<Alice::Stringkey("prototype")>().valueGet());
+			glfwSetWindowTitle(window.get(),"Mesh shadow");
+			SnowflakeModel::IceParticle particle_out;
+			particle_out.solidSet(solid_in);
+			return ShadowMask(particle_out.solidGet());
 			}();
 
-		ViewState vs{cloud,6.0f,12.0f,0,-std::acos(-1.0f)/2.0f,0,0
-			,static_cast<float>(2.0f*std::pow(cloud.nPointsGet(),-1.0/3.0))};
+		ViewState vs
+			{
+			 mask
+			,2.0f*std::acos(-1.0f)*cmdline.get<Alice::Stringkey("alpha")>().valueGet()
+			,2.0f*std::acos(-1.0f)*cmdline.get<Alice::Stringkey("beta")>().valueGet()
+			,2.0f*std::acos(-1.0f)*cmdline.get<Alice::Stringkey("gamma")>().valueGet()
+			};
 		glfwSetWindowUserPointer(window.get(),&vs);
 
 		glfwSetWindowCloseCallback(window.get(),close);
 		glfwSetWindowRefreshCallback(window.get(),render);
-		glfwSetCursorPosCallback(window.get(),mouseMove);
-		glfwSetScrollCallback(window.get(),scroll);
-		glfwSetKeyCallback(window.get(),keyAction);
+		glfwSetWindowPos(window.get(), 50, 50);
+		glfwSetWindowSize(window.get(),1024,1024);
 
-
-		fprintf(stderr,"\n\nNavigation\n"
-			"==========\n"
-			" * Drag to look from different angles [Left mouse + move]\n"
-			" * Use scroll wheel to modify view distance\n"
-			" * Space bar resets camera position\n"
-			" * O toggles orthographic view\n"
-			"\n"
-			"Orthographic view also features the following modes\n"
-			" * Shift icreases distance changes\n"
-			" * Ctrl + Wheel changes the view thickness. This makes it possible "
-			"to create a slice\n");
-
-		while (!glfwWindowShouldClose(window.get()))
-			{
-			glfwWaitEvents();
-			render(window.get());
-			}
-
+		glfwWaitEvents();
+		render(window.get());
+		render(window.get());
+		pixelsDump(window.get()
+			,mask.scaleGet()
+			,SnowflakeModel::FileOut(cmdline.get<Alice::Stringkey("image")>()?
+				 SnowflakeModel::FileOut(cmdline.get<Alice::Stringkey("image")>().valueGet().c_str())
+				:SnowflakeModel::FileOut(stdout))
+			);
+		}
+	catch(const Alice::ErrorMessage& message)
+		{
+		fprintf(stderr,"Command line error: %s\n",message.data);return -1;
 		}
 	catch(const char* message)
 		{

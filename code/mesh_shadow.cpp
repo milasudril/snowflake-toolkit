@@ -42,6 +42,19 @@ namespace Alice
 		static constexpr const char* descriptionLongGet() noexcept
 			{return "Angles are normalized. This means that 1 corresponds to a full turn, or 2 pi";}
 		};
+
+	template<>
+	struct MakeType<Stringkey("shadow map file")>:public MakeType<Stringkey("filename")>
+		{
+		static constexpr const char* descriptionShortGet() noexcept
+			{return "filename";}
+		static constexpr const char* descriptionLongGet() noexcept
+			{
+			return "A filename that refers to a file that contains a shadow map. "
+				"A shadow map is encoded as a PNG. The image resolution is the "
+				"number of pixels per length unit, multiplied by 1024.";
+			}
+		};
 	}
 
 ALICE_OPTION_DESCRIPTOR(OptionDescriptor
@@ -50,7 +63,7 @@ ALICE_OPTION_DESCRIPTOR(OptionDescriptor
 	,{"Input","alpha","First Euler angle","angle",Alice::Option::Multiplicity::ONE}
 	,{"Input","beta","Second Euler angle","angle",Alice::Option::Multiplicity::ONE}
 	,{"Input","gamma","Third Euler angle","angle",Alice::Option::Multiplicity::ONE}
-	,{"Output","image","Destination file. If this option is not given, the image is written to stdout","filename",Alice::Option::Multiplicity::ONE}
+	,{"Output","image","Destination file. If this option is not given, the image is written to stdout","shadow map file",Alice::Option::Multiplicity::ONE}
 	,);
 
 
