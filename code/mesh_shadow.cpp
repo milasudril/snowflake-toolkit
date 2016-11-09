@@ -2,6 +2,7 @@
 //@	 "targets":
 //@		[{
 //@		 "name":"mesh_shadow","type":"application"
+//@		,"description":"Mesh shadow renderer"		
 //@ 	,"dependencies":
 //@			[
 //@			 {"ref":"png","rel":"external"}
