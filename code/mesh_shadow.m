@@ -1,4 +1,4 @@
-function img=mesh_shadow(ice_file,alpha,beta,gamma,exepath,exename)
+function [img,res]=mesh_shadow(ice_file,alpha,beta,gamma,exepath,exename)
 % function img=mesh_shadow(ice_file,alpha,beta,gamma,exepath,exename)
 %
 % Mesh shadow renderer
@@ -18,7 +18,8 @@ function img=mesh_shadow(ice_file,alpha,beta,gamma,exepath,exename)
 % OUT
 %	img	A matrix containing the shadow map. Use imshow, image, or imagesc 
 %	to show the result.
-%
+%	res	The number of pixels per length unit
+%	
 
 	prototype=['--prototype=',ice_file];
 	alpha=['--alpha=',num2str(alpha)];
@@ -50,6 +51,8 @@ function img=mesh_shadow(ice_file,alpha,beta,gamma,exepath,exename)
 	name=sprintf('/tmp/%08x-%04x-%04x-%04x-%04x%04x%04x',x,y(1),y(2),y(3),z(1),z(2),z(3));
 	img_param=['--image=',name];
 	system_wrapper({cmd,prototype,alpha,beta,gamma,img_param},1);
+	info=imfinfo(name);
 	img=imread(name);
+	res=[info.XResolution,info.YResolution]/1024;
 	delete(name);
 end

@@ -50,7 +50,7 @@ ALICE_OPTION_DESCRIPTOR(OptionDescriptor
 	,{"Input","alpha","First Euler angle","angle",Alice::Option::Multiplicity::ONE}
 	,{"Input","beta","Second Euler angle","angle",Alice::Option::Multiplicity::ONE}
 	,{"Input","gamma","Third Euler angle","angle",Alice::Option::Multiplicity::ONE}
-	,{"Output","image","Destination file","filename",Alice::Option::Multiplicity::ONE}
+	,{"Output","image","Destination file. If this option is not given, the image is written to stdout","filename",Alice::Option::Multiplicity::ONE}
 	,);
 
 
@@ -71,6 +71,7 @@ static void init()
 	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 	glfwWindowHint(GLFW_DOUBLEBUFFER,GL_TRUE);
+	glfwWindowHint(GLFW_VISIBLE,0);
 	}
 
 static void deinit()
@@ -309,7 +310,8 @@ void ShadowMask::render(float distance,float alpha,float beta,float gamma
 	glDisableVertexAttribArray(0);
 	}
 
-static void pixelsDump(GLFWwindow* window,SnowflakeModel::FileOut&& dump)
+static void pixelsDump(GLFWwindow* window,float scale
+	,SnowflakeModel::FileOut&& dump)
 	{
 	int width;
 	int height;
@@ -323,6 +325,9 @@ static void pixelsDump(GLFWwindow* window,SnowflakeModel::FileOut&& dump)
 	png_init_io(pngptr, dump.handleGet());
 	png_set_IHDR(pngptr,pnginfo,width,height,8,PNG_COLOR_TYPE_GRAY,PNG_INTERLACE_NONE
 		,PNG_COMPRESSION_TYPE_DEFAULT,PNG_FILTER_TYPE_DEFAULT);
+	png_set_pHYs(pngptr,pnginfo,1024.0f*width*scale + 0.5f,1024.0f*width*scale + 0.5f
+		,PNG_RESOLUTION_UNKNOWN);
+	png_set_sCAL(pngptr,pnginfo,1,1/(width*scale),1/(width*scale));
 	png_write_info(pngptr,pnginfo);
 	for(int k=height-1;k>=0;--k)
 		{png_write_row(pngptr, ret.data() + width*k);}
@@ -459,10 +464,13 @@ int main(int argc,char** argv)
 
 		glfwWaitEvents();
 		render(window.get());
+		render(window.get());
 		pixelsDump(window.get()
-			,SnowflakeModel::FileOut(cmdline.get<Alice::Stringkey("image")>().valueGet().c_str()));
-
-		printf("%.8g\n",1024.0f*mask.scaleGet());
+			,mask.scaleGet()
+			,SnowflakeModel::FileOut(cmdline.get<Alice::Stringkey("image")>()?
+				 SnowflakeModel::FileOut(cmdline.get<Alice::Stringkey("image")>().valueGet().c_str())
+				:SnowflakeModel::FileOut(stdout))
+			);
 		}
 	catch(const Alice::ErrorMessage& message)
 		{
