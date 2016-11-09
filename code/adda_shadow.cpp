@@ -62,6 +62,7 @@ ALICE_OPTION_DESCRIPTOR(OptionDescriptor
 	,{"Input","beta","Second Euler angle","angle",Alice::Option::Multiplicity::ONE}
 	,{"Input","gamma","Third Euler angle","angle",Alice::Option::Multiplicity::ONE}
 	,{"Output","image","Destination file. If this option is not given, the image is written to stdout","shadow map file",Alice::Option::Multiplicity::ONE}
+	,{"Other","cookie","File to write to when the process is done","filename",Alice::Option::Multiplicity::ONE}
 	,);
 
 
@@ -414,6 +415,9 @@ int main(int argc,char** argv)
 				 SnowflakeModel::FileOut(cmdline.get<Alice::Stringkey("image")>().valueGet().c_str())
 				:SnowflakeModel::FileOut(stdout))
 			);
+
+		if(cmdline.get<Alice::Stringkey("cookie")>())
+			{remove(cmdline.get<Alice::Stringkey("cookie")>().valueGet().c_str());}
 		}
 	catch(const Alice::ErrorMessage& message)
 		{
@@ -423,7 +427,6 @@ int main(int argc,char** argv)
 		{
 		fprintf(stderr,"Error: %s\n",message);return -1;
 		}
-
 
 	return 0;
 	}
