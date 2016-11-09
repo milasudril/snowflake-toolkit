@@ -3,4 +3,5 @@
 \contentsline {section}{\numberline {3}Visualisation of point clouds}{2}{section.3}
 \contentsline {section}{\numberline {4}Support for mixture of prototypes in aggregate generator}{2}{section.4}
 \contentsline {section}{\numberline {5}MATLAB and Octave frontend}{2}{section.5}
-\contentsline {section}{\numberline {6}External libraries required by the snowflake toolkit}{3}{section.6}
+\contentsline {section}{\numberline {6}Shadow mask renderer}{3}{section.6}
+\contentsline {section}{\numberline {7}External libraries required by the snowflake toolkit}{3}{section.7}

@@ -44,6 +44,9 @@ The mixture file refers to other files, prototypes, and optionally custom probab
 \section{MATLAB and Octave frontend}
 To make it easier to integrate the toolkit into the workflow, a set of wrapper functions for MATLAB and Octave has been written. These functions makes it easier to start a simulation, and when it is done, analyse its output. Other features include mixture file generation, and a function to start \texttt{addaview}. It is also possible to import the mesh contents of an \texttt{ice} file.
 
+\section{Shadow mask renderer}
+The toolkit now features two programs for rendering shadow masks of meshes, and ADDA files. These programs are implemented using OpenGL 3.3 and a simple orthographic projection. The programs both writes the result into a PNG file, with the resolution set to the number of pixels per length unit, multiplied by 1024. There exists MATALB and Octave frontents as well.
+
 \section{External libraries required by the snowflake toolkit}
 This is a list of all external libraries used by the toolkit, as reported by \prgname{maike}.
 
