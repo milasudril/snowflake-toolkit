@@ -331,6 +331,7 @@ static void render(GLFWwindow* handle)
 	glViewport(0,0,width,height);
 	auto projection=make_ortho(width,height,1.0f,10,20);
 	glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
+	glPointSize(width*vs->pc.scaleGet() + 0.5f);
 	vs->pc.render(10,vs->alpha,vs->beta,vs->gamma,projection);
 	
 	glfwSwapBuffers(handle);
