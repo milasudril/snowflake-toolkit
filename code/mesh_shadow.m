@@ -1,5 +1,5 @@
 function [img,res]=mesh_shadow(ice_file,alpha,beta,gamma,exepath,exename)
-% function img=mesh_shadow(ice_file,alpha,beta,gamma,exepath,exename)
+% function [img,res]=mesh_shadow(ice_file,alpha,beta,gamma,exepath,exename)
 %
 % Mesh shadow renderer
 %

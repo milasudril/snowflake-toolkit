@@ -2,7 +2,7 @@
 //@	 "targets":
 //@		[{
 //@		 "name":"adda_shadow","type":"application"
-//@		,"description":"Adda file shadow renderer"		
+//@		,"description":"ADDA file shadow renderer"		
 //@		,"dependencies":
 //@			[
 //@			 {"ref":"png","rel":"external"}

@@ -1,7 +1,7 @@
 function [img,res]=adda_shadow(points,alpha,beta,gamma,exepath,exename)
-% function img=mesh_shadow(points,alpha,beta,gamma,exepath,exename)
+% function [img,res]=adda_shadow(points,alpha,beta,gamma,exepath,exename)
 %
-% Adda shadow renderer
+% ADDA file shadow renderer
 %
 % This function renders the shadow of the point, projected using the Euler
 % angles alpha, beta, and gamma. The renderer requires a graphical terminal,
