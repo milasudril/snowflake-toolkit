@@ -1,22 +1,23 @@
-//	{
-//	 "targets":
-//		[{
-//		 "name":"adda_shadow","type":"application"
-//		,"description":"Adda file shadow renderer"		
-//		,"dependencies":
-//			[
-//			 {"ref":"png","rel":"external"}
-//			,{"ref":"GL","rel":"external"}
-//			,{"ref":"GLEW","rel":"external"}
-//			,{"ref":"glfw","rel":"external"}
-//			]
-//		}]
-//	}
+//@	{
+//@	 "targets":
+//@		[{
+//@		 "name":"adda_shadow","type":"application"
+//@		,"description":"Adda file shadow renderer"		
+//@		,"dependencies":
+//@			[
+//@			 {"ref":"png","rel":"external"}
+//@			,{"ref":"GL","rel":"external"}
+//@			,{"ref":"GLEW","rel":"external"}
+//@			,{"ref":"glfw","rel":"external"}
+//@			]
+//@		}]
+//@	}
 
 #include "file_in.h"
 #include "file_out.h"
 #include "ice_particle.h"
 #include "filename.h"
+#include "adda.h"
 #include "alice/commandline.hpp"
 #include <GL/glew.h>
 #include <GL/gl.h>
@@ -234,13 +235,12 @@ ShadowMask::ShadowMask(const std::vector<glm::vec3>& points)
 
 	glEnable(GL_DEPTH_TEST);
 	glGenBuffers(1,&vbo);
-	glGenBuffers(1,&element_buffer);
 	glBindBuffer(GL_ARRAY_BUFFER,vbo);
 	n=points.size();
 	glPointSize(1);
 	glBufferData(GL_ARRAY_BUFFER,n*sizeof(glm::vec3),points.data(),GL_STATIC_DRAW);
 
-	auto bb=solid.boundingBoxGet();
+	auto bb=SnowflakeModel::boundingBoxGet(points);
 	auto mid=0.5f*(bb.m_min + bb.m_max);
 	auto s=0.5f*glm::length(bb.m_max - bb.m_min);
 	scalepos=glm::scale(scalepos,SnowflakeModel::Vector(1.0f,1.0f,1.0f)/s);
@@ -265,8 +265,7 @@ void ShadowMask::render(float distance,float alpha,float beta,float gamma
 	glBindBuffer(GL_ARRAY_BUFFER, vbo);
 	glEnableVertexAttribArray(0);
 	glVertexAttribPointer(0,3,GL_FLOAT,GL_FALSE,0,(void*)0);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,element_buffer);
-	glDrawElements(GL_TRIANGLES,n_faces,GL_UNSIGNED_INT,nullptr);
+	glDrawArrays(GL_POINTS,0,n);
 	glDisableVertexAttribArray(0);
 	}
 
@@ -348,23 +347,6 @@ static void helpPrint(const Alice::CommandLine<OptionDescriptor>& options
 		}
 	}
 
-
-static SnowflakeModel::Solid solidLoad(const std::string& prototype)
-	{
-	if(prototype.size()==0)
-		{throw "No crystal prototype is given";}
-
-	SnowflakeModel::Solid solid_in;
-		{
-		SnowflakeModel::FileIn file_in(prototype.c_str());
-		SnowflakeModel::ConfigParser parser(file_in);
-		SnowflakeModel::SolidLoader loader(solid_in);
-		parser.commandsRead(loader);
-		}
-
-	return std::move(solid_in);
-	}
-
 int main(int argc,char** argv)
 	{
 	try
@@ -401,11 +383,12 @@ int main(int argc,char** argv)
 
 		auto mask=[&cmdline,&window]()
 			{
-			auto solid_in=solidLoad(cmdline.get<Alice::Stringkey("prototype")>().valueGet());
-			glfwSetWindowTitle(window.get(),"Mesh shadow");
-			SnowflakeModel::IceParticle particle_out;
-			particle_out.solidSet(solid_in);
-			return ShadowMask(particle_out.solidGet());
+			auto& x=cmdline.get<Alice::Stringkey("file")>();
+			auto points=pointsLoad(x?
+				 SnowflakeModel::FileIn(x.valueGet().c_str())
+				:SnowflakeModel::FileIn(stdin));
+			glfwSetWindowTitle(window.get(),"adda shadow");
+			return ShadowMask(points);
 			}();
 
 		ViewState vs
