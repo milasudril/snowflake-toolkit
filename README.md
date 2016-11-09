@@ -13,9 +13,10 @@ The toolkit has been design with so it should not have to many external dependen
  * glm - The "OpenGL Mathematics Library"
  * libhdf5-cpp + its dependencies
  * libjansson (libjansson-dev on Ubuntu)
- * GLEW (libglew-dev on Ubuntu) - For addaview
- * GLFW (libglfw3-dev on Ubuntu)- For addaview 
- * OpenGL 3.3 (appropriate graphics driver) - For addaview 
+ * GLEW (libglew-dev on Ubuntu)
+ * GLFW (libglfw3-dev on Ubuntu)
+ * OpenGL 3.3 (appropriate graphics driver)
+ * libpng (libpng*-dev on Ubuntu)
  
 
 Compiling
