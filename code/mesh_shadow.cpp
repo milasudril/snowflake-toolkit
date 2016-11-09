@@ -283,7 +283,7 @@ ShadowMask::ShadowMask(const SnowflakeModel::Solid& solid)
 	auto s=0.5f*glm::length(bb.m_max - bb.m_min);
 	scalepos=glm::scale(scalepos,SnowflakeModel::Vector(1.0f,1.0f,1.0f)/s);
 	scalepos=glm::translate(scalepos,SnowflakeModel::Vector(-mid));
-	m_s=s;
+	m_s=0.5f/s;
 	}
 
 void ShadowMask::render(float distance,float alpha,float beta,float gamma
@@ -363,9 +363,9 @@ static void render(GLFWwindow* handle)
 	auto vs=reinterpret_cast<const ViewState*>(glfwGetWindowUserPointer(handle));
 	
 	glViewport(0,0,width,height);
-	auto projection=make_ortho(width,height,1.25f,10,20);
+	auto projection=make_ortho(width,height,1.0f,10,20);
 	glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
-	vs->pc.render(6,vs->alpha,vs->beta,vs->gamma,projection);
+	vs->pc.render(10,vs->alpha,vs->beta,vs->gamma,projection);
 	
 	glfwSwapBuffers(handle);
 	}
@@ -453,7 +453,7 @@ int main(int argc,char** argv)
 
 		glfwSetWindowCloseCallback(window.get(),close);
 		glfwSetWindowRefreshCallback(window.get(),render);
-		glfwSetWindowPos(window.get(), 100, 100);
+		glfwSetWindowPos(window.get(), 50, 50);
 		glfwSetWindowSize(window.get(),1024,1024);
 
 		glfwWaitEvents();
@@ -461,7 +461,7 @@ int main(int argc,char** argv)
 		pixelsDump(window.get()
 			,SnowflakeModel::FileOut(cmdline.get<Alice::Stringkey("image")>().valueGet().c_str()));
 
-		printf("%.8g\n",sqrt(0.5f*1024.0f)/mask.scaleGet());
+		printf("%.8g\n",1024.0f*mask.scaleGet());
 		}
 	catch(const Alice::ErrorMessage& message)
 		{
