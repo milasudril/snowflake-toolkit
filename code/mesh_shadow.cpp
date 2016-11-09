@@ -278,7 +278,6 @@ ShadowMask::ShadowMask(const SnowflakeModel::Solid& solid)
 	mvp_location=glGetUniformLocation(shader,"MVP");
 	fragment_color_location=glGetUniformLocation(shader,"fragment_color");
 
-	glEnable(GL_DEPTH_TEST);
 	glGenBuffers(1,&vbo);
 	glGenBuffers(1,&element_buffer);
 
@@ -301,11 +300,10 @@ ShadowMask::ShadowMask(const SnowflakeModel::Solid& solid)
 	m_s=0.5f/s;
 	}
 
-void ShadowMask::render(float distance,float alpha,float beta,float gamma
+void ShadowMask::render(float alpha,float beta,float gamma
 	,const glm::mat4& projection) const noexcept
 	{
 	glm::mat4 mvp;
-	mvp=glm::translate(mvp,glm::vec3(0.0f,0.0f,-distance));
 	mvp=glm::rotate(mvp,alpha,glm::vec3(0,0,1));
 	mvp=glm::rotate(mvp,beta,glm::vec3(0,1,0));
 	mvp=glm::rotate(mvp,gamma,glm::vec3(0,0,1));
@@ -383,8 +381,8 @@ static void render(GLFWwindow* handle)
 	
 	glViewport(0,0,width,height);
 	auto projection=make_ortho(width,height,1.0f,10,20);
-	glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
-	vs->pc.render(10,vs->alpha,vs->beta,vs->gamma,projection);
+	glClear(GL_COLOR_BUFFER_BIT);
+	vs->pc.render(vs->alpha,vs->beta,vs->gamma,projection);
 	
 	glfwSwapBuffers(handle);
 	}
