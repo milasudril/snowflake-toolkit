@@ -208,7 +208,7 @@ class ShadowMask
 
 		ShadowMask(const SnowflakeModel::Solid& s);
 
-		void render(float distance,float alpha,float beta,float gamma
+		void render(float alpha,float beta,float gamma
 			,const glm::mat4& projection) const noexcept;
 
 		float scaleGet() const noexcept
