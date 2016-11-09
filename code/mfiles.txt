@@ -1,0 +1,42 @@
+function addaview(points,exedir)
+
+Visualize a point cloud
+function [frame_data,N_rows]=frame_data_load(basedir)
+
+Loads information about frame data generated during aggregate simulation
+function [data,N_rows]=aggregates_frame_load_last(basedir)
+
+Loads statistics from the last frame.
+function [data,N_rows]=aggregates_frame_load(basedir,frame_number)
+
+Loads statistics from a particular frame. Valid frame numbers can be 
+function aggregates_frames_process(basedir,callback)
+
+Processes all frames from an aggregate simulation
+function aggregates_generate(paramstruct,sync,exepath,exefile)
+
+Generates aggregates
+function [stats]=graupel_generate(paramstruct,exepath,exefile)
+
+Generates a graupel
+function vols=ice_load(source,exepath,exename)
+
+Loads mesh geometry
+function coords=mesh_rasterize_2(ice_file,N,ratio,output_file,exepath,exename)
+
+Alternative mesh rasterizer
+function coords=mesh_rasterize(ice_file,grid,output_file,exepath,exename)
+
+Mesh rasterizer
+function choice=prototypechoice_create(prototype,probability,deformations)
+
+Creates a prototype choice record
+function prototypechoices_write(file,choices)
+
+Stores the prototype choices to file
+function coords=sphere_aggregate_rasterize_2(aggregate,N,ratio,output_file,exepath,exename)
+
+Alternative sphere aggregate rasterizer
+function coords=mesh_rasterize(aggregate,grid,output_file,exepath,exename)
+
+Sphere aggregate rasterizer

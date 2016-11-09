@@ -1,12 +1,10 @@
 //@	{
-//@	    "dependencies_extra":[],
-//@	    "targets":[
-//@	        {
-//@	            "dependencies":[],
-//@	            "name":"graupel_generate2",
-//@	            "type":"application"
-//@	        }
-//@	    ]
+//@	"targets":
+//@		[{
+//@		 "name":"graupel_generate2"
+//@		,"type":"application"
+//@		,"description":"Graupel generator"
+//@		}]
 //@	}
 
 #include "file_in.h"
@@ -327,9 +325,7 @@ Simstate::Simstate(const Alice::CommandLine<OptionDescriptor>& cmd_line):
 	E_0=cmd_line.get<Alice::Stringkey("E_0")>().valueGet();
 	decay_distance=
 		std::max(cmd_line.get<Alice::Stringkey("decay-distance")>().valueGet()
-			,1.0e-7);
-	
-		
+			,1.0e-7f);
 
 	fill=0;
 	

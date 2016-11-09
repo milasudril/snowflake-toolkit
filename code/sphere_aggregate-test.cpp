@@ -2,6 +2,7 @@
 //@	"targets":
 //@		[{
 //@		 "name":"sphere_aggregate-test","type":"application"
+//@		,"description":"Test application for sphere aggregates"
 //@		}]
 //@	}
 

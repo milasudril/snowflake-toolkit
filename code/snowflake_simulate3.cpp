@@ -1,12 +1,9 @@
 //@	{
-//@	"dependencies_extra":[],
-//@		"targets":[
-//@			{
-//@			 "dependencies":[]
-//@			,"name":"snowflake_simulate3"
-//@			,"type":"application"
-//@			}
-//@		]
+//@	"targets":
+//@		[{
+//@		 "name":"snowflake_simulate3","type":"application"
+//@		,"description":"The aggregate generator"
+//@		}]
 //@	}
 #include "deformation_data.h"
 #include "config_parser.h"

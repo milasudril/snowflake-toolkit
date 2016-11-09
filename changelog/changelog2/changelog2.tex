@@ -1,0 +1,71 @@
+\documentclass[a4paper,10pt]{scrartcl}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{varioref}
+\usepackage{hyperref}
+\usepackage{cleveref}
+\usepackage[intlimits]{amsmath}
+\usepackage{amssymb}
+
+
+\newcommand{\prgname}[1]{\texttt{#1}}
+\newcommand{\dd}{\mathrm{d}}
+
+%opening
+\title{The Snowflake-Toolkit Updates}
+\author{Torbjörn Rathsman}
+
+\begin{document}
+
+\maketitle
+\begin{abstract}
+The Snowflake-Toolkit is a software toolkit intended to generate shape data for simulating microwave scattering from snow and ice particles. This paper briefly describes changes since the October 2016 
+\end{abstract}
+
+
+
+\tableofcontents
+
+\section{Graupel generator and sphere aggregates}
+The toolkit now contains a graupel generator \texttt{graupel\_generate2}, described in \cite{graupelgen}. This required an additional geometry representation, since it was too inefficient to use polygon meshes when building large aggregates of spheres. The new representation takes advantage of the fact that the sub-volumes are all spheres. This makes the data structures simpler, and reduces the amount of work needed for hit-testing, overlap detection, and ray-casting. Also, overlapping volumes are trivial to compute. This means that all computed volumes should be exact. A drawback is that $D_\text{max}$ requires more effort to compute exactly. Thus, it is approximated by comparing the 6 axis-aligned points on each sphere.
+
+\section{Rewrite of rasterizer}
+The addition of an additional aggregate representation motivated a rewrite of the rasterizer. The previous callback-based approach has been replaced by a direct approach. The floodfill method of the aggregate object is given a \texttt{Grid} object, and sets its bits directly. When the ADDA file is written, it loops through the filled grid, and writes the indices of all non-zero elements. The new approach should be an order of magnitude faster, due to the simplified call graph.
+
+\section{Visualisation of point clouds}
+Due to the large number of vertices resulting from generating icospheres from a sphere aggregate, visualisation becomes demanding. To overcome this problem a very bare-metal tool \texttt{addaview}, for visualising a point cloud has been written. The tool uses nothing more than OpenGL 3.3+ to render a set of points. It features some primitive mouse and keyboard navigation for switching between perspective and orthographic view, rotate the cloud, and render slices.
+
+\section{Support for mixture of prototypes in aggregate generator}
+The aggregate generator has been extended to support custom mixture of prototypes, and probability distribution. A mixture is a set of deformation rules, each with an associated crystal prototype and probability. Mixtures are stored in JSON format. The outer object is an array where each object has the properties \texttt{prototype}, \texttt{probability}, and \texttt{deformations}. The latter property is an array of deformation rules, which has the same properties as they had before. Each rule is encoded as an array, with the ordered elements \textit{parameter}, \textit{distribution}, and \textit{distribution parameters}.
+
+The mixture file refers to other files, prototypes, and optionally custom probability distributions. The paths of these files are assumed to be relative to the loaction of the mixture file. This design choice is motivated by the assumption that mixture files, and the files they refer to, together forms a database, and that database should be usable regardless of current working directory.
+
+\section{MATLAB and Octave frontend}
+To make it easier to integrate the toolkit into the workflow, a set of wrapper functions for MATLAB and Octave has been written. These functions makes it easier to start a simulation, and when it is done, analyse its output. Other features include mixture file generation, and a function to start \texttt{addaview}. It is also possible to import the mesh contents of an \texttt{ice} file.
+
+\section{Shadow mask renderer}
+The toolkit now features two programs for rendering shadow masks of meshes, and ADDA files. These programs are implemented using OpenGL 3.3 and a simple orthographic projection. The programs both writes the result into a PNG file, with the resolution set to the number of pixels per length unit, multiplied by 1024. There exists MATALB and Octave frontents as well.
+
+\section{External libraries required by the snowflake toolkit}
+This is a list of all external libraries used by the toolkit, as reported by \prgname{maike}.
+
+\begin{itemize}
+\item \texttt{GL}
+ \item \texttt{hdf5}
+ \item \texttt{hdf5\_cpp}
+ \item \texttt{png}
+ \item \texttt{pthread}
+ \item \texttt{hdf5\_hl\_cpp}
+ \item \texttt{glfw}
+ \item \texttt{GLEW}
+ \item \item{jansson}
+ \end{itemize}
+
+\begin{thebibliography}{9}
+ \bibitem{graupelgen}
+ \url{https://github.com/milasudril/snowflake-toolkit/blob/master/changelog/graupelgen/graupelgen.pdf}
+\end{thebibliography}
+\vfill
+
+\end{document}
