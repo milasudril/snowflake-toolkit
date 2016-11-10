@@ -402,6 +402,9 @@ Simstate::Simstate(const Alice::CommandLine<OptionDescriptor>& cmd_line
 		}
 
 	dump.arrayRead<ParameterValue>("scale").dataRead(&scale,1);
+	auto ex=solid_out.extremaGet();
+	d_max=length(ex.first - ex.second);
+	fill=solid_out.volumeGet()/( 4*std::acos(-1.0)*pow(0.5*d_max,3)/3.0 );
 	}
 
 
