@@ -84,7 +84,6 @@ static void init()
 	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 	glfwWindowHint(GLFW_DOUBLEBUFFER,GL_TRUE);
-	glfwWindowHint(GLFW_VISIBLE,0);
 	}
 
 static void deinit()
@@ -383,8 +382,6 @@ static void render(GLFWwindow* handle)
 	auto projection=make_ortho(width,height,1.0f,10,20);
 	glClear(GL_COLOR_BUFFER_BIT);
 	vs->pc.render(vs->alpha,vs->beta,vs->gamma,projection);
-	
-	glfwSwapBuffers(handle);
 	}
 
 static void helpPrint(const Alice::CommandLine<OptionDescriptor>& options
@@ -475,7 +472,7 @@ int main(int argc,char** argv)
 
 		glfwWaitEvents();
 		render(window.get());
-		render(window.get());
+		glReadBuffer(GL_BACK);
 		pixelsDump(window.get()
 			,mask.scaleGet()
 			,SnowflakeModel::FileOut(cmdline.get<Alice::Stringkey("image")>()?
