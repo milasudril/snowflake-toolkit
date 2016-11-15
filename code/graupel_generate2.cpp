@@ -103,7 +103,9 @@ namespace Alice
 
 	template<>
 	struct MakeType<Stringkey("number")>:public MakeType<Stringkey("unsigned int")>
-		{};
+		{
+		
+		};
 	}
 
 ALICE_OPTION_DESCRIPTOR(OptionDescriptor
@@ -111,7 +113,7 @@ ALICE_OPTION_DESCRIPTOR(OptionDescriptor
 	
 	,{"Simulation parameters","seed","Random seed mod 2^32","unsigned int",Alice::Option::Multiplicity::ONE}
 	
-	,{"Simulation parameters","scale","Determines the size of individual spheres","Parameter value",Alice::Option::Multiplicity::ONE}
+	,{"Simulation parameters","scale","Determines the diameter of individual spheres","Parameter value",Alice::Option::Multiplicity::ONE}
 	
 	,{"Simulation parameters","E_0","The maximal initial particle energe. The energy is chosen as U(0, E_0)","float",Alice::Option::Multiplicity::ONE}
 	
@@ -139,6 +141,8 @@ ALICE_OPTION_DESCRIPTOR(OptionDescriptor
 		"so it can processed by sphere_aggregate_rasterize.","filename",Alice::Option::Multiplicity::ONE}
 	
 	,{"Output options","dump-stats","Write statistics to the given file","filename",Alice::Option::Multiplicity::ONE}
+
+	,{"Output options","report-rate","Limit statistics to be written every `number` step","number",Alice::Option::Multiplicity::ONE}
 	
 	,{"Other","statefile-in","Reload state from file","filename",Alice::Option::Multiplicity::ONE}
 
@@ -226,12 +230,9 @@ static void statsDump(SnowflakeModel::FileOut* file_out,const SnowflakeModel::Sp
 			"%.7g\t"
 			"%.7g\t"
 			"%zu\n"
-		//	"%zu\n"
 			,glm::distance(extrema.first,extrema.second)
 			,solid.volumeGet()
-			,L.x,L.x/L.y,L.x/L.z,solid.subvolumesCount()
-		//	,solid.overlapCount()
-			);
+			,L.x,L.x/L.y,L.x/L.z,solid.subvolumesCount());
 		}
 	}
 
@@ -301,8 +302,8 @@ struct Simstate
 	std::string statfile;
 	std::string objfile;
 	std::string icefile;
-
-	uint8_t iter_count;
+	size_t iter_count;
+	size_t report_rate;
 	};
 
 Simstate::Simstate(const Alice::CommandLine<OptionDescriptor>& cmd_line):
@@ -313,6 +314,8 @@ Simstate::Simstate(const Alice::CommandLine<OptionDescriptor>& cmd_line):
 		if(!x)
 			{throw "No scale parameter is given";}
 		scale=x.valueGet();
+		scale.mean/=2.0f;
+		scale.standard_deviation/=2.0f;
 		}
 
 	G=generateGamma(scale.mean,scale.standard_deviation);
@@ -356,6 +359,7 @@ Simstate::Simstate(const Alice::CommandLine<OptionDescriptor>& cmd_line):
 		auto p=particleGenerate(G,randgen);
 		solid_out.subvolumeAdd(p,0.0f);
 		}
+
 		{
 		auto ex=solid_out.extremaGet();
 		d_max=length(ex.first - ex.second);
@@ -365,9 +369,17 @@ Simstate::Simstate(const Alice::CommandLine<OptionDescriptor>& cmd_line):
 	if(statfile.size())
 		{
 		file_out=std::make_unique<SnowflakeModel::FileOut>(statfile.c_str());
-		file_out->printf("D_max\tVolume\tL_x\tr_xy\tr_xz\tNumber_of_subvolumes\n"
-		//	"Overlap count\n"
-			);
+		file_out->printf("D_max\tVolume\tL_x\tr_xy\tr_xz\tNumber_of_subvolumes\n");
+		}
+
+		{
+		report_rate=128;
+		auto& x=r_cmd_line.get<Alice::Stringkey("report-rate")>();
+		if(x)
+			{
+			report_rate=x.valueGet();
+			report_rate=std::max(size_t(1),report_rate);
+			}
 		}
 	objfile=r_cmd_line.get<Alice::Stringkey("dump-geometry")>().valueGet();
 	icefile=r_cmd_line.get<Alice::Stringkey("dump-geometry-ice")>().valueGet();
@@ -402,6 +414,12 @@ Simstate::Simstate(const Alice::CommandLine<OptionDescriptor>& cmd_line
 		}
 
 	dump.arrayRead<ParameterValue>("scale").dataRead(&scale,1);
+	auto ex=solid_out.extremaGet();
+	d_max=length(ex.first - ex.second);
+	fill=solid_out.volumeGet()/( 4*std::acos(-1.0)*pow(0.5*d_max,3)/3.0 );
+	dump.arrayRead<size_t>("iter_count").dataRead(&iter_count,1);
+	dump.arrayRead<size_t>("report_rate").dataRead(&report_rate,1);
+	report_rate=std::max(size_t(1),report_rate);
 	}
 
 
@@ -446,6 +464,14 @@ void Simstate::save(const std::string& now) const
 		{
 		dump.write("scale",&scale,1);
 		}
+
+		{
+		dump.write("iter_count",&iter_count,1);
+		}
+
+		{
+		dump.write("report_rate",&report_rate,1);
+		}
 	}
 
 
@@ -474,10 +500,10 @@ void Simstate::step()
 		if(d_max<D_max)
 			{
 			solid_out.subvolumeAdd(std::move(v_2),overlap_res);
-			if(iter_count%128==0)
+			auto ex=solid_out.extremaGet();
+			d_max=length(ex.first - ex.second);
+			if(iter_count%report_rate==0)
 				{
-				auto ex=solid_out.extremaGet();
-				d_max=length(ex.first - ex.second);
 				fill=solid_out.volumeGet()/( 4*std::acos(-1.0)*pow(0.5*d_max,3)/3.0 );
 				fprintf(stderr,"\r%.7g %.7g  (Cs: %zu,  Cr: %zu, Pass: %zu)      "
 					,d_max,fill,solid_out.subvolumesCount(),rejected,pass);
@@ -492,7 +518,7 @@ void Simstate::step()
 			if(length(ex.first - ex.second)>d_max)
 				{return;}
 			solid_out.subvolumeAdd(std::move(v_2),overlap_res);
-			if(iter_count%128==0)
+			if(iter_count%report_rate==0)
 				{
 				fill=solid_out.volumeGet()/( 4*std::acos(-1.0)*pow(0.5*d_max,3)/3.0 );
 				fprintf(stderr,"\r%.7g %.7g  (Cs: %zu,  Cr: %zu)      "

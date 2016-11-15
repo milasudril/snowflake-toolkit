@@ -83,7 +83,6 @@ static void init()
 	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 	glfwWindowHint(GLFW_DOUBLEBUFFER,GL_TRUE);
-	glfwWindowHint(GLFW_VISIBLE,0);
 	}
 
 static void deinit()
@@ -207,7 +206,7 @@ class ShadowMask
 
 		ShadowMask(const std::vector<glm::vec3>& points);
 
-		void render(float distance,float alpha,float beta,float gamma
+		void render(float alpha,float beta,float gamma
 			,const glm::mat4& projection) const noexcept;
 
 		float scaleGet() const noexcept
@@ -234,11 +233,9 @@ ShadowMask::ShadowMask(const std::vector<glm::vec3>& points)
 	mvp_location=glGetUniformLocation(shader,"MVP");
 	fragment_color_location=glGetUniformLocation(shader,"fragment_color");
 
-	glEnable(GL_DEPTH_TEST);
 	glGenBuffers(1,&vbo);
 	glBindBuffer(GL_ARRAY_BUFFER,vbo);
 	n=points.size();
-	glPointSize(1);
 	glBufferData(GL_ARRAY_BUFFER,n*sizeof(glm::vec3),points.data(),GL_STATIC_DRAW);
 
 	auto bb=SnowflakeModel::boundingBoxGet(points);
@@ -249,11 +246,10 @@ ShadowMask::ShadowMask(const std::vector<glm::vec3>& points)
 	m_s=0.5f/s;
 	}
 
-void ShadowMask::render(float distance,float alpha,float beta,float gamma
+void ShadowMask::render(float alpha,float beta,float gamma
 	,const glm::mat4& projection) const noexcept
 	{
 	glm::mat4 mvp;
-	mvp=glm::translate(mvp,glm::vec3(0.0f,0.0f,-distance));
 	mvp=glm::rotate(mvp,alpha,glm::vec3(0,0,1));
 	mvp=glm::rotate(mvp,beta,glm::vec3(0,1,0));
 	mvp=glm::rotate(mvp,gamma,glm::vec3(0,0,1));
@@ -330,11 +326,9 @@ static void render(GLFWwindow* handle)
 	
 	glViewport(0,0,width,height);
 	auto projection=make_ortho(width,height,1.0f,10,20);
-	glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
+	glClear(GL_COLOR_BUFFER_BIT);
 	glPointSize(width*vs->pc.scaleGet() + 0.5f);
-	vs->pc.render(10,vs->alpha,vs->beta,vs->gamma,projection);
-	
-	glfwSwapBuffers(handle);
+	vs->pc.render(vs->alpha,vs->beta,vs->gamma,projection);
 	}
 
 static void helpPrint(const Alice::CommandLine<OptionDescriptor>& options
@@ -409,7 +403,7 @@ int main(int argc,char** argv)
 
 		glfwWaitEvents();
 		render(window.get());
-		render(window.get());
+		glReadBuffer(GL_BACK);
 		pixelsDump(window.get()
 			,mask.scaleGet()
 			,SnowflakeModel::FileOut(cmdline.get<Alice::Stringkey("image")>()?

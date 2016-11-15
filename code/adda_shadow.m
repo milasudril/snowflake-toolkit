@@ -65,6 +65,7 @@ function [img,res]=adda_shadow(points,alpha,beta,gamma,exepath,exename)
 	end
 	info=imfinfo(name);
 	img=imread(name);
+	img=img/max(max(img));
 	res=[info.XResolution,info.YResolution]/1024;
 	delete(name);
 end
