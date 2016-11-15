@@ -53,6 +53,7 @@ function [img,res]=mesh_shadow(ice_file,alpha,beta,gamma,exepath,exename)
 	system_wrapper({cmd,prototype,alpha,beta,gamma,img_param},1);
 	info=imfinfo(name);
 	img=imread(name);
+	img=img/max(max(img));
 	res=[info.XResolution,info.YResolution]/1024;
 	delete(name);
 end

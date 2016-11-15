@@ -979,8 +979,10 @@ void Simstate::rasterize() const
 
 void Simstate::statsDump(bool force) const
 	{
-	if( !(frame_data_file!=nullptr && m_data.frame%r_setup.m_data.m_stat_saverate==0) && !force )
+	if(frame_data_file==nullptr 
+		|| (m_data.frame%r_setup.m_data.m_stat_saverate!=0 && !force))
 		{return;}
+
 	auto now=time(nullptr);
 
 	//	Frame\tClock time\tSimulation time\tN_cloud\tN_drop\t

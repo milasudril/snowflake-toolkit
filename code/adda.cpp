@@ -90,8 +90,8 @@ BoundingBox SnowflakeModel::boundingBoxGet(const std::vector<Vector>& points)
 	auto ptr_end=ptr + points.size();
 	if(ptr==ptr_end)
 		{return BoundingBox{{-1.0f,-1.0f,-1.0f,1.0f},{1.0f,1.0f,1.0f,1.0f}};}
-	++ptr;
 	auto ret=BoundingBox{Point(*ptr,1.0f),Point(*ptr,1.0f)};
+	++ptr;
 	while(ptr!=ptr_end)
 		{
 		auto p=Point(*ptr,1.0f);
