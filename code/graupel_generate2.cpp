@@ -115,8 +115,12 @@ ALICE_OPTION_DESCRIPTOR(OptionDescriptor
 	
 	,{"Simulation parameters","seed","Random seed mod 2^32","unsigned int",Alice::Option::Multiplicity::ONE}
 
-	,{"Simulation parameters","pmap","Gives a linear grayscale PNG file to use for direction probabilities"
+	,{"Simulation parameters","pmap","Gives a linear grayscale PNG file to use for direction probabilities. "
+		"Without this option, a uniform distribution is used."
 		,"filename",Alice::Option::Multiplicity::ONE}
+
+/*	,{"Simulation parameters","projection","Sets a projection for the probability map"
+		,"projection",Alice::Option::Multiplicity::ONE}*/
 	
 	,{"Simulation parameters","scale","Determines the diameter of individual spheres","Parameter value",Alice::Option::Multiplicity::ONE}
 	
@@ -214,8 +218,8 @@ static SnowflakeModel::Vector drawSphere(SnowflakeModel::RandomGenerator& randge
 		{return drawSphere(randgen);}
 
 	auto elem=SnowflakeModel::elementChoose(randgen,pmap);
-	auto xi=elem.second*2.0f*std::acos(-1.0f)/(n_cols - 1);
-	auto eta=1.0f - elem.first*2.0f/(n_rows - 1) ;
+	auto xi=(elem.second + 0.5f)*2.0f*std::acos(-1.0f)/n_cols;
+	auto eta=1.0f - (elem.first + 0.5f)*2.0f/n_rows;
 	return mapCylindricalProjection(xi,eta);
 	}
 
