@@ -166,8 +166,8 @@ namespace SnowflakeModel
 	template<>
 	const DataDump::FieldDescriptor DataDump::MetaObject<ParameterValue>::fields[]=
 		{
-		 {"name",offsetOf(&ParameterValue::mean),DataDump::MetaObject<decltype(ParameterValue::mean)>().typeGet()}
-		,{"mean",offsetOf(&ParameterValue::standard_deviation),DataDump::MetaObject<decltype(ParameterValue::standard_deviation)>().typeGet()}
+		 {"mean",offsetOf(&ParameterValue::mean),DataDump::MetaObject<decltype(ParameterValue::mean)>().typeGet()}
+		,{"standard_deviation",offsetOf(&ParameterValue::standard_deviation),DataDump::MetaObject<decltype(ParameterValue::standard_deviation)>().typeGet()}
 		};
 
 	template<>
@@ -457,6 +457,7 @@ Simstate::Simstate(const Alice::CommandLine<OptionDescriptor>& cmd_line
 		}
 
 	dump.arrayRead<ParameterValue>("scale").dataRead(&scale,1);
+	G=generateGamma(scale.mean,scale.standard_deviation);
 	auto ex=solid_out.extremaGet();
 	d_max=length(ex.first - ex.second);
 	fill=solid_out.volumeGet()/( 4*std::acos(-1.0)*pow(0.5*d_max,3)/3.0 );
