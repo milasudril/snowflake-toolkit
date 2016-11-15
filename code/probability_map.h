@@ -23,7 +23,7 @@ namespace SnowflakeModel
 		public:
 			ProbabilityMap():ProbabilityMap(1,1){}
 
-			ProbabilityMap(uint32_t N_rows,uint32_t N_cols);
+			explicit ProbabilityMap(uint32_t N_rows,uint32_t N_cols);
 
 			Twins<uint32_t> elementGet(RandomGenerator& rng) const noexcept;
 

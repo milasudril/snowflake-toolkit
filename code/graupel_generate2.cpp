@@ -439,6 +439,13 @@ Simstate::Simstate(const Alice::CommandLine<OptionDescriptor>& cmd_line
 	dump.arrayRead<float>("merge_offset").dataRead(&merge_offset,1);
 	dump.arrayRead<unsigned int>("overlap_max").dataRead(&overlap_max,1);
 
+		{
+		uint32_t s[2];
+		dump.arrayRead<uint32_t>("pmap_size").dataRead(s,2);
+		pmap=SnowflakeModel::ProbabilityMap<float>(s[0],s[1]);
+		dump.arrayRead<float>("pmap").dataRead(pmap.rowGet(0),s[0]*s[1]);
+		}
+
 	statfile=dump.arrayGet<SnowflakeModel::DataDump::StringHolder>("statfile")[0];
 	objfile=dump.arrayGet<SnowflakeModel::DataDump::StringHolder>("objfile")[0];
 	icefile=dump.arrayGet<SnowflakeModel::DataDump::StringHolder>("icefile")[0];
@@ -507,6 +514,12 @@ void Simstate::save(const std::string& now) const
 
 		{
 		dump.write("report_rate",&report_rate,1);
+		}
+
+		{
+		uint32_t s[]={pmap.nRowsGet(),pmap.nColsGet()};
+		dump.write("pmap_size",s,2);
+		dump.write("pmap",pmap.rowGet(0),s[0]*s[1]);
 		}
 	}
 
