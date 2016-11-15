@@ -20,6 +20,7 @@
 #include "solid.h"
 #include "filename.h"
 #include "probability_map.h"
+#include "pmap_loader.h"
 #include "alice/commandline.hpp"
 
 #include <fenv.h>
@@ -113,6 +114,9 @@ ALICE_OPTION_DESCRIPTOR(OptionDescriptor
 	,{"Help","help","Print option summary to stdout, or, if a filename is given, to that file","filename",Alice::Option::Multiplicity::ZERO_OR_ONE}
 	
 	,{"Simulation parameters","seed","Random seed mod 2^32","unsigned int",Alice::Option::Multiplicity::ONE}
+
+	,{"Simulation parameters","pmap","Gives a linear grayscale PNG file to use for direction probabilities"
+		,"filename",Alice::Option::Multiplicity::ONE}
 	
 	,{"Simulation parameters","scale","Determines the diameter of individual spheres","Parameter value",Alice::Option::Multiplicity::ONE}
 	
@@ -203,14 +207,13 @@ static SnowflakeModel::Vector drawSphere(SnowflakeModel::RandomGenerator& randge
 static SnowflakeModel::Vector drawSphere(SnowflakeModel::RandomGenerator& randgen
 	,const SnowflakeModel::ProbabilityMap<float>& pmap)
 	{
-	auto elem=SnowflakeModel::elementChoose(randgen,pmap);
 	auto n_rows=pmap.nRowsGet();
 	auto n_cols=pmap.nColsGet();
 
-//TODO: Use uniform distribution individually.
 	if(n_rows==1 || n_cols==1)
 		{return drawSphere(randgen);}
 
+	auto elem=SnowflakeModel::elementChoose(randgen,pmap);
 	auto xi=elem.second*2.0f*std::acos(-1.0f)/(n_cols - 1);
 	auto eta=1.0f - elem.first*2.0f/(n_rows - 1) ;
 	return mapCylindricalProjection(xi,eta);
@@ -218,7 +221,7 @@ static SnowflakeModel::Vector drawSphere(SnowflakeModel::RandomGenerator& randge
 
 template<class T,class RandomGenerator>
 static auto shootRandom(const T& object,RandomGenerator& randgen
-	,float E_0,float decay_distance)
+	,const SnowflakeModel::ProbabilityMap<float>& pmap,float E_0,float decay_distance)
 	{
 //	Construct a sphere from the bounding box
 	auto& bb=object.boundingBoxGet();
@@ -226,7 +229,7 @@ static auto shootRandom(const T& object,RandomGenerator& randgen
 	auto bb_mid=bb.centerGet();
 	auto r=0.5f*glm::length( bb_size );
 
-	auto direction=drawSphere(randgen);
+	auto direction=drawSphere(randgen,pmap);
 
 
 //	Set the source on the sphere
@@ -303,6 +306,7 @@ struct Simstate
 	const Alice::CommandLine<OptionDescriptor>& r_cmd_line;
 	
 	SnowflakeModel::RandomGenerator randgen;
+	SnowflakeModel::ProbabilityMap<float> pmap;
 	ParameterValue scale;
 	std::gamma_distribution<float> G;
 	SnowflakeModel::SphereAggregate solid_out;
@@ -399,6 +403,14 @@ Simstate::Simstate(const Alice::CommandLine<OptionDescriptor>& cmd_line):
 			{
 			report_rate=x.valueGet();
 			report_rate=std::max(size_t(1),report_rate);
+			}
+		}
+
+		{
+		auto& x=r_cmd_line.get<Alice::Stringkey("pmap")>();
+		if(x)
+			{
+			pmap=SnowflakeModel::pmapLoad(x.valueGet().c_str());
 			}
 		}
 	objfile=r_cmd_line.get<Alice::Stringkey("dump-geometry")>().valueGet();
@@ -502,7 +514,7 @@ void Simstate::step()
 	std::uniform_real_distribution<float> U(0,E_0);
 	auto E=U(randgen);
 
-	auto posnormal=shootRandom(solid_out,randgen,E,decay_distance);
+	auto posnormal=shootRandom(solid_out,randgen,pmap,E,decay_distance);
 
 	if(posnormal.first.x==INFINITY)
 		{

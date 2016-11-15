@@ -72,8 +72,8 @@ namespace SnowflakeModel
 		m_data.reset(reinterpret_cast<ElementType*>(malloc(N_bytes)));
 		std::fill(m_data.get(),m_data.get() + N_rows*N_cols,1);
 
-		m_cumsum.reset(reinterpret_cast<double*>(malloc(N_bytes)));
-		memset(m_cumsum.get(),0,N_bytes);
+		m_cumsum.reset(reinterpret_cast<double*>(malloc(N_cols*N_rows*sizeof(double))));
+		memset(m_cumsum.get(),0,N_cols*N_rows*sizeof(double));
 		m_sum_dirty=1;
 		}
 
@@ -86,8 +86,8 @@ namespace SnowflakeModel
 		auto ptr_data=m_data.get();
 		while(ptr_cumsum!=ptr_end)
 			{
-			*ptr_cumsum=sum;
 			sum+=*ptr_data;
+			*ptr_cumsum=sum;
 			++ptr_data;
 			++ptr_cumsum;
 			}
@@ -102,7 +102,7 @@ namespace SnowflakeModel
 		auto r=U(rng);
 		auto ptr=m_cumsum.get();
 		auto ptr_end=ptr + m_N_rows*m_N_cols;
-		auto pos=std::upper_bound(ptr,ptr_end,r
+		auto pos=std::lower_bound(ptr,ptr_end,r
 			,[](decltype(r) value,double limit)
 				{return value<limit;}
 			);
