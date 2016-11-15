@@ -66,6 +66,9 @@ namespace SnowflakeModel
 			const char* nameGet() const noexcept
 				{return m_filename.data();}
 
+			FILE* handleGet() noexcept
+				{return file_in;}
+
 		private:
 			FILE* file_in;
 			std::string m_filename;

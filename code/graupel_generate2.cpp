@@ -19,6 +19,7 @@
 #include "solid_writer.h"
 #include "solid.h"
 #include "filename.h"
+#include "probability_map.h"
 #include "alice/commandline.hpp"
 
 #include <fenv.h>
@@ -180,13 +181,8 @@ static bool printHelp(const Alice::CommandLine<OptionDescriptor>& cmd_line)
 	return 0;
 	}
 
-static SnowflakeModel::Vector drawSphere(SnowflakeModel::RandomGenerator& randgen)
+static SnowflakeModel::Vector mapCylindricalProjection(float xi,float eta)
 	{
-	std::uniform_real_distribution<float> xi_dist(0,2.0f*std::acos(-1.0f));
-	std::uniform_real_distribution<float> eta_dist(-1.0f,1.0f);
-	
-	auto xi=xi_dist(randgen);
-	auto eta=eta_dist(randgen);
 	auto r=std::sqrt(1.0f - eta*eta);
 	return SnowflakeModel::Vector
 		{
@@ -194,6 +190,30 @@ static SnowflakeModel::Vector drawSphere(SnowflakeModel::RandomGenerator& randge
 		,std::sin(xi)*r
 		,-eta
 		};
+	}
+
+static SnowflakeModel::Vector drawSphere(SnowflakeModel::RandomGenerator& randgen)
+	{
+	std::uniform_real_distribution<float> xi_dist(0,2.0f*std::acos(-1.0f));
+	std::uniform_real_distribution<float> eta_dist(-1.0f,1.0f);
+	
+	return mapCylindricalProjection(xi_dist(randgen),eta_dist(randgen));
+	}
+
+static SnowflakeModel::Vector drawSphere(SnowflakeModel::RandomGenerator& randgen
+	,const SnowflakeModel::ProbabilityMap<float>& pmap)
+	{
+	auto elem=SnowflakeModel::elementChoose(randgen,pmap);
+	auto n_rows=pmap.nRowsGet();
+	auto n_cols=pmap.nColsGet();
+
+//TODO: Use uniform distribution individually.
+	if(n_rows==1 || n_cols==1)
+		{return drawSphere(randgen);}
+
+	auto xi=elem.second*2.0f*std::acos(-1.0f)/(n_cols - 1);
+	auto eta=1.0f - elem.first*2.0f/(n_rows - 1) ;
+	return mapCylindricalProjection(xi,eta);
 	}
 
 template<class T,class RandomGenerator>
