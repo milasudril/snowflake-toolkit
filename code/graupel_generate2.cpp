@@ -31,6 +31,9 @@ struct ParameterValue
 	float standard_deviation;
 	};
 
+enum class Projection:int{RAW,CYLINDRICAL};
+
+
 namespace Alice
 	{
 	void print(const ParameterValue& deformation,FILE* dest)
@@ -39,6 +42,9 @@ namespace Alice
 			,deformation.mean
 			,deformation.standard_deviation);
 		}
+
+	void print(Projection proj,FILE* output)
+		{fprintf(output,"\"%s\"",proj==Projection::RAW?"raw":"cylindrical");};
 
 	template<>
 	struct MakeType<Stringkey("Parameter value")>:public MakeTypeBase
@@ -105,8 +111,36 @@ namespace Alice
 
 	template<>
 	struct MakeType<Stringkey("number")>:public MakeType<Stringkey("unsigned int")>
+		{};
+
+	template<>
+	struct MakeType<Stringkey("projection")>
 		{
-		
+		typedef Projection Type;
+
+		static constexpr const char* descriptionShortGet()
+			{return "raw | spherical";}
+
+		static constexpr const char* descriptionLongGet()
+			{
+			return "A projection is used for mapping angles to pixels. There are "
+				"two availible projections: `raw` and `cylindrical`. The `raw` "
+				"projection uses uniform scaling in latitude, while `cylindrical` "
+				"preserves the area around the poles.";
+			}
+		};
+
+	template<class ErrorHandler>
+	struct MakeValue<Projection,ErrorHandler>
+		{
+		static Projection make_value(const std::string& str)
+			{
+			if(str=="raw")
+				{return Projection::RAW;}
+			if(str=="cylindrical")
+				{return Projection::CYLINDRICAL;}
+			throw "Invalid projection";
+			}
 		};
 	}
 
@@ -119,8 +153,9 @@ ALICE_OPTION_DESCRIPTOR(OptionDescriptor
 		"Without this option, a uniform distribution is used."
 		,"filename",Alice::Option::Multiplicity::ONE}
 
-/*	,{"Simulation parameters","projection","Sets a projection for the probability map"
-		,"projection",Alice::Option::Multiplicity::ONE}*/
+	,{"Simulation parameters","projection","Sets a projection for the probability map. "
+		"If not set, a cylindrical projection is used."
+		,"projection",Alice::Option::Multiplicity::ONE}
 	
 	,{"Simulation parameters","scale","Determines the diameter of individual spheres","Parameter value",Alice::Option::Multiplicity::ONE}
 	
@@ -189,43 +224,59 @@ static bool printHelp(const Alice::CommandLine<OptionDescriptor>& cmd_line)
 	return 0;
 	}
 
-static SnowflakeModel::Vector mapCylindricalProjection(float xi,float eta)
+static SnowflakeModel::Vector mapProjection(float xi,float eta
+	,Projection proj)
 	{
-	auto r=std::sqrt(1.0f - eta*eta);
-	return SnowflakeModel::Vector
+	if(proj==Projection::CYLINDRICAL)
 		{
-		 std::cos(xi)*r
-		,std::sin(xi)*r
-		,-eta
-		};
+		auto r=std::sqrt(1.0f - eta*eta);
+		return SnowflakeModel::Vector
+			{
+			 std::cos(xi)*r
+			,std::sin(xi)*r
+			,-eta
+			};
+		}
+	else
+		{
+		return 
+			{
+			 std::cos(xi)*std::sin(eta)
+			,std::sin(xi)*std::sin(eta)
+			,std::cos(eta)
+			};
+		}
 	}
 
-static SnowflakeModel::Vector drawSphere(SnowflakeModel::RandomGenerator& randgen)
+static SnowflakeModel::Vector drawSphere(SnowflakeModel::RandomGenerator& randgen
+	,Projection proj)
 	{
 	std::uniform_real_distribution<float> xi_dist(0,2.0f*std::acos(-1.0f));
 	std::uniform_real_distribution<float> eta_dist(-1.0f,1.0f);
 	
-	return mapCylindricalProjection(xi_dist(randgen),eta_dist(randgen));
+	return mapProjection(xi_dist(randgen),eta_dist(randgen),proj);
 	}
 
 static SnowflakeModel::Vector drawSphere(SnowflakeModel::RandomGenerator& randgen
-	,const SnowflakeModel::ProbabilityMap<float>& pmap)
+	,const SnowflakeModel::ProbabilityMap<float>& pmap
+	,Projection proj)
 	{
 	auto n_rows=pmap.nRowsGet();
 	auto n_cols=pmap.nColsGet();
 
 	if(n_rows==1 || n_cols==1)
-		{return drawSphere(randgen);}
+		{return drawSphere(randgen,proj);}
 
 	auto elem=SnowflakeModel::elementChoose(randgen,pmap);
 	auto xi=(elem.second + 0.5f)*2.0f*std::acos(-1.0f)/n_cols;
 	auto eta=1.0f - (elem.first + 0.5f)*2.0f/n_rows;
-	return mapCylindricalProjection(xi,eta);
+	return mapProjection(xi,eta,proj);
 	}
 
 template<class T,class RandomGenerator>
 static auto shootRandom(const T& object,RandomGenerator& randgen
-	,const SnowflakeModel::ProbabilityMap<float>& pmap,float E_0,float decay_distance)
+	,const SnowflakeModel::ProbabilityMap<float>& pmap,Projection proj
+	,float E_0,float decay_distance)
 	{
 //	Construct a sphere from the bounding box
 	auto& bb=object.boundingBoxGet();
@@ -233,7 +284,7 @@ static auto shootRandom(const T& object,RandomGenerator& randgen
 	auto bb_mid=bb.centerGet();
 	auto r=0.5f*glm::length( bb_size );
 
-	auto direction=drawSphere(randgen,pmap);
+	auto direction=drawSphere(randgen,pmap,proj);
 
 
 //	Set the source on the sphere
@@ -311,6 +362,7 @@ struct Simstate
 	
 	SnowflakeModel::RandomGenerator randgen;
 	SnowflakeModel::ProbabilityMap<float> pmap;
+	Projection proj;
 	ParameterValue scale;
 	std::gamma_distribution<float> G;
 	SnowflakeModel::SphereAggregate solid_out;
@@ -417,6 +469,14 @@ Simstate::Simstate(const Alice::CommandLine<OptionDescriptor>& cmd_line):
 			pmap=SnowflakeModel::pmapLoad(x.valueGet().c_str());
 			}
 		}
+
+	proj=Projection::CYLINDRICAL;
+		{
+		auto& x=r_cmd_line.get<Alice::Stringkey("projection")>();
+		if(x)
+			{proj=x.valueGet();}
+		}
+
 	objfile=r_cmd_line.get<Alice::Stringkey("dump-geometry")>().valueGet();
 	icefile=r_cmd_line.get<Alice::Stringkey("dump-geometry-ice")>().valueGet();
 	}
@@ -445,6 +505,8 @@ Simstate::Simstate(const Alice::CommandLine<OptionDescriptor>& cmd_line
 		pmap=SnowflakeModel::ProbabilityMap<float>(s[0],s[1]);
 		dump.arrayRead<float>("pmap").dataRead(pmap.rowGet(0),s[0]*s[1]);
 		}
+
+	dump.arrayRead<int>("projection").dataRead(reinterpret_cast<int*>(&proj),1);
 
 	statfile=dump.arrayGet<SnowflakeModel::DataDump::StringHolder>("statfile")[0];
 	objfile=dump.arrayGet<SnowflakeModel::DataDump::StringHolder>("objfile")[0];
@@ -489,6 +551,7 @@ void Simstate::save(const std::string& now) const
 	dump.write("decay_distance",&decay_distance,1);
 	dump.write("merge_offset",&merge_offset,1);
 	dump.write("overlap_max",&overlap_max,1);
+	dump.write("projection",reinterpret_cast<const int*>(&proj),1);
 
 		{
 		auto x=statfile.c_str();
@@ -532,7 +595,7 @@ void Simstate::step()
 	std::uniform_real_distribution<float> U(0,E_0);
 	auto E=U(randgen);
 
-	auto posnormal=shootRandom(solid_out,randgen,pmap,E,decay_distance);
+	auto posnormal=shootRandom(solid_out,randgen,pmap,proj,E,decay_distance);
 
 	if(posnormal.first.x==INFINITY)
 		{
