@@ -470,7 +470,7 @@ void Simstate::save(const std::string& now) const
 		}
 
 		{
-		dump.write("report_count",&report_rate,1);
+		dump.write("report_rate",&report_rate,1);
 		}
 	}
 
