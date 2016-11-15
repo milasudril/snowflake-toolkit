@@ -5,12 +5,10 @@ function aggregates_generate(paramstruct,sync,exepath,exefile)
 %
 % IN
 %	paramstruct	A struct with simulation parameters
+%	sync	wait for the executable to finish
 %	exedir	exepath the directory containing the executable for running
 %		the simulation
 %	exefile	the name of the executable file
-%
-% OUT
-%	stats	Growth history of the generated graupel
 %
 % Recognized members of paramstruct
 % 

@@ -90,6 +90,10 @@ function [stats]=graupel_generate(paramstruct,exepath,exefile)
 		,@()['--dump-stats=',paramstruct.dump_stats]...
 		,@()'');
 
+	report_rate=ternary(@()( isfield(paramstruct,'report_rate') && ~isempty(paramstruct.report_rate) )...
+		,@()['--report-rate=',paramstruct.report_rate]...
+		,@()'');
+
 	n=nargin();
 	cmd='';
 	switch nargin()
@@ -104,7 +108,7 @@ function [stats]=graupel_generate(paramstruct,exepath,exefile)
 	system_wrapper({cmd,seed,scale,E_0,decay_distance,merge_offset...
 		,overlap_max,D_max,fill_ratio,statefile_in,statefile_out...
 		,dump_geometry,dump_geometry_ice...
-		,dump_stats},nargout()>0);
+		,dump_stats,report_rate},nargout()>0);
 	if ~isempty(dump_stats) && nargout()>0
 		stats=csvread2(paramstruct.dump_stats,'\t');
 	end
