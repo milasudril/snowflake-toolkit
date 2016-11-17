@@ -229,21 +229,25 @@ static SnowflakeModel::Vector mapProjection(float xi,float eta
 	{
 	if(proj==Projection::CYLINDRICAL)
 		{
-		auto r=std::sqrt(1.0f - eta*eta);
+		auto xi_prime=xi*2.0f*std::acos(-1.0f);
+		auto eta_prime=2.0f*eta - 1.0f;
+		auto r=std::sqrt(1.0f - eta_prime*eta_prime);
 		return SnowflakeModel::Vector
 			{
-			 std::cos(xi)*r
-			,std::sin(xi)*r
-			,-eta
+			 std::cos(xi_prime)*r
+			,std::sin(xi_prime)*r
+			,eta_prime
 			};
 		}
 	else
 		{
+		auto xi_prime=xi*2.0f*std::acos(-1.0f);
+		auto eta_prime=std::acos(-1.0f)*eta;
 		return 
 			{
-			 std::cos(xi)*std::sin(eta)
-			,std::sin(xi)*std::sin(eta)
-			,std::cos(eta)
+			 std::cos(xi_prime)*std::sin(eta_prime)
+			,std::sin(xi_prime)*std::sin(eta_prime)
+			,std::cos(eta_prime)
 			};
 		}
 	}
@@ -268,8 +272,8 @@ static SnowflakeModel::Vector drawSphere(SnowflakeModel::RandomGenerator& randge
 		{return drawSphere(randgen,proj);}
 
 	auto elem=SnowflakeModel::elementChoose(randgen,pmap);
-	auto xi=(elem.second + 0.5f)*2.0f*std::acos(-1.0f)/n_cols;
-	auto eta=1.0f - (elem.first + 0.5f)*2.0f/n_rows;
+	auto xi=(elem.second + 0.5f)/n_cols;
+	auto eta=(elem.first + 0.5f)/n_rows;
 	return mapProjection(xi,eta,proj);
 	}
 
