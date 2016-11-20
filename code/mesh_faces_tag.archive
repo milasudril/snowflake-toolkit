@@ -1,0 +1,7 @@
+{
+"targets":
+	[{"name":"mesh_faces_tag.zip","type":"zip"}]
+
+,"contents":
+	[{"from":"source","file":"mesh_faces_tag/__init__.py"}]
+}

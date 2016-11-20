@@ -1,0 +1,7 @@
+{
+"targets":
+	[{"name":"io_scene_snowflakecrystalprototype.zip","type":"zip"}]
+
+,"contents":
+	[{"from":"source","file":"io_scene_snowflakecrystalprototype/__init__.py"}]
+}
