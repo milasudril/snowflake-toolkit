@@ -15,6 +15,8 @@ function [stats]=graupel_generate(paramstruct,exepath,exefile)
 % Recognized members of paramstruct
 %
 % seed               seed for the random generator
+% pmap               direction probability map stored in a matrix
+% projection         projection mode, either cylindrical (this is default), or raw
 % scale              scaling of the spheres. It is given with a struct with the members `mean`,
 %                    and `std`
 % E_0                initial energy
@@ -40,6 +42,20 @@ function [stats]=graupel_generate(paramstruct,exepath,exefile)
 	seed=ternary(@()( isfield(paramstruct,'seed') && ~isempty(paramstruct.seed))...
 		,@()['--seed=',int2str(paramstruct.seed)]...
 		,@()'');
+
+	rng=fopen('/dev/urandom','r');
+	x=fread(rng,1,'uint32');
+	y=fread(rng,3,'uint16');
+	z=fread(rng,3,'uint16');
+	fclose(rng);
+	pmap_name=sprintf('/tmp/%08x-%04x-%04x-%04x-%04x%04x%04x.png',x,y(1),y(2),y(3),z(1),z(2),z(3));
+	pmap=ternary(@()( isfield(paramstruct,'pmap') && ~isempty(paramstruct.pmap) )...
+		,@()['--pmap=',pmap_name]...
+		,@()'');
+
+	projection=ternary(@()( isfield(paramstruct,'projection') && ~isempty(paramstruct.projection) )...
+		,@()['--projection=',paramstruct.projection]...
+		,@()['']);
 
 	scale=ternary(@()( isfield(paramstruct,'scale') && ~isempty(paramstruct.scale) )...
 		,@()['--scale=[',num2str(paramstruct.scale.mean),',',num2str(paramstruct.scale.std),']']...
@@ -105,10 +121,14 @@ function [stats]=graupel_generate(paramstruct,exepath,exefile)
 			cmd=[exepath,'/',exefile];
 	end
 
+	if ~isempty(pmap)
+		imwrite(paramstruct.pmap,pmap_name);
+	end
+
 	system_wrapper({cmd,seed,scale,E_0,decay_distance,merge_offset...
 		,overlap_max,D_max,fill_ratio,statefile_in,statefile_out...
 		,dump_geometry,dump_geometry_ice...
-		,dump_stats,report_rate},nargout()>0);
+		,dump_stats,report_rate,pmap,projection},nargout()>0);
 	if ~isempty(dump_stats) && nargout()>0
 		stats=csvread2(paramstruct.dump_stats,'\t');
 	end

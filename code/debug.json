@@ -178,7 +178,6 @@
             "name":"archivedefault",
             "plugin":"targetarchive"
         }
-
     ],
     "targetinfo":{
         "target_directory":"__targets_dbg"
