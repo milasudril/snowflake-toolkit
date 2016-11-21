@@ -1,9 +1,9 @@
 #!/bin/bash
 
 __targets_rel/graupel_generate2 --seed=123 --E_0=12 --decay-distance=50 --overlap-max=3 \
-	--scale=[1,0.25] --merge-offset=0.2 --D_max=40 --fill-ratio=0 --dump-stats=graupel-stats2.txt \
-	--statefile-out=2.h5 --dump-geometry-ice=test9.graupel --projection=cylindrical --pmap=unidir.png \
-	--beam-width=5
+	--scale=[1,0.25] --merge-offset=0.2 --D_max=50 --fill-ratio=0 --dump-stats=graupel-stats2.txt \
+	--statefile-out=2.h5 --dump-geometry-ice=test10.graupel --projection=cylindrical --pmap=unidir.png \
+	--beam-width=200
 
 
 #__targets_rel/graupel_generate2 --seed=$seedval --E_0=0 --decay-distance=40 --overlap-max=3 \

@@ -356,7 +356,9 @@ static auto shootRandom(const T& object,RandomGenerator& randgen
 //	Adjust offset by using the beam width
 	if(beam_radius>1e-6)
 		{
-		auto offset=drawCircle(direction,beam_radius,randgen);
+		auto offset=drawCircle(direction
+			,std::max(beam_radius,0.5f*glm::length(bb_size))
+			,randgen);
 		source+=SnowflakeModel::Point(offset,0.0f);
 		}
 

@@ -125,6 +125,9 @@ std::pair<Point,Vector> SphereAggregate::shoot(const Point& source
 	if(subvols_begin==subvols_end)
 		{return std::make_pair(Point(0.0f,0.0f,0.0f,1.0f),Vector(1.0f,0.0f,0.0f));}
 
+	if(!intersect(boundingBoxGet(),source,direction))
+		{return std::make_pair(Point{INFINITY,INFINITY,INFINITY,1.0f},Vector{1.0f,0.0f,0.0f});}
+
 	--subvols_end;
 
 	auto d=subvols_end->shoot(source,direction,E_0,decay_distance);

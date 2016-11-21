@@ -64,6 +64,33 @@ namespace SnowflakeModel
 		{
 		return glm::length( glm::max(box.m_min - p,p - box.m_max) );
 		}
+
+	inline bool intersect(const BoundingBox& bb,const Point& source,const Vector& direction)
+		{
+	//	Adopted from Gamedev
+	//		http://gamedev.stackexchange.com/questions/18436/most-efficient-aabb-vs-ray-collision-algorithms
+
+		auto dirfrac=1.0f/direction;
+
+		float t1 = (bb.m_min.x - source.x)*dirfrac.x;
+		float t3 = (bb.m_min.y - source.y)*dirfrac.y;
+		float t5 = (bb.m_min.z - source.z)*dirfrac.z;
+		float t2 = (bb.m_max.x - source.x)*dirfrac.x;
+		float t4 = (bb.m_max.y - source.y)*dirfrac.y;
+		float t6 = (bb.m_max.z - source.z)*dirfrac.z;
+
+		float tmin = std::max(std::max(std::min(t1, t2), std::min(t3, t4)), std::min(t5, t6));
+		float tmax = std::min(std::min(std::max(t1, t2), std::max(t3, t4)), std::max(t5, t6));
+
+		// if tmax < 0, ray (line) is intersecting AABB, but whole AABB is behind us
+		if (tmax < 0)
+			{return 0;}
+
+		// if tmin > tmax, ray doesn't intersect AABB
+		if (tmin > tmax)
+			{return 0;}
+		return 1;
+		}
 	}
 
 
