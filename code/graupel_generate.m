@@ -18,6 +18,7 @@ function [stats]=graupel_generate(paramstruct,exepath,exefile)
 % beam_width         the width of injector beam
 % pmap               direction probability map stored in a matrix
 % projection         projection mode, either cylindrical (this is default), or raw
+% zenith_adjust      enable/disable zenith probability adjustment
 % scale              scaling of the spheres. It is given with a struct with the members `mean`,
 %                    and `std`
 % E_0                initial energy
@@ -61,6 +62,10 @@ function [stats]=graupel_generate(paramstruct,exepath,exefile)
 
 	projection=ternary(@()( isfield(paramstruct,'projection') && ~isempty(paramstruct.projection) )...
 		,@()['--projection=',paramstruct.projection]...
+		,@()['']);
+
+	zenith_adjust=ternary(@()( isfield(paramstruct,'zenith_adjust') && ~isempty(paramstruct.zenith_adjust) )...
+		,@()['--zenith-adjust=',truefalse(paramstruct.projection>0)]...
 		,@()['']);
 
 	scale=ternary(@()( isfield(paramstruct,'scale') && ~isempty(paramstruct.scale) )...
@@ -134,8 +139,16 @@ function [stats]=graupel_generate(paramstruct,exepath,exefile)
 	system_wrapper({cmd,seed,scale,E_0,decay_distance,merge_offset...
 		,overlap_max,D_max,fill_ratio,statefile_in,statefile_out...
 		,dump_geometry,dump_geometry_ice...
-		,dump_stats,report_rate,pmap,projection,beam_width},nargout()>0);
+		,dump_stats,report_rate,pmap,projection,beam_width,zenith_adjust},nargout()>0);
 	if ~isempty(dump_stats) && nargout()>0
 		stats=csvread2(paramstruct.dump_stats,'\t');
+	end
+end
+
+function str=truefalse(x)
+	if x
+		str='yes'
+	else
+		str='no'
 	end
 end

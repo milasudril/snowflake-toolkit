@@ -1,8 +1,8 @@
 #!/bin/bash
 
 __targets_rel/graupel_generate2 --seed=123 --E_0=12 --decay-distance=50 --overlap-max=3 \
-	--scale=[1,0.25] --merge-offset=0.2 --D_max=100 --fill-ratio=0 --dump-stats=graupel-stats2.txt \
-	--statefile-out=2.h5 --dump-geometry-ice=test10.graupel --projection=cylindrical --pmap=test.png
+	--scale=[1,0.25] --merge-offset=0.2 --D_max=60 --fill-ratio=0 --dump-stats=graupel-stats3.txt \
+	--statefile-out=3.h5 --dump-geometry-ice=test13.graupel --projection=raw --pmap=test3.png
 
 
 #__targets_rel/graupel_generate2 --seed=$seedval --E_0=0 --decay-distance=40 --overlap-max=3 \

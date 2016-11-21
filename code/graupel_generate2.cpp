@@ -157,8 +157,15 @@ ALICE_OPTION_DESCRIPTOR(OptionDescriptor
 		,"filename",Alice::Option::Multiplicity::ONE}
 
 	,{"Simulation parameters","projection","Sets a projection for the probability map. "
-		"If not set, a cylindrical projection is used."
+		"If neither this or the zenith-adjust option is set, an area-preserving cylindrical "
+		"projection is used. If zenith-adjust is set to true, the raw projection is used."
 		,"projection",Alice::Option::Multiplicity::ONE}
+
+	,{"Simulation parameters","zenith-adjust","Adjust probabilities to compensate for "
+		"variable area scaling. This option has a similar affect as --projection=cylindrical "
+		"but works on the probabilities instead of the map geometry. If projection is set to "
+		"cylindrical, the value defaults to false. Otherwise, the default value is true."
+		,"bool",Alice::Option::Multiplicity::ONE}
 	
 	,{"Simulation parameters","scale","Determines the diameter of individual spheres","Parameter value",Alice::Option::Multiplicity::ONE}
 	
@@ -245,7 +252,7 @@ static SnowflakeModel::Vector mapProjection(float xi,float eta
 	else
 		{
 		auto xi_prime=xi*2.0f*std::acos(-1.0f);
-		auto eta_prime=std::acos(-1.0f)*eta;
+		auto eta_prime=std::acos(-1.0f)*(1.0f - eta);
 		return 
 			{
 			 std::cos(xi_prime)*std::sin(eta_prime)
@@ -357,7 +364,7 @@ static auto shootRandom(const T& object,RandomGenerator& randgen
 	if(beam_radius>1e-6)
 		{
 		auto offset=drawCircle(direction
-			,std::max(beam_radius,0.5f*glm::length(bb_size))
+			,std::min(beam_radius,0.5f*glm::length(bb_size))
 			,randgen);
 		source+=SnowflakeModel::Point(offset,0.0f);
 		}
@@ -404,6 +411,24 @@ template<class Distribution,class RandomGenerator>
 static SnowflakeModel::Sphere particleGenerate(Distribution& d,RandomGenerator& rng)
 	{
 	return SnowflakeModel::Sphere(SnowflakeModel::Point(0.0f,0.0f,0.0f,1.0f),d(rng));
+	}
+
+static void zenithAdjust(SnowflakeModel::ProbabilityMap<float>& pmap)
+	{
+	auto rows=pmap.rowGet(0);
+	size_t n_rows=pmap.nRowsGet();
+	size_t n_cols=pmap.nColsGet();
+	for(size_t k=0;k<n_rows;++k)
+		{
+		auto factor=std::sin( (k + 0.5f)*std::acos(-1.0f)/n_rows );
+		for(size_t l=0;l<n_cols;++l)
+			{
+			auto v=*rows;
+			v*=factor;
+			*rows=v;
+			++rows;
+			}
+		}
 	}
 
 
@@ -545,9 +570,7 @@ Simstate::Simstate(const Alice::CommandLine<OptionDescriptor>& cmd_line):
 		{
 		auto& x=r_cmd_line.get<Alice::Stringkey("pmap")>();
 		if(x)
-			{
-			pmap=SnowflakeModel::pmapLoad(x.valueGet().c_str());
-			}
+			{pmap=SnowflakeModel::pmapLoad(x.valueGet().c_str());}
 		}
 
 	proj=Projection::CYLINDRICAL;
@@ -555,6 +578,18 @@ Simstate::Simstate(const Alice::CommandLine<OptionDescriptor>& cmd_line):
 		auto& x=r_cmd_line.get<Alice::Stringkey("projection")>();
 		if(x)
 			{proj=x.valueGet();}
+		}
+	
+		{
+		auto zenith_adjust=proj==Projection::CYLINDRICAL?0:1;
+		auto& x=r_cmd_line.get<Alice::Stringkey("zenith-adjust")>();
+		if(x)
+			{zenith_adjust=x.valueGet();}
+		if(zenith_adjust && !r_cmd_line.get<Alice::Stringkey("projection")>())
+			{proj=Projection::RAW;}
+
+		if(zenith_adjust)
+			{zenithAdjust(pmap);}
 		}
 
 	objfile=r_cmd_line.get<Alice::Stringkey("dump-geometry")>().valueGet();
