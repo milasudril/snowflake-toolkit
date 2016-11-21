@@ -15,6 +15,7 @@ function [stats]=graupel_generate(paramstruct,exepath,exefile)
 % Recognized members of paramstruct
 %
 % seed               seed for the random generator
+% beam_width         the width of injector beam
 % pmap               direction probability map stored in a matrix
 % projection         projection mode, either cylindrical (this is default), or raw
 % scale              scaling of the spheres. It is given with a struct with the members `mean`,
@@ -43,11 +44,16 @@ function [stats]=graupel_generate(paramstruct,exepath,exefile)
 		,@()['--seed=',int2str(paramstruct.seed)]...
 		,@()'');
 
+	beam_width=ternary(@()( isfield(paramstruct,'beam_width') && ~isempty(paramstruct.seed))...
+		,@()['--beam-width=',num2str(paramstruct.beam_width)]...
+		,@()'');
+
 	rng=fopen('/dev/urandom','r');
 	x=fread(rng,1,'uint32');
 	y=fread(rng,3,'uint16');
 	z=fread(rng,3,'uint16');
 	fclose(rng);
+
 	pmap_name=sprintf('/tmp/%08x-%04x-%04x-%04x-%04x%04x%04x.png',x,y(1),y(2),y(3),z(1),z(2),z(3));
 	pmap=ternary(@()( isfield(paramstruct,'pmap') && ~isempty(paramstruct.pmap) )...
 		,@()['--pmap=',pmap_name]...
@@ -128,7 +134,7 @@ function [stats]=graupel_generate(paramstruct,exepath,exefile)
 	system_wrapper({cmd,seed,scale,E_0,decay_distance,merge_offset...
 		,overlap_max,D_max,fill_ratio,statefile_in,statefile_out...
 		,dump_geometry,dump_geometry_ice...
-		,dump_stats,report_rate,pmap,projection},nargout()>0);
+		,dump_stats,report_rate,pmap,projection,beam_width},nargout()>0);
 	if ~isempty(dump_stats) && nargout()>0
 		stats=csvread2(paramstruct.dump_stats,'\t');
 	end
