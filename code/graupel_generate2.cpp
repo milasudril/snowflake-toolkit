@@ -149,6 +149,9 @@ ALICE_OPTION_DESCRIPTOR(OptionDescriptor
 	
 	,{"Simulation parameters","seed","Random seed mod 2^32","unsigned int",Alice::Option::Multiplicity::ONE}
 
+	,{"Simulation parameters","beam-width","The width of the beam shooting particles. "
+		"The beam is modelled as a circle with this diameter","float",Alice::Option::Multiplicity::ONE}
+
 	,{"Simulation parameters","pmap","Gives a linear grayscale PNG file to use for direction probabilities. "
 		"Without this option, a uniform distribution is used."
 		,"filename",Alice::Option::Multiplicity::ONE}
@@ -277,8 +280,65 @@ static SnowflakeModel::Vector drawSphere(SnowflakeModel::RandomGenerator& randge
 	return mapProjection(xi,eta,proj);
 	}
 
+inline int principalComponent(const SnowflakeModel::Vector& v)
+	{
+	auto i=0;
+	auto val=v[i];
+	auto i_max=i;
+	++i;
+	while(i!=3)
+		{
+		if(std::abs(v[i]) > val)
+			{
+			val=std::abs(v[i]);
+			i_max=i;
+			}
+		++i;
+		}
+	return i_max;
+	}
+
+SnowflakeModel::Vector orthGet(const SnowflakeModel::Vector& direction)
+	{
+	auto dir_max=principalComponent(direction);
+	switch(dir_max)
+		{
+		case 0: //We want x;
+			return SnowflakeModel::Vector(-direction.z,0.0f,direction.x);
+		case 1: //we want y;
+			return SnowflakeModel::Vector(0.0f,-direction.z,direction.y);
+		case 2: //We want z;
+			return SnowflakeModel::Vector(0.0f,-direction.z,direction.y);
+		default:
+			return SnowflakeModel::Vector(0.0f,0.0f,0.0f);
+		}
+	}
+
+template<class RandomGenerator>
+SnowflakeModel::Vector drawCircle(const SnowflakeModel::Vector normal
+	,float radius,RandomGenerator& randgen)
+	{
+	auto r2=radius*radius;
+	std::uniform_real_distribution<float> U(-radius,radius);
+	float x;
+	float y;
+	do
+		{
+		x=U(randgen);
+		y=U(randgen);
+		}
+	while(x*x + y*y>r2);
+
+	auto u=orthGet(normal);
+	auto v=glm::cross(u,normal);
+	glm::mat3 m(u,v,normal);
+
+	return m*SnowflakeModel::Vector(x,y,0.0f);
+	}
+
 template<class T,class RandomGenerator>
 static auto shootRandom(const T& object,RandomGenerator& randgen
+	,float beam_radius
 	,const SnowflakeModel::ProbabilityMap<float>& pmap,Projection proj
 	,float E_0,float decay_distance)
 	{
@@ -290,9 +350,15 @@ static auto shootRandom(const T& object,RandomGenerator& randgen
 
 	auto direction=drawSphere(randgen,pmap,proj);
 
-
 //	Set the source on the sphere
 	auto source=bb_mid - SnowflakeModel::Point(r*direction,0.0f);
+
+//	Adjust offset by using the beam width
+	if(beam_radius>1e-6)
+		{
+		auto offset=drawCircle(direction,beam_radius,randgen);
+		source+=SnowflakeModel::Point(offset,0.0f);
+		}
 
 	return object.shoot(source,direction,E_0,decay_distance);
 	}
@@ -377,6 +443,7 @@ struct Simstate
 	float E_0;
 	float decay_distance;
 	float merge_offset;
+	float beam_radius;
 	unsigned int overlap_max;
 	
 	size_t rejected;
@@ -467,6 +534,13 @@ Simstate::Simstate(const Alice::CommandLine<OptionDescriptor>& cmd_line):
 		}
 
 		{
+		beam_radius=0.0f;
+		auto& x=r_cmd_line.get<Alice::Stringkey("beam-width")>();
+		if(x)
+			{beam_radius=x.valueGet()/2;}
+		}
+
+		{
 		auto& x=r_cmd_line.get<Alice::Stringkey("pmap")>();
 		if(x)
 			{
@@ -502,6 +576,7 @@ Simstate::Simstate(const Alice::CommandLine<OptionDescriptor>& cmd_line
 	dump.arrayRead<float>("decay_distance").dataRead(&decay_distance,1);
 	dump.arrayRead<float>("merge_offset").dataRead(&merge_offset,1);
 	dump.arrayRead<unsigned int>("overlap_max").dataRead(&overlap_max,1);
+	dump.arrayRead<float>("beam_radius").dataRead(&beam_radius,1);
 
 		{
 		uint32_t s[2];
@@ -556,6 +631,7 @@ void Simstate::save(const std::string& now) const
 	dump.write("merge_offset",&merge_offset,1);
 	dump.write("overlap_max",&overlap_max,1);
 	dump.write("projection",reinterpret_cast<const int*>(&proj),1);
+	dump.write("beam_radius",&beam_radius,1);
 
 		{
 		auto x=statfile.c_str();
@@ -599,7 +675,7 @@ void Simstate::step()
 	std::uniform_real_distribution<float> U(0,E_0);
 	auto E=U(randgen);
 
-	auto posnormal=shootRandom(solid_out,randgen,pmap,proj,E,decay_distance);
+	auto posnormal=shootRandom(solid_out,randgen,beam_radius,pmap,proj,E,decay_distance);
 
 	if(posnormal.first.x==INFINITY)
 		{
