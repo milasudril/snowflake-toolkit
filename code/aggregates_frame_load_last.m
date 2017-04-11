@@ -11,5 +11,5 @@ function [data,N_rows]=aggregates_frame_load_last(basedir)
 %	N_rows	The number of rows in the frame file 
 %
 	frame_data=aggregates_framedata_load(basedir);
-	[data,N_rows]=aggregates_frame_load(basedir,frame_data.Frames(end));
+	[data,N_rows]=aggregates_frame_load(basedir,frame_data.Frame(end));
 end
