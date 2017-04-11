@@ -8,7 +8,8 @@ function [data,N_rows]=csvread2(filename,delimiter)
 	end
 	c=onCleanup(@()fclose(fd));
 	headers=strsplit(fgetl(fd),delimiter);
-
+	headers=strrep(headers,' ','_');
+	headers=strrep(headers,'-','_');
 	content=dlmread(filename,delimiter,1,0);
 	data=struct();
 	N_rows=0;
