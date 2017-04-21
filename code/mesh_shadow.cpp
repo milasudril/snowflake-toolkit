@@ -293,7 +293,8 @@ ShadowMask::ShadowMask(const SnowflakeModel::Solid& solid)
 
 	auto bb=solid.boundingBoxGet();
 	auto mid=0.5f*(bb.m_min + bb.m_max);
-	auto s=0.5f*glm::length(bb.m_max - bb.m_min);
+	auto diag=bb.m_max - bb.m_min;
+	auto s=std::sqrt(3.0f)*0.5f*std::max(diag.x,std::max(diag.y,diag.z));
 	scalepos=glm::scale(scalepos,SnowflakeModel::Vector(1.0f,1.0f,1.0f)/s);
 	scalepos=glm::translate(scalepos,SnowflakeModel::Vector(-mid));
 	m_s=0.5f/s;
