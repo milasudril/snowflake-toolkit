@@ -10,6 +10,7 @@
 #include "sphere_aggregate_loader.h"
 #include "solid.h"
 #include "solid_writer_prototype.h"
+#include "solid_writer.h"
 #include "filename.h"
 #include "config_parser.h"
 #include "file_out.h"
@@ -26,10 +27,16 @@ ALICE_OPTION_DESCRIPTOR(OptionDescriptor
 	,Alice::Option::Multiplicity::ONE
 	}
 	,{
-	 "Output options","dest","The name of the destination file. If filename is omitted, data is written to stdout. "
+	 "Output options","output-ice","Write an aggregate file. If filename is omitted, data is written to stdout. "
 	,"filename"
-	,Alice::Option::Multiplicity::ONE
+	,Alice::Option::Multiplicity::ZERO_OR_ONE
 	}
+	,{
+	 "Output options","output-obj","Write a Wavefront file. If filename is omitted, data is written to stdout. "
+	,"filename"
+	,Alice::Option::Multiplicity::ZERO_OR_ONE
+	}
+
 	);
 
 static void helpPrint(const Alice::CommandLine<OptionDescriptor>& options
@@ -57,7 +64,7 @@ static SnowflakeModel::SphereAggregate aggregateLoad(const char* filename)
 	return std::move(ret);
 	}
 
-static void aggregateStore(const SnowflakeModel::Solid& solid,const char* filename)
+static void aggregateStoreIce(const SnowflakeModel::Solid& solid,const char* filename)
 	{
 	auto dest=filename==nullptr?
 		 SnowflakeModel::FileOut(stdout)
@@ -66,6 +73,17 @@ static void aggregateStore(const SnowflakeModel::Solid& solid,const char* filena
 	SnowflakeModel::SolidWriterPrototype writer(dest);
 	writer.write(solid);
 	}
+
+static void aggregateStoreObj(const SnowflakeModel::Solid& solid,const char* filename)
+	{
+	auto dest=filename==nullptr?
+		 SnowflakeModel::FileOut(stdout)
+		:SnowflakeModel::FileOut(filename);
+
+	SnowflakeModel::SolidWriter writer(dest);
+	writer.write(solid);
+	}
+
 
 int main(int argc,char** argv)
 	{
@@ -96,9 +114,20 @@ int main(int argc,char** argv)
 			return SnowflakeModel::Solid(aggregate,n);
 			}();
 
+		
+		if(cmdline.get<Alice::Stringkey("output-obj")>())
+			{
+			auto& x=cmdline.get<Alice::Stringkey("output-obj")>();
+			auto& v=x.valueGet();
+			aggregateStoreObj(aggregate_mesh,v.size()?v[0].c_str():nullptr);
+			}
 
-		auto& x=cmdline.get<Alice::Stringkey("dest")>();
-		aggregateStore(aggregate_mesh,x?x.valueGet().c_str():nullptr);
+		if(cmdline.get<Alice::Stringkey("output-ice")>())
+			{
+			auto& x=cmdline.get<Alice::Stringkey("output-ice")>();
+			auto& v=x.valueGet();
+			aggregateStoreIce(aggregate_mesh,v.size()?v[0].c_str():nullptr);
+			}
 		}
 	catch(const Alice::ErrorMessage& msg)
 		{
