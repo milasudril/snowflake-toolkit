@@ -240,7 +240,8 @@ ShadowMask::ShadowMask(const std::vector<glm::vec3>& points)
 
 	auto bb=SnowflakeModel::boundingBoxGet(points);
 	auto mid=0.5f*(bb.m_min + bb.m_max);
-	auto s=0.5f*glm::length(bb.m_max - bb.m_min);
+	auto diag=bb.m_max - bb.m_min;
+	auto s=std::sqrt(3.0f)*0.5f*std::max(diag.x,std::max(diag.y,diag.z));
 	scalepos=glm::scale(scalepos,SnowflakeModel::Vector(1.0f,1.0f,1.0f)/s);
 	scalepos=glm::translate(scalepos,SnowflakeModel::Vector(-mid));
 	m_s=0.5f/s;
@@ -281,9 +282,10 @@ static void pixelsDump(GLFWwindow* window,float scale
 	png_init_io(pngptr, dump.handleGet());
 	png_set_IHDR(pngptr,pnginfo,width,height,8,PNG_COLOR_TYPE_GRAY,PNG_INTERLACE_NONE
 		,PNG_COMPRESSION_TYPE_DEFAULT,PNG_FILTER_TYPE_DEFAULT);
-	png_set_pHYs(pngptr,pnginfo,1024.0f*width*scale + 0.5f,1024.0f*width*scale + 0.5f
+	printf("%d %d %.7g\n",width,height,scale);
+	png_set_pHYs(pngptr,pnginfo,1024.0f*width*scale,1024.0f*height*scale + 1.0f
 		,PNG_RESOLUTION_UNKNOWN);
-	png_set_sCAL(pngptr,pnginfo,1,1/(width*scale),1/(width*scale));
+	png_set_sCAL(pngptr,pnginfo,1,1/(width*scale),1/(height*scale));
 	png_write_info(pngptr,pnginfo);
 	for(int k=height-1;k>=0;--k)
 		{png_write_row(pngptr, ret.data() + width*k);}
@@ -304,14 +306,13 @@ static glm::mat4 make_ortho(float width,float height,float size,float distance
 	,float view_thickness)
 	{
 	auto r=width<height?size/width:size/height;
-
 	width*=r;
 	height*=r;
 
 	auto left=-width;
-	auto right=-left;
+	auto right=width;
 	auto bottom=-height;
-	auto top=-bottom;
+	auto top=height;
 
 	return glm::ortho(left,right,bottom,top,-distance,-distance+view_thickness);
 	}
@@ -327,7 +328,11 @@ static void render(GLFWwindow* handle)
 	glViewport(0,0,width,height);
 	auto projection=make_ortho(width,height,1.0f,10,20);
 	glClear(GL_COLOR_BUFFER_BIT);
-	glPointSize(width*vs->pc.scaleGet() + 0.5f);
+	auto pointsize=width*vs->pc.scaleGet() + 0.5f;
+	float sizes[2];
+	glGetFloatv( GL_POINT_SIZE_RANGE, sizes);
+	fprintf(stderr,"Requested point size is %.7g. Valid range is [%.7g, %.7g]\n",pointsize,sizes[0],sizes[1]);
+	glPointSize(pointsize - 0.5f);
 	vs->pc.render(vs->alpha,vs->beta,vs->gamma,projection);
 	}
 

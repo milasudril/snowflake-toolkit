@@ -25,20 +25,20 @@ This is a shell script that can be used to compile the toolkit. The toolkit requ
 
     #!/bin/bash
 
-    # Download Maike [Any version newer than 0.8.4 should work]
-    wget https://github.com/milasudril/maike/archive/0.8.4.tar.gz
+    # Download Maike [Any version newer than 0.10.6 should work]
+    wget https://github.com/milasudril/maike/archive/0.10.6.tar.gz
 
     # Rename the compressed tarball
-    mv "0.8.4.tar.gz" "maike-0.8.4.tar.gz"
+    mv "0.10.6.tar.gz" "maike-0.10.6.tar.gz"
 
     # Decompress the tarball
-    gzip -d "maike-0.8.4.tar.gz"
+    gzip -d "maike-0.10.6.tar.gz"
 
     # Extract its contents
-    tar -xf "maike-0.8.4.tar.gz"
+    tar -xf "maike-0.10.6.tar.gz"
 
     # Cd into the Maike source directory
-    cd maike-0.8.4
+    cd maike-0.10.6
 
     # Compile Maike
     chmod u+x build.sh

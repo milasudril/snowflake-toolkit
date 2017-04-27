@@ -293,7 +293,8 @@ ShadowMask::ShadowMask(const SnowflakeModel::Solid& solid)
 
 	auto bb=solid.boundingBoxGet();
 	auto mid=0.5f*(bb.m_min + bb.m_max);
-	auto s=0.5f*glm::length(bb.m_max - bb.m_min);
+	auto diag=bb.m_max - bb.m_min;
+	auto s=std::sqrt(3.0f)*0.5f*std::max(diag.x,std::max(diag.y,diag.z));
 	scalepos=glm::scale(scalepos,SnowflakeModel::Vector(1.0f,1.0f,1.0f)/s);
 	scalepos=glm::translate(scalepos,SnowflakeModel::Vector(-mid));
 	m_s=0.5f/s;
@@ -335,7 +336,7 @@ static void pixelsDump(GLFWwindow* window,float scale
 	png_init_io(pngptr, dump.handleGet());
 	png_set_IHDR(pngptr,pnginfo,width,height,8,PNG_COLOR_TYPE_GRAY,PNG_INTERLACE_NONE
 		,PNG_COMPRESSION_TYPE_DEFAULT,PNG_FILTER_TYPE_DEFAULT);
-	png_set_pHYs(pngptr,pnginfo,1024.0f*width*scale + 0.5f,1024.0f*width*scale + 0.5f
+	png_set_pHYs(pngptr,pnginfo,1024.0f*width*scale,1024.0f*width*scale + 1.0f
 		,PNG_RESOLUTION_UNKNOWN);
 	png_set_sCAL(pngptr,pnginfo,1,1/(width*scale),1/(width*scale));
 	png_write_info(pngptr,pnginfo);
