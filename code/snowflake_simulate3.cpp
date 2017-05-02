@@ -1396,7 +1396,9 @@ int main(int argc,char** argv)
 			SnowflakeModel::DataDump dump(setup.m_statefile_in.c_str()
 				,SnowflakeModel::DataDump::IOMode::READ);
 			auto statefile=setup.m_statefile_in;
+			auto file_out=setup.m_statefile_out; //Save value
 			setup=Setup(dump);
+			setup.m_statefile_out=file_out; //Restore value
 			setup.m_statefile_in=statefile;
 			}
 		setup.validate();
