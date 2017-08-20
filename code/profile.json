@@ -26,6 +26,7 @@
                         "-o",
                         "{target}",
                         "{source}",
+						"{libdir}",
                         "{dependencies}"
                     ],
                     "name":"g++"
@@ -33,7 +34,7 @@
                 "cflags_extra":["O2","march=native","DPROFILE","DNDEBUG","fno-stack-protector"],
                 "cflags_format":"-^",
                 "cxxversion_max":-1,
-                "cxxversion_min":201103,
+                "cxxversion_min":201402,
                 "dllcompile":{
                     "args":[
                         "{cxxversion}",
@@ -44,6 +45,7 @@
                         "-o",
                         "{target}",
                         "{source}",
+						"{libdir}",
                         "{dependencies}"
                     ],
                     "name":"g++"

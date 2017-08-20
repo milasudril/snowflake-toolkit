@@ -9,7 +9,7 @@
 //@			,{"ref":"hdf5_cpp","rel":"external"}
 //@			,{"ref":"hdf5","rel":"external"}
 //@			]
-//@		,"cxxoptions":{"cflags_extra":["I/usr/include/hdf5/serial","L/usr/lib/x86_64-linux-gnu/hdf5/serial"]}
+//@		,"pkgconfig_libs":["hdf5-serial"]
 //@		}]
 //@	}
 

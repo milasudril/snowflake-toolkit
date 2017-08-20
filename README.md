@@ -25,7 +25,7 @@ This is a shell script that can be used to compile the toolkit. The toolkit requ
 
     #!/bin/bash
 
-    # Download Maike [Any version newer than 0.10.6 should work]
+    # Download Maike [Any version newer than 0.10.6 should work, but see milasudril/maike#60. This means that versions newer than and including 0.10.8 may not work]
     wget https://github.com/milasudril/maike/archive/0.10.6.tar.gz
 
     # Rename the compressed tarball

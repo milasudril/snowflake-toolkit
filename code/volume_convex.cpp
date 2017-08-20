@@ -73,6 +73,17 @@ static PointInt seedGenerate(const VolumeConvex& v,const Grid& grid)
 	PointInt seed;
 	std::minstd_rand rng;
 	auto& bb=v.boundingBoxGet();
+	
+ 	auto size=grid.quantize(bb.m_max) - grid.quantize(bb.m_min);
+	if(size.x<2)
+		{throw "Too few raster points in x direction";}
+		
+	if(size.y<2)
+		{throw "Too few raster points in y direction";}
+
+	if(size.z<2)
+		{throw "Too few raster points in z direction";}
+	
 	do
 		{
 		seed=grid.quantize( randomPoint(bb,rng) );

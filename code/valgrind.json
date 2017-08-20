@@ -28,6 +28,7 @@
                         "-o",
                         "{target}",
                         "{source}",
+						"{libdir}",
                         "{dependencies}"
                     ],
                     "name":"g++"
@@ -35,7 +36,7 @@
                 "cflags_extra":["march=native"],
                 "cflags_format":"-^",
                 "cxxversion_max":-1,
-                "cxxversion_min":201103,
+                "cxxversion_min":201402,
                 "dllcompile":{
                     "args":[
                         "-g",
@@ -78,6 +79,7 @@
                         "{includedir}",
                         "-o",
                         "{target}",
+						"{libdir}",
                         "{source}"
                     ],
                     "name":"g++"
