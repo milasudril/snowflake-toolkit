@@ -18,7 +18,9 @@ void SnowflakeModel::addaShapeWrite(const Grid& grid,FileOut&& dest)
 		.printf("# Bounding box starts at (%.7g,%.7g,%.7g)\n"
 			,min.x,min.y,min.z)
 		.printf("# Number of divisions are (%d,%d,%d)\n",size.x,size.y,size.z)
-		.printf("# Step sizes are (%.7g,%.7g,%.7g)\n",step.x,step.y,step.z);
+		.printf("# Step sizes are (%.7g,%.7g,%.7g)\n",step.x,step.y,step.z)
+		.printf("# Subvolume hit ratio %zu/%zu\n"
+			,grid.volumeCount() - grid.failcount(),grid.volumeCount());
 
 	grid.pointsVisit([&dest](int x,int y,int z,uint8_t value)
 		{

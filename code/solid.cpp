@@ -10,6 +10,7 @@
 //@	}
 #include "solid.h"
 #include "sphere_aggregate.h"
+#include "grid.h"
 #include <algorithm>
 
 using namespace SnowflakeModel;
@@ -140,6 +141,7 @@ void Solid::midpointCompute() const noexcept
 
 void Solid::geometrySample(Grid& grid) const
 	{
+	grid.failcountReset().volumeCount(subvolumesCount());
 	auto subvolume=subvolumesBegin();
 	auto vol_end=subvolumesEnd();
 	while(subvolume!=vol_end)

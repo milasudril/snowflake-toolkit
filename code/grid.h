@@ -120,6 +120,31 @@ namespace SnowflakeModel
 
 			VectorDouble stepGet() const noexcept
 				{return VectorDouble(m_dx,m_dy,m_dz);}
+				
+			Grid& fail() noexcept
+				{
+				++m_failed;
+				return *this;
+				}
+			
+			Grid& failcountReset() noexcept
+				{
+				m_failed=0;
+				return *this;
+				}
+			
+			size_t failcount() const noexcept
+				{return m_failed;}
+				
+			size_t volumeCount() const noexcept
+				{return m_n_vols;}
+				
+			Grid& volumeCount(size_t n) noexcept
+				{
+				fprintf(stderr,"%zu\n",n);
+				m_n_vols=n;
+				return *this;
+				}
 			
 		private:
 			uint8_t* m_data;
@@ -130,6 +155,8 @@ namespace SnowflakeModel
 			int m_n_x;
 			int m_n_y;
 			int m_n_z;
+			size_t m_failed;
+			size_t m_n_vols;
 		};
 	}
 

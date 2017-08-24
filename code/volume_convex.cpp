@@ -74,29 +74,30 @@ static PointInt seedGenerate(const VolumeConvex& v,const Grid& grid)
 	std::minstd_rand rng;
 	auto& bb=v.boundingBoxGet();
 	
- 	auto size=grid.quantize(bb.m_max) - grid.quantize(bb.m_min);
-	if(size.x<2)
-		{throw "Too few raster points in x direction";}
-		
-	if(size.y<2)
-		{throw "Too few raster points in y direction";}
+ 	auto size=VectorDouble( bb.sizeGet() )/grid.stepGet();
+ 	auto N_points=16*static_cast<size_t>( size.x*size.y*size.z + 1);
 
-	if(size.z<2)
-		{throw "Too few raster points in z direction";}
-	
 	do
 		{
+		if(N_points==0)
+			{return PointInt{-1,-1,-1,1};}
 		seed=grid.quantize( randomPoint(bb,rng) );
+		--N_points;
 		}
-	while(!v.inside( grid.dequantize(seed)) );
+	while(!v.inside( grid.dequantize(seed)));
 	return seed;
 	}
 
 void VolumeConvex::geometrySample(Grid& grid) const
 	{
+	auto seed=seedGenerate(*this,grid);
+	if(seed.x==-1)
+		{
+		grid.fail();
+		return;
+		}
 	std::stack<PointInt> nodes;
-
-	nodes.push(seedGenerate(*this,grid));
+	nodes.push(seed);
 	auto& bb=boundingBoxGet();
 	grid.bitAnd(grid.quantize(bb.m_min),grid.quantize(bb.m_max),0xf0);
 	while(nodes.size()!=0)

@@ -16,6 +16,7 @@ using namespace SnowflakeModel;
 
 Grid::Grid(double dx,double dy,double dz,const BoundingBox& bounding_box)
 	{
+	m_failed=0;
 	auto range=bounding_box.m_max - bounding_box.m_min;
 	m_n_x=static_cast<int>( ceil( range.x/dx ) );
 	m_n_y=static_cast<int>( ceil( range.y/dy ) );
@@ -34,6 +35,7 @@ Grid::Grid(double dx,double dy,double dz,const BoundingBox& bounding_box)
 Grid::Grid(unsigned int n_x,unsigned int n_y,unsigned int n_z
 	,const BoundingBox& bounding_box):m_n_x(n_x),m_n_y(n_y),m_n_z(n_z)
 	{
+	m_failed=0;
 	if(m_n_x==0)
 		{
 		if(n_y > 0)
