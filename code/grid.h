@@ -141,7 +141,6 @@ namespace SnowflakeModel
 				
 			Grid& volumeCount(size_t n) noexcept
 				{
-				fprintf(stderr,"%zu\n",n);
 				m_n_vols=n;
 				return *this;
 				}
